@@ -6,3 +6,5 @@ I learn as i go, just by doing things.
 Its WIP so please dont be hars to it.
 Happy Hacking!
 <img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/IMG_20240924_193407_DRO.jpg">
+
+Cheap yellow display, CYD, ESP32-2432S028R, ESP32-2432S028Rv2
