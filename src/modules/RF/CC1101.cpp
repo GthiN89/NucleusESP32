@@ -494,9 +494,9 @@ bool CC1101_CLASS::captureLoop()
     }
 
      File outputFile;
-    // if (CheckReceived())
-    // {
-    //    CC1101_CLASS::signalanalyse();
+     if (CheckReceived())
+     {
+       CC1101_CLASS::signalanalyse();
        std::stringstream rawSignal;
 
         for (int i = 0; i < samplecount; i++) {
@@ -528,11 +528,10 @@ bool CC1101_CLASS::captureLoop()
          } else {
              return false;
          }
-         signalanalyse();
          return true;
      }
-//     return false;
-// }
+     return false;
+}
    
 String CC1101_CLASS::generateFilename(float frequency, int modulation, float bandwidth)
 {
@@ -678,151 +677,5 @@ void CC1101_CLASS::saveSignal() {
     SPIFFS.remove(fullPath);
 }
 
-
-
-
-
-
-// bool CC1101_CLASS::CheckReceived() {
-//   unsigned long previousMillis = millis();
-  
-//     RCSwitch rcswitch = RCSwitch();
-//     RfCodes received;
-//         ScreenManager& scrMng = ScreenManager::getInstance();
-//     lv_obj_t *text_area = scrMng.getTextArea();
-//     File fileIntern = SPIFFS.open(fullPath, FILE_READ);
-
-// //    drawMainBorder();
-//     // tft.setCursor(10, 28);
-//     // tft.setTextSize(FP);
-//     Serial.println("Waiting for signal.");
-//     char hexString[64];
-    
-//     if(!CC1101_MHZ) CC1101_MHZ = CC1101_MHZ; // default from settings
-    
-
-//     // init receive
-//     pinMode(CC1101_CCGDO0A, INPUT);
-//     rcswitch.enableReceive(CC1101_CCGDO0A);
-
-//     while(true) {
-//         if(rcswitch.available()) {
-//             long value = rcswitch.getReceivedValue();
-//             Serial.println("Available");
-//             if(value) {
-//                 Serial.println("has value");
-
-//                 unsigned int* raw = rcswitch.getReceivedRawdata();
-//                 received.frequency=long(CC1101_MHZ*1000000);
-//                 received.key=rcswitch.getReceivedValue();
-//                 received.protocol="RcSwitch";
-//                 received.preset=rcswitch.getReceivedProtocol();
-//                 received.te=rcswitch.getReceivedDelay();
-//                 received.Bit=rcswitch.getReceivedBitlength();
-//                 received.filepath="Last copied";
-
-//                 for(int i=0; i<received.te*2;i++) {
-//                     if(i>0) received.data+=" ";
-//                     received.data+=raw[i];
-//                 }
-//                 //Serial.println(received.protocol);
-//                 //Serial.println(received.data);
-//                 // const char* b = dec2binWzerofill(received.key, received.Bit);
-//                 // drawMainBorder();
-//                 // tft.setCursor(10, 28);
-//                 // tft.setTextSize(FP);
-//             //    decimalToHexString(received.key,hexString); // need to remove the extra padding 0s?
-//                 Serial.println("Key: " + String(hexString));
-//            //     tft.setCursor(10, tft.getCursorY());
-//           //      Serial.println("Binary: " + String(b));
-//            //     tft.setCursor(10, tft.getCursorY());
-//                 Serial.println("Lenght: " + String(received.Bit) + " bits");
-//           //      tft.setCursor(10, tft.getCursorY());
-//                 Serial.println("PulseLenght: " + String(received.te) + "ms");
-//            //     tft.setCursor(10, tft.getCursorY());
-//                 Serial.println("Protocol: " + String(received.protocol));
-//              //   tft.setCursor(10, tft.getCursorY()+LH*2);
-//              //   Serial.println("Press " + String(BTN_ALIAS) + "for options.");
-//             }
-//             rcswitch.resetAvailable();
-//             previousMillis = millis();
-//         }
-//         if(received.key>0) {
-//             String subfile_out = "Filetype: Bruce SubGhz RAW File\nVersion 1\n";
-//             subfile_out += "Frequency: " + String(int(CC1101_MHZ*1000000)) + "\n";
-//             if(received.preset=="1") received.preset="FuriHalSubGhzPresetOok270Async";
-//             else if (received.preset=="2") received.preset="FuriHalSubGhzPresetOok650Async";
-//             subfile_out += "Preset: " + String(received.preset) + "\n";
-//             subfile_out += "Protocol: RcSwitch\n";
-//             subfile_out += "Bit: " + String(received.Bit) + "\n";
-//             subfile_out += "Key: " + String(hexString) + "\n";
-//             // subfile_out += "RAW_Data: " + received.data; // not in flipper pattern
-//             subfile_out += "TE: " + String(received.te) + "\n";
-            
-//             #ifndef HAS_SCREEN
-//                 // headless mode, just print the file on serial and quit
-//                 Serial.println(subfile_out);
-//                 return true;
-//             #endif
-            
-//             if(true) {
-//                 int chosen=0;
-//                 // options = {
-//                 //     {"Replay signal",   [&]()  { chosen=1; } },
-//                 //     {"Save signal",     [&]()  { chosen=2; } },
-//                 // };
-//                 delay(200);
-//               //  loopOptions(options);
-//                 if(chosen==1) {
-//                     rcswitch.disableReceive();
-//                   //  sendRfCommand(received);
-//                //     addToRecentCodes(received);
-//                 //    displayRedStripe("Waiting Signal",TFT_WHITE, FGCOLOR);
-
-//                 }
-//                 else if (chosen==2) {
-//                     int i=0;
-//                     File file;
-//                     String FS="";
-//                     if(SD.begin()) {
-//                         if (!SD.exists("/BruceRF")) SD.mkdir("/BruceRF");
-//                         while(SD.exists("/BruceRF/bruce_" + String(i) + ".sub")) i++;
-//                         file = SD.open("/BruceRF/bruce_"+ String(i) +".sub", FILE_WRITE);
-//                         FS="SD";
-//                     } else if(LittleFS.begin()) {
-//                    //     if(!checkLittleFsSize()) goto Exit;
-//                         if (!LittleFS.exists("/BruceRF")) LittleFS.mkdir("/BruceRF");
-//                         while(LittleFS.exists("/BruceRF/bruce_" + String(i) + ".sub")) i++;
-//                         file = LittleFS.open("/BruceRF/bruce_"+ String(i) +".sub", FILE_WRITE);
-//                         FS="LittleFS";
-//                     }
-//                     if(file) {
-//                         file.println(subfile_out);
-//                   //      displaySuccess(FS + "/bruce_" + String(i) + ".sub");
-//                     } else {
-//                         Serial.println("Fail saving data to LittleFS");
-//                 //        displayError("Error saving file");
-//                     }
-//                     file.close();
-//                     delay(2000);
-//                 //    drawMainBorder();
-//                 //    tft.setCursor(10, 28);
-//               //      tft.setTextSize(FP);
-//                     Serial.println("Waiting for signal.");
-//                 }
-//             }
-//         }
-//     }
-
-//     delay(1);
-//             ELECHOUSE_cc1101.setSidle();
-
-//     #ifdef USE_CC1101_VIA_SPI   
-//     if(RfModule==1) 
-//         ELECHOUSE_cc1101.setSidle();
-//     #endif
-        
-//     return true;
-// }
 
 
