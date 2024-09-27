@@ -21,6 +21,8 @@
 #define CC1101_CCGDO0A 17      // GDO0
 #define CC1101_CCGDO2A 16      // GDO2
 
+extern bool teslaSucessFlag;
+
    //---------------------------------------------------------------------------//
   //-----------------------------ENUMBS----------------------------------------//
  //---------------------------------------------------------------------------//
@@ -55,6 +57,7 @@ enum C1101State
   STATE_SEND_FLIPPER,
   STATE_WIFI_SCAN,
   STATE_SEND_BLESPAM,
+  STATE_PULSE_SCAN,
 };
 
 // Current State
