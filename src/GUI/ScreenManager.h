@@ -24,6 +24,7 @@ public:
     lv_obj_t* getPresetDropdown();
     lv_obj_t* getSyncDropdown();
     lv_obj_t* getPTKDropdown();
+    lv_obj_t* getPulseLenghtInput();
 
 
 private:
@@ -42,13 +43,16 @@ private:
     lv_obj_t* button_container2_;
     lv_obj_t* button_container_settings;
     lv_obj_t* C1101preset_container_;
-    lv_obj_t* C1101preset_dropdown_;
+    lv_obj_t* C1101buffer_dropdown_;
     lv_obj_t* checkbox_container_;
     lv_obj_t* C1101PTK_container_;
     lv_obj_t* C1101PTK_dropdown_;
     lv_obj_t* C1101SYNC_container_;
     lv_obj_t* C1101SYNC_dropdown_;
     lv_obj_t *buttonSettings_;
+    lv_obj_t * C1101pulseLenght_container_;
+    lv_obj_t * pulseLenghInput_;
+    lv_obj_t * pulseGet_;
 };
 
 #endif 

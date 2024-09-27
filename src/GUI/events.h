@@ -44,11 +44,12 @@ static void saveSignal(lv_event_t * e);
 static void saveSignalProcess(lv_event_t * e);
 static void listenRFEvent(lv_event_t * e);
 static void fcnProtAnaPlay(lv_event_t * e);
-static void ta_preset_event_cb(lv_event_t * e);
+static void ta_buffert_event_cb(lv_event_t * e);
 static void saveRFSettingEvent(lv_event_t * e);
 static void cancelRFSettingEvent(lv_event_t * e);
 static void replayEvent(lv_event_t * e);
 static void exitReplayEvent(lv_event_t * e);
+static void ta_pulse_event_cb(lv_event_t * e);
 
 static void playFromBuffer();
 static void radioHandlerOnChange();

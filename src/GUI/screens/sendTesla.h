@@ -17,6 +17,8 @@ const uint16_t pulseWidth = 400;
 const uint16_t messageDistance = 23;
 const uint8_t transmtesla = 5;
 const uint8_t messageLength = 43;
+extern void btn_event_teslaCharger_run(lv_event_t* e);
+
 
 const uint8_t sequence[messageLength] = { 
   0x02,0xAA,0xAA,0xAA,  // Preamble of 26 bits by repeating 1010

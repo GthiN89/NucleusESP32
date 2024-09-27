@@ -2,6 +2,7 @@
 #define C1101_H
 
 #include "globals.h"
+#define SAMPLE_SIZE 1024
 
    //---------------------------------------------------------------------------//
   //-----------------------------Presets-Variables-----------------------------//
@@ -10,6 +11,12 @@
 
 class CC1101_CLASS {
 public:
+
+unsigned long samplesmooth[SAMPLE_SIZE];
+  int smoothcount=0;
+    String rawString = "";
+    int BufferSize = 32;
+    int pulseLenght;
     int CC1101_MODULATION;
     float CC1101_DRATE;
     float CC1101_RX_BW;
@@ -34,6 +41,10 @@ public:
     void saveSignal();
     void signalanalyse();
     static bool CheckReceived(void);
+    bool getPulseLenghtLoop();
+    void asciitohex(byte *ascii_ptr, byte *hex_ptr,int len);
+    void initrRaw();
+
 
 private:
 

@@ -124,19 +124,32 @@ void loop() {
     if(C1101CurrentState == STATE_CAPTURE) {
         ScreenManager& screenMgr = ScreenManager::getInstance();
         lv_obj_t * text_area = screenMgr.getTextArea();
+            CC1101.captureLoop();
+            //  CC1101.showResultRecPlay();
+            C1101CurrentState = STATE_IDLE;
+            
+            delay(100);
+    }
+
+    if(C1101CurrentState == STATE_PULSE_SCAN) {
+        ScreenManager& screenMgr = ScreenManager::getInstance();
+        lv_obj_t * text_area = screenMgr.getTextArea();
         if (CC1101.CheckReceived())
             {
-              CC1101.captureLoop();
+              CC1101.getPulseLenghtLoop();
               CC1101.disableReceiver();
-              //delay(1000); - OZ CHANGES FOR TESTING
-              CC1101.showResultRecPlay();
+              delay(10);
+            //  CC1101.showResultRecPlay();
               C1101CurrentState = STATE_IDLE;
             }
             delay(1);
     }
 
     if(C1101CurrentState == STATE_PLAYBACK) {
+      //  CC1101.enableTransmit();
         CC1101.sendCapture();
+      //  CC1101.disableTransmit();
+      C1101CurrentState = STATE_IDLE;
     };
 
 

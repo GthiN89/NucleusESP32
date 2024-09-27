@@ -6,11 +6,13 @@
 
 uint8_t C1101CurrentState = STATE_IDLE;
 
-bool C1101LoadPreset = false;
+bool C1101LoadPreset = true;
 
 bool receiverEnabled;
 
 float CC1101_MHZ;
+
+bool teslaSucessFlag;
 
 RFMenuScreen rfMenuScreen;
 

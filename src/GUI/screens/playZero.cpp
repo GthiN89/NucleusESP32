@@ -8,6 +8,8 @@
 #include "GUI/screens/replay.h"
 #include "GUI/screens/c1101Scan.h"
 #include "GUI/screens/playRecorded.h"
+#include "GUI/screens/playZero.h"
+#include "GUI/screens/sendTesla.h"
 
 
 #define MAX_PATH_LENGTH 256
@@ -69,17 +71,17 @@ void playZeroScreen() {
 }
 
 void btn_event_teslaCharger_run(lv_event_t* e) {
-    // lv_event_code_t code = lv_event_get_code(e);
-    // if (code == LV_EVENT_CLICKED) {
-    //     teslaScreen();
-    //     // Uncomment and use if needed:
-    //     // if (sendTeslaSignal(433.92)) {
-    //     //     teslaSucessFlag = true;
-    //     // }
-    //     // if (sendTeslaSignal(315.00)) {
-    //     //     teslaSucessFlag = true;
-    //     // }
-    // }
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        teslaScreen();
+        // Uncomment and use if needed:
+        // if (sendTeslaSignal(433.92)) {
+        //     teslaSucessFlag = true;
+        // }
+        // if (sendTeslaSignal(315.00)) {
+        //     teslaSucessFlag = true;
+        // }
+    }
 }
 
 

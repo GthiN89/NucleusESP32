@@ -127,7 +127,34 @@ void EVENTS::kb_qwert_event_cb(lv_event_t * e) {
     }
 }
 
-void EVENTS::ta_preset_event_cb(lv_event_t * e) {
+
+
+void EVENTS::ta_pulse_event_cb(lv_event_t * e) {
+    char frequency_buffer[10];
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    lv_obj_t * text_area = screenMgr.getTextArea();
+    lv_obj_t * ta = screenMgr.getFreqInput();
+    strncpy(frequency_buffer, lv_textarea_get_text(ta), sizeof(frequency_buffer) - 1);
+    frequency_buffer[sizeof(frequency_buffer) - 1] = '\0'; 
+    C1101CurrentState = STATE_PULSE_SCAN;
+    C1101LoadPreset = true;
+
+     float freq = atof(frequency_buffer);
+        lv_textarea_set_text(text_area, "Waiting for signal.\n");
+//     char freq_str[20]; // Buffer to hold the converted float as a string
+//     snprintf(freq_str, sizeof(freq_str), "%f", freq);
+
+//     lv_textarea_add_text(text_area, freq_str);
+//    // lv_textarea_set_text(text_area, "  " );
+//     lv_textarea_set_text(text_area, String("Capture Started..").c_str());
+
+    CC1101.setFrequency(freq);
+    CC1101.enableReceiver();
+    delay(20);
+
+}
+
+void EVENTS::ta_buffert_event_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t* text_area = screenMgr.getTextArea();
@@ -135,8 +162,8 @@ void EVENTS::ta_preset_event_cb(lv_event_t * e) {
     lv_dropdown_get_selected_str(dropdown, EVENTS::selected_str, sizeof(EVENTS::selected_str));
 
     if (code == LV_EVENT_VALUE_CHANGED) {
-        C1101preset = stringToCC1101Preset(EVENTS::selected_str);
-        lv_textarea_add_text(text_area, "Preset set to: ");
+
+        lv_textarea_add_text(text_area, "Buffer size: ");
         lv_textarea_add_text(text_area,EVENTS::selected_str);
         lv_textarea_add_text(text_area, "\n");
     }
@@ -169,20 +196,26 @@ void EVENTS::listenRFEvent(lv_event_t * e) {
     lv_obj_t * ta = screenMgr.getFreqInput();
     strncpy(frequency_buffer, lv_textarea_get_text(ta), sizeof(frequency_buffer) - 1);
     frequency_buffer[sizeof(frequency_buffer) - 1] = '\0'; 
-    C1101CurrentState = STATE_CAPTURE;
-    C1101LoadPreset = true;
+
+    C1101LoadPreset = false;
 
     float freq = atof(frequency_buffer);
     char freq_str[20]; // Buffer to hold the converted float as a string
     snprintf(freq_str, sizeof(freq_str), "%f", freq);
 
     lv_textarea_add_text(text_area, freq_str);
-    lv_textarea_add_text(text_area, "\n" );
-    lv_textarea_add_text(text_area, String("Capture Started..").c_str());
+   // lv_textarea_set_text(text_area, "  " );
+    lv_textarea_set_text(text_area, String("Capture Started..").c_str());
 
-    CC1101.setFrequency(freq);
-    CC1101.enableReceiver();
+    ELECHOUSE_cc1101.setSidle();  // Set to idle state
+    ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
+    
+    // Optionally disable chip select (CS) to fully power down the CC1101
+    digitalWrite(CC1101_CS, HIGH); 
 
+    CC1101.initrRaw();
+    delay(20);
+    C1101CurrentState = STATE_CAPTURE;
 
 }
 
@@ -255,11 +288,11 @@ void EVENTS::playFromBuffer()
 
   if (C1101CurrentState == STATE_IDLE)
   {
-    ScreenManager &screenMgr = ScreenManager::getInstance();
-    lv_obj_t *ta = screenMgr.getTextArea();
+    // ScreenManager &screenMgr = ScreenManager::getInstance();
+    // lv_obj_t *ta = screenMgr.getTextArea();
 
-    float freq = String(lv_textarea_get_text(ta)).toFloat();
-    CC1101.setFrequency(freq);
+    // float freq = String(lv_textarea_get_text(ta)).toFloat();
+   // CC1101.setFrequency(freq);
 
     C1101CurrentState = STATE_PLAYBACK;
   }

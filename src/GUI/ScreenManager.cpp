@@ -30,7 +30,9 @@ ScreenManager::ScreenManager()
       C1101preset_container_(nullptr),
       C1101PTK_container_(nullptr),
       C1101PTK_dropdown_(nullptr),
-      C1101SYNC_container_(nullptr)
+      C1101SYNC_container_(nullptr),
+      C1101pulseLenght_container_(nullptr),
+      pulseLenghInput_(nullptr)
 {
 }
 
@@ -50,6 +52,11 @@ lv_obj_t *ScreenManager::getTextArea()
     return text_area_;
 }
 
+lv_obj_t *ScreenManager::getPulseLenghtInput()
+{
+    return pulseLenghInput_;
+}
+
 lv_obj_t *ScreenManager::getFilenameInput()
 {
     return filenameInput_;
@@ -62,7 +69,7 @@ lv_obj_t *ScreenManager::getKeyboardFreq()
 
 lv_obj_t *ScreenManager::getPresetDropdown()
 {
-    return C1101preset_dropdown_;
+    return C1101buffer_dropdown_;
 }
 
 lv_obj_t *ScreenManager::getSyncDropdown()
@@ -82,15 +89,13 @@ void ScreenManager::createReplayScreen()
 
     ReplayScreen_ = lv_obj_create(NULL);
     const char *CC1101_PRESET_STRINGS[] = {
-        "AM650",
-        "AM270",
-        "FM238",
-        "FM476",
-        "FM95",
-        "FM15k",
-        "PAGER",
-        "HND1",
-        "HND2"};
+        "32",
+        "64",
+        "128",
+        "256",
+        "512",
+        "1024"
+        };
 
     lv_scr_load(ReplayScreen_);
     lv_obj_set_flex_flow(ReplayScreen_, LV_FLEX_FLOW_COLUMN);
@@ -105,37 +110,49 @@ void ScreenManager::createReplayScreen()
     kb_freq_ = KeyboardHelper::createKeyboard(ReplayScreen_, LV_KEYBOARD_MODE_NUMBER);
 
     // Create frequency input
-    containerHelper.fillTopContainer(topLabel_container_, "Frequency:", TEXT_AREA, &freqInput_, "433.92", "433.92", 10, kb_freq_, EVENTS::ta_freq_event_cb);
-    lv_obj_set_size(freqInput_, 80, 30);
-    lv_obj_add_event_cb(freqInput_, EVENTS::ta_freq_event_cb, LV_EVENT_FOCUSED, kb_freq_);
+    containerHelper.fillTopContainer(topLabel_container_, "Mhz:  ", TEXT_AREA, &freqInput_, "433.92", "433.92", 10, kb_freq_, EVENTS::ta_freq_event_cb);
+    lv_obj_set_size(freqInput_, 70, 30);                   
+  //  lv_obj_add_event_cb(freqInput_, EVENTS::ta_freq_event_cb, LV_EVENT_FOCUSED, kb_freq_);
 
     // CREATE settings icon
-    buttonSettings_ = ButtonHelper::createButton(topLabel_container_, "C");
-    lv_obj_set_size(buttonSettings_, 30, 30);
-     lv_obj_add_event_cb(buttonSettings_, [](lv_event_t * e) {
-        ScreenManager::getInstance().createRFSettingsScreen(e);
-    }, LV_EVENT_CLICKED, NULL);
+    buttonSettings_ = ButtonHelper::createButton(topLabel_container_, "Get");
+    lv_obj_set_size(buttonSettings_, 60, 30);
+    //  lv_obj_add_event_cb(buttonSettings_, [](lv_event_t * e) {
+    //     ScreenManager::getInstance().createRFSettingsScreen(e);
+    // }, LV_EVENT_CLICKED, NULL);
+
+    containerHelper.createContainer(&C1101pulseLenght_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    lv_obj_set_style_border_width(C1101pulseLenght_container_, 0, LV_PART_MAIN);
+
+    containerHelper.fillTopContainer(C1101pulseLenght_container_, "Pulse:", TEXT_AREA, &pulseLenghInput_, "450", "450", 10, kb_freq_, EVENTS::ta_freq_event_cb);
+    lv_obj_set_size(pulseLenghInput_, 70, 30);                   
+  //  lv_obj_add_event_cb(pulseLenghInput_, EVENTS::ta_freq_event_cb, LV_EVENT_FOCUSED, kb_freq_);
+
+    pulseGet_ = ButtonHelper::createButton(C1101pulseLenght_container_, "Get");
+    lv_obj_set_size(pulseGet_, 60, 30);
+    lv_obj_add_event_cb(pulseGet_, EVENTS::ta_pulse_event_cb, LV_EVENT_CLICKED, NULL);
 
 
-    containerHelper.createContainer(&C1101preset_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-    lv_obj_set_style_border_width(C1101preset_container_, 0, LV_PART_MAIN);
-    containerHelper.fillTopContainer(C1101preset_container_, "Preset:", DROPDOWN, &C1101preset_dropdown_, NULL, NULL, 12, NULL, EVENTS::ta_filename_event_cb, CC1101_PRESET_STRINGS, 9);
-    lv_obj_set_size(C1101preset_dropdown_, 120, 30);
-    lv_obj_add_event_cb(C1101preset_dropdown_, EVENTS::ta_preset_event_cb, LV_EVENT_ALL, NULL);
 
-    // Create filename input container
-    containerHelper.createContainer(&fileName_container_, ReplayScreen_, LV_FLEX_FLOW_COLUMN, 80, 240);
-    lv_obj_add_flag(fileName_container_, LV_OBJ_FLAG_HIDDEN);
+//     containerHelper.createContainer(&C1101preset_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+//     lv_obj_set_style_border_width(C1101preset_container_, 0, LV_PART_MAIN);
+//     containerHelper.fillTopContainer(C1101preset_container_, "Buffer:", DROPDOWN, &C1101buffer_dropdown_, NULL, NULL, 12, NULL, EVENTS::ta_filename_event_cb, CC1101_PRESET_STRINGS, 6);
+//     lv_obj_set_size(C1101buffer_dropdown_, 120, 30);
+//    lv_obj_add_event_cb(C1101buffer_dropdown_, EVENTS::ta_buffert_event_cb, LV_EVENT_ALL, NULL);
 
-    // Create filename input
-    containerHelper.fillTopContainer(fileName_container_, "File:", TEXT_AREA, &filenameInput_, "file name", "file name", 12, kb_qwert_, EVENTS::ta_filename_event_cb);
-    lv_obj_set_size(filenameInput_, 200, 30);
+    // // Create filename input container
+    // containerHelper.createContainer(&fileName_container_, ReplayScreen_, LV_FLEX_FLOW_COLUMN, 80, 240);
+    // lv_obj_add_flag(fileName_container_, LV_OBJ_FLAG_HIDDEN);
+
+    // // Create filename input
+    // containerHelper.fillTopContainer(fileName_container_, "File:", TEXT_AREA, &filenameInput_, "file name", "file name", 12, kb_qwert_, EVENTS::ta_filename_event_cb);
+    // lv_obj_set_size(filenameInput_, 200, 30);
 
     // Create main text area
     text_area_ = lv_textarea_create(ReplayScreen_);
     lv_obj_set_size(text_area_, 240, 140);
     lv_obj_align(text_area_, LV_ALIGN_CENTER, 0, -20);
-    lv_textarea_set_text(text_area_, "Welcome to the RF scanner.\n");
+    lv_textarea_set_text(text_area_, "RAW protocol tool.\nSet/get frequency, pulse lenght and bugger size.\nDuring radio operation device may not respond.");
     lv_obj_set_scrollbar_mode(text_area_, LV_SCROLLBAR_MODE_OFF); // Disable scrollbar
 
     // Create button container 1
