@@ -92,16 +92,16 @@ void setup() {
     MainMenuScreen MainMenuScreen;
     MainMenuScreen.initialize(); // Load main menu
 
-      Serial.print("Initializing CC1101...");
+//       Serial.print("Initializing CC1101...");
 
-  if (CC1101.init())
-  {
-    Serial.print("CC1101 initialized.");
-  }
-  else
-  {
-    Serial.print("CC1101 not initialized.");
-  }
+//   if (CC1101.init())
+//   {
+//     Serial.print("CC1101 initialized.");
+//   }
+//   else
+//   {
+//     Serial.print("CC1101 not initialized.");
+//   }
     // Inicializace RF Modules
    
   
