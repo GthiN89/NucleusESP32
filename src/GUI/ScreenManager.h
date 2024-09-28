@@ -16,6 +16,8 @@ public:
     void createmainMenu();
     void createRFMenu();
     void createRFSettingsScreen(lv_event_t*); 
+    void createSubPlayerScreen();
+    void createFileBrowser(lv_obj_t* parent);
 
     lv_obj_t* getFreqInput();  
     lv_obj_t* getTextArea();  
@@ -53,6 +55,11 @@ private:
     lv_obj_t * C1101pulseLenght_container_;
     lv_obj_t * pulseLenghInput_;
     lv_obj_t * pulseGet_;
+    lv_obj_t* SubPlayerScreen_;
+
+    
+    char* current_dir;
+    char* selected_file;
 };
 
 #endif 

@@ -3,15 +3,10 @@
 
 #include <lvgl.h>              // Include LVGL library
 #include <SD.h>                // Include SD card library
-//#include "modules/RF/subGhz.h" // Include your specific module
+#include "modules/RF/subGhz.h" // Include your specific module
 
 
 // Function declarations
-void back_btn_event_cb(lv_event_t* e);
-
-void btn_event_Replay_run(lv_event_t* e);
-
-void playZeroScreen();
 
 /**
  * @brief Creates the file browser UI.
@@ -19,6 +14,9 @@ void playZeroScreen();
  * @param parent The parent LVGL object to which the file browser will be added.
  */
 void createFileBrowser(lv_obj_t* parent);
+
+
+void playZeroScreen();
 
 /**
  * @brief Updates the file list based on the given directory.
@@ -61,7 +59,6 @@ void file_btn_event_cb(lv_event_t* e);
  * 
  * @param e The event object from LVGL.
  */
-
-
+void back_btn_event_cb(lv_event_t* e);
 
 #endif // FILE_BROWSER_H

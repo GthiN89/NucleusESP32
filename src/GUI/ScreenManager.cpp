@@ -5,6 +5,8 @@
 #include "globals.h"
 #include "events.h"
 #include "settingsButton.h"
+#include "FS.h"
+#include "fileBrowserHelper.h"
 
 EVENTS events;
 
@@ -33,6 +35,7 @@ ScreenManager::ScreenManager()
       C1101SYNC_container_(nullptr),
       C1101pulseLenght_container_(nullptr),
       pulseLenghInput_(nullptr)
+      
 {
 }
 
@@ -201,7 +204,7 @@ void ScreenManager::createRFMenu()
     lv_obj_t *btn_playZero_menu = lv_btn_create(rfMenu);
     lv_obj_set_pos(btn_playZero_menu, 25, 10);
     lv_obj_set_size(btn_playZero_menu, 200, 50);
-    // lv_obj_add_event_cb(btn_playZero_menu, btn_event_playZero_run, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(btn_playZero_menu, EVENTS::btn_event_playZero_run, LV_EVENT_ALL, NULL);
 
     lv_obj_t *label_playZero_menu = lv_label_create(btn_playZero_menu);
     lv_label_set_text(label_playZero_menu, "Transmit Zero codes");
@@ -288,3 +291,54 @@ void ScreenManager::createRFSettingsScreen(lv_event_t * e)
     lv_obj_add_event_cb(SaveSetting, EVENTS::saveRFSettingEvent, LV_EVENT_CLICKED, NULL); // Assign event callback for Play if needed
     lv_obj_add_event_cb(CancelSettings, EVENTS::cancelRFSettingEvent, LV_EVENT_CLICKED, NULL); // Assign event callback for Exit if needed
 }
+
+void ScreenManager::createSubPlayerScreen() {
+    ContainerHelper containerHelper;
+
+    lv_obj_t *SubPlayerScreen_ = lv_obj_create(NULL);
+
+    lv_scr_load(SubPlayerScreen_);
+    
+    ScreenManager::createFileBrowser(SubPlayerScreen_);
+}
+
+void ScreenManager::createFileBrowser(lv_obj_t* parent) {
+    
+    FileBrowserHelper fileBrowserHelper;
+
+    char** file_list;  // Array of strings for file names
+    int file_count = 0;
+    lv_obj_t* list;
+    lv_obj_t* selected_label;
+    lv_obj_t* selected_btn = NULL;
+    File flipperFile;
+ 
+    lv_obj_set_flex_flow(parent, LV_FLEX_FLOW_COLUMN);
+    fileBrowserHelper.updateFileList(current_dir);  // Update the list with files and folders
+
+    // Label to show selected file
+    selected_label = lv_label_create(parent);
+    lv_label_set_text(selected_label, "No file selected");
+    lv_obj_set_flex_flow(parent, LV_FLEX_FLOW_COLUMN); // Arrange children in a row
+    lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER); // Align buttons in the container
+
+    //  // Create a horizontal container for the buttons
+    lv_obj_t* button_container = lv_obj_create(lv_scr_act());
+    lv_obj_set_size(button_container, LV_PCT(100), 50); // Set container width to 100% of the parent and height to 50px
+    lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW); // Arrange children in a row
+    lv_obj_set_flex_align(button_container, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER); // Align buttons in the container
+
+ // Button to load the selected file
+    lv_obj_t* load_btn = lv_btn_create(button_container);
+    lv_obj_add_event_cb(load_btn, FileBrowserHelper::load_btn_event_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_t* label = lv_label_create(load_btn);
+    lv_label_set_text(label, "Load File");
+
+    // Back button for navigating to the parent directory
+    lv_obj_t* back_btn = lv_btn_create(button_container);
+    lv_obj_add_event_cb(back_btn, FileBrowserHelper::back_btn_event_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_t* back_label = lv_label_create(back_btn);
+    lv_label_set_text(back_label, LV_SYMBOL_LEFT "Back");
+}
+
+
