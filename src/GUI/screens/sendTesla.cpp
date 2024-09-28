@@ -22,11 +22,12 @@ void addLineToTeslaContainer(lv_obj_t* teslaCont, String text);
 void teslaScreen() {
     Serial.println("Initializing playTeslaScreen...");  
     
-    tesla_screen = lv_obj_create(lv_scr_act()); 
+    tesla_screen = lv_obj_create(NULL); 
+    lv_scr_load(tesla_screen);  
     lv_obj_set_size(tesla_screen, 240, 320);
     lv_obj_set_flex_flow(tesla_screen, LV_FLEX_FLOW_COLUMN); 
     lv_obj_set_flex_align(tesla_screen, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER); 
-    lv_scr_load(tesla_screen);  
+    
 
     Serial.println("Created playTeslaScreen");
     createTeslaScreenContainer(tesla_screen);
