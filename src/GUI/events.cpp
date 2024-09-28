@@ -47,6 +47,20 @@ void EVENTS::btn_event_Replay_run(lv_event_t* e) {
     }
 }
 
+void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        teslaScreen();
+        // Uncomment and use if needed:
+        // if (sendTeslaSignal(433.92)) {
+        //     teslaSucessFlag = true;
+        // }
+        // if (sendTeslaSignal(315.00)) {
+        //     teslaSucessFlag = true;
+        // }
+    }
+}
+
 
 void EVENTS::ta_freq_event_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);

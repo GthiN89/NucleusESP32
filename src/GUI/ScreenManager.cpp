@@ -213,7 +213,7 @@ void ScreenManager::createRFMenu()
     lv_obj_t *btn_teslaCharger_menu = lv_btn_create(rfMenu);
     lv_obj_set_pos(btn_teslaCharger_menu, 25, 70);
     lv_obj_set_size(btn_teslaCharger_menu, 200, 50);
-    // lv_obj_add_event_cb(btn_teslaCharger_menu, btn_event_teslaCharger_run, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(btn_teslaCharger_menu, EVENTS::btn_event_teslaCharger_run, LV_EVENT_ALL, NULL);
 
     lv_obj_t *label_teslaCharger_menu = lv_label_create(btn_teslaCharger_menu);
     lv_label_set_text(label_teslaCharger_menu, "Transmit tesla charger code");
