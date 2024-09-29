@@ -7,6 +7,20 @@ Its WIP so please dont be hars to it.
 I got SDR, so i managed to implement RAW protocol for replay by simle bitBang.
 Now i can put back RCswitch and .sub (flipper) file player, which are on old GUI, and are not implemented in to the new one.
 Happy Hacking!
+
+have:
+-C1101 raw replay
+-*.sub files playr
+-Tesla charger open
+
+planned:
+-BL spam
+-Sour apple
+-Deauther
+-Bad USB
+-2.4ghz
+-mousejack
+
 <img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/IMG_20240924_193407_DRO.jpg">
 
 Cheap yellow display, CYD, ESP32-2432S028R, ESP32-2432S028Rv2
