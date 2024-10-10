@@ -18,6 +18,7 @@ public:
     void createRFSettingsScreen(lv_event_t*); 
     void createSubPlayerScreen();
     void createFileBrowser(lv_obj_t* parent);
+    void protoAnalysScreen();
 
     lv_obj_t* getFreqInput();  
     lv_obj_t* getTextArea();  
@@ -41,6 +42,7 @@ private:
     lv_obj_t* kb_qwert_;
     lv_obj_t* fileName_container_;
     lv_obj_t* topLabel_container_;
+    lv_obj_t* text_area_protoAnalyse;
     lv_obj_t* button_container1_;
     lv_obj_t* button_container2_;
     lv_obj_t* button_container_settings;
@@ -56,7 +58,12 @@ private:
     lv_obj_t * pulseLenghInput_;
     lv_obj_t * pulseGet_;
     lv_obj_t* SubPlayerScreen_;
-
+    lv_obj_t* topLabel_protoAnalyse_container_;
+    lv_obj_t* protoAnalyseScreen_;
+    lv_obj_t* button_container_protoAnalyse1_;
+    lv_obj_t* button_container_protoAnalyse2_; 
+    lv_obj_t* settingsButton_; 
+    lv_obj_t* secondLabel_protoAnalyse_container_;
     
     char* current_dir;
     char* selected_file;

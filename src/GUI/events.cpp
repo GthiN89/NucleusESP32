@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include "ELECHOUSE_CC1101_SRC_DRV.h"
 #include "main.h"
+#include "screens/replay.h"
 using namespace std;
 
 
@@ -45,6 +46,10 @@ void EVENTS::btn_event_Replay_run(lv_event_t* e) {
           
           ReplayScr.initialize();
     }
+}
+
+void EVENTS::btn_event_protoAnalyse_run(lv_event_t* e) {
+    screenMgr.protoAnalysScreen();
 }
 
 void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {

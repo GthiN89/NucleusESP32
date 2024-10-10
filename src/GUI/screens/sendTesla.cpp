@@ -39,10 +39,10 @@ void createTeslaScreenContainer(lv_obj_t* parent_screen) {
     lv_obj_set_flex_flow(teslaCont, LV_FLEX_FLOW_COLUMN);
 
     testLabel = lv_label_create(teslaCont); 
-    lv_label_set_text_fmt(testLabel, "%s", "hardcode text");
+    lv_label_set_text_fmt(testLabel, "%s", "Tesla charger port opener \n Press send to open");
     lv_obj_set_style_align(testLabel, LV_ALIGN_LEFT_MID, 0);
 
-    addLineToTeslaContainer(teslaCont, "second text");
+ //   addLineToTeslaContainer(teslaCont, "second text");
     createTeslaButtons(teslaCont);   
 }
 
@@ -70,11 +70,13 @@ void createTeslaButtons(lv_obj_t* teslaCont) {
     lv_obj_set_size(tesla_button_container, 215, 30); 
     lv_obj_set_flex_flow(tesla_button_container, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(tesla_button_container, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER); 
+    lv_obj_clear_flag(tesla_button_container, LV_OBJ_FLAG_SCROLLABLE);
+    
 
     lv_obj_t* load_btn = lv_btn_create(tesla_button_container);
     lv_obj_add_event_cb(load_btn, play_tesla_btn_event_cb, LV_EVENT_CLICKED, teslaCont);  // Pass teslaCont as user data
     lv_obj_t* label = lv_label_create(load_btn);
-    lv_label_set_text(label, "Play code");
+    lv_label_set_text(label, "Send code");
 
     lv_obj_t* back_btn = lv_btn_create(tesla_button_container);
     lv_obj_add_event_cb(back_btn, EVENTS::btn_event_subGhzTools, LV_EVENT_CLICKED, NULL);
@@ -108,7 +110,7 @@ bool sendTeslaSignal(lv_obj_t* teslaCont, float freq) {
         return false;
     }
 
-    addLineToTeslaContainer(teslaCont, "extern Text");
+    addLineToTeslaContainer(teslaCont, "Code has been send");
 
     ELECHOUSE_cc1101.setGDO(CCGDO0A, CCGDO2A);
     ELECHOUSE_cc1101.setMHZ(freq);

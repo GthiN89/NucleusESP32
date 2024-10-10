@@ -50,12 +50,14 @@ static void cancelRFSettingEvent(lv_event_t * e);
 static void replayEvent(lv_event_t * e);
 static void exitReplayEvent(lv_event_t * e);
 static void ta_pulse_event_cb(lv_event_t * e);
+static void btn_event_protoAnalyse_run(lv_event_t* e);
 
 static void playFromBuffer();
 static void radioHandlerOnChange();
 static void ProtAnalyzerloop();
 static bool initCC1101();
-bool recievedSubGhz;
+static bool recievedSubGhz;
+
 static CC1101_PRESET stringToCC1101Preset(String presetStr);
 
 private:
