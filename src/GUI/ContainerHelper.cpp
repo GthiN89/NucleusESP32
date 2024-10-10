@@ -75,7 +75,7 @@ void ContainerHelper::fillTopContainer(lv_obj_t* parent, const char* labelText, 
 
     // Create input field based on type
     switch (inputType) {
-        case TEXT_AREA:
+        case TEXT_AREA: {
             *input = lv_textarea_create(parent);
             lv_textarea_set_placeholder_text(*input, placeholder);
             lv_textarea_set_text(*input, initialText);
@@ -86,10 +86,27 @@ void ContainerHelper::fillTopContainer(lv_obj_t* parent, const char* labelText, 
                 // Assign the event callback and pass kb as user data
                 lv_obj_add_event_cb(*input, event_cb, LV_EVENT_ALL, kb);
             }
+        }
+        break;
 
+        case BUTTON: {
+            *input = lv_btn_create(parent);
+            lv_obj_set_size(*input, 90, 30);
+
+            // Create label inside the button, making the button parent of the label
+            lv_obj_t* labelButton = lv_label_create(*input); 
+            lv_label_set_text(labelButton, placeholder);  // Set label text as the placeholder
+            lv_obj_center(labelButton);  // Center the label inside the button
+
+            lv_obj_clear_flag(*input, LV_OBJ_FLAG_SCROLLABLE); // Double ensure
+
+            if (event_cb) {
+                lv_obj_add_event_cb(*input, event_cb, LV_EVENT_ALL, NULL);
+            }
             break;
+        }
 
-        case DROPDOWN:
+        case DROPDOWN: {
             *input = lv_dropdown_create(parent);
             
             // Check if options are provided and set them
@@ -110,7 +127,7 @@ void ContainerHelper::fillTopContainer(lv_obj_t* parent, const char* labelText, 
             if (event_cb && kb) {
                 lv_obj_add_event_cb(*input, event_cb, LV_EVENT_ALL, kb);
             }
-
+        }
             break;
 
         // Handle other input types if necessary

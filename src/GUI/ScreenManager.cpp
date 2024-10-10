@@ -22,11 +22,13 @@ ScreenManager::ScreenManager()
     : ReplayScreen_(nullptr),
       text_area_(nullptr),
       freqInput_(nullptr),
+      settingsButton_(nullptr),
       filenameInput_(nullptr),
       kb_freq_(nullptr),
       kb_qwert_(nullptr),
       fileName_container_(nullptr),
       topLabel_container_(nullptr),
+      protoAnalyseScreen_(nullptr),
       button_container1_(nullptr),
       button_container2_(nullptr),
       C1101preset_container_(nullptr),
@@ -34,7 +36,12 @@ ScreenManager::ScreenManager()
       C1101PTK_dropdown_(nullptr),
       C1101SYNC_container_(nullptr),
       C1101pulseLenght_container_(nullptr),
-      pulseLenghInput_(nullptr)
+      pulseLenghInput_(nullptr),
+      topLabel_protoAnalyse_container_(nullptr),
+      secondLabel_protoAnalyse_container_(nullptr),
+      text_area_protoAnalyse(nullptr),
+      button_container_protoAnalyse2_(nullptr),
+      button_container_protoAnalyse1_(nullptr)
       
 {
 }
@@ -231,20 +238,22 @@ void ScreenManager::createRFMenu()
     lv_obj_t *btn_c1101Scan_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_c1101Scan_menu, 25, 190);
     lv_obj_set_size(btn_c1101Scan_menu, 200, 50);
-    // lv_obj_add_event_cb(btn_c1101Scan_menu, btn_event_c1101Scanner_run, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(btn_c1101Scan_menu, EVENTS::btn_event_protoAnalyse_run, LV_EVENT_CLICKED, NULL);
+
 
     lv_obj_t *label_c1101Scan_menu = lv_label_create(btn_c1101Scan_menu);
-    lv_label_set_text(label_c1101Scan_menu, "RF Scanner");
+    lv_label_set_text(label_c1101Scan_menu, "Protocol analyser");
     lv_obj_center(label_c1101Scan_menu);
 
     lv_obj_t *btn_c1101Others_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_c1101Others_menu, 25, 250);
     lv_obj_set_size(btn_c1101Others_menu, 200, 50);
-    // lv_obj_add_event_cb(btn_c1101Others_menu, btn_event_playRecorded_run, LV_EVENT_ALL, NULL);
 
     lv_obj_t *label_c1101Others_menu = lv_label_create(btn_c1101Others_menu);
     lv_label_set_text(label_c1101Others_menu, "Play Recorded");
     lv_obj_center(label_c1101Others_menu);
+        // lv_obj_add_event_cb(btn_c1101Scan_menu, btn_event_c1101Scanner_run, LV_EVENT_ALL, NULL);
+
 }
 
 void ScreenManager::createRFSettingsScreen(lv_event_t * e)
@@ -341,4 +350,88 @@ void ScreenManager::createFileBrowser(lv_obj_t* parent) {
     lv_label_set_text(back_label, LV_SYMBOL_LEFT "Back");
 }
 
+void ScreenManager::protoAnalysScreen() {
+    ContainerHelper containerHelper;
 
+    protoAnalyseScreen_ = lv_obj_create(NULL);
+
+    lv_scr_load(protoAnalyseScreen_);
+    lv_obj_set_flex_flow(protoAnalyseScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(protoAnalyseScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    // Create top label container secondLabel_protoAnalyse_container_
+    containerHelper.createContainer(&topLabel_protoAnalyse_container_, protoAnalyseScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    lv_obj_set_style_border_width(topLabel_protoAnalyse_container_, 0, LV_PART_MAIN);
+
+    // Create keyboards
+    kb_qwert_ = KeyboardHelper::createKeyboard(protoAnalyseScreen_, LV_KEYBOARD_MODE_TEXT_LOWER);
+    kb_freq_ = KeyboardHelper::createKeyboard(protoAnalyseScreen_, LV_KEYBOARD_MODE_NUMBER);
+
+    // Create frequency input
+    containerHelper.fillTopContainer(topLabel_protoAnalyse_container_, "Mhz:  ", TEXT_AREA, &freqInput_, "433.92", "433.92", 10, kb_freq_, NULL);
+    lv_obj_set_size(freqInput_, 70, 30);                   
+    lv_obj_add_event_cb(freqInput_, EVENTS::ta_freq_event_cb, LV_EVENT_FOCUSED, kb_freq_);
+  
+  
+//    lv_obj_set_size(buttonSettings_, 60, 30);  
+//    lv_obj_add_event_cb(buttonSettings_, [](lv_event_t * e) {  
+//         ScreenManager::getInstance().createRFSettingsScreen(e);  
+//    }, LV_EVENT_CLICKED, NULL);
+
+    containerHelper.createContainer(&secondLabel_protoAnalyse_container_, protoAnalyseScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    lv_obj_set_style_border_width(secondLabel_protoAnalyse_container_, 0, LV_PART_MAIN);
+
+    containerHelper.fillTopContainer(secondLabel_protoAnalyse_container_, "Settings  ", BUTTON, &buttonSettings_, "open", "open", 10, kb_freq_, NULL);
+  //  lv_obj_set_size(freqInput_, 70, 30);  
+
+
+ //    containerHelper.createContainer(&C1101preset_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+ //    lv_obj_set_style_border_width(C1101preset_container_, 0, LV_PART_MAIN);
+ //    containerHelper.fillTopContainer(C1101preset_container_, "Buffer:", DROPDOWN, &C1101buffer_dropdown_, NULL, NULL, 12, NULL, EVENTS::ta_filename_event_cb, CC1101_PRESET_STRINGS, 6);
+ //    lv_obj_set_size(C1101buffer_dropdown_, 120, 30);
+ //   lv_obj_add_event_cb(C1101buffer_dropdown_, EVENTS::ta_buffert_event_cb, LV_EVENT_ALL, NULL);
+
+    // // Create filename input container
+    // containerHelper.createContainer(&fileName_container_, ReplayScreen_, LV_FLEX_FLOW_COLUMN, 80, 240);
+    // lv_obj_add_flag(fileName_container_, LV_OBJ_FLAG_HIDDEN);
+
+    // // Create filename input
+    // containerHelper.fillTopContainer(fileName_container_, "File:", TEXT_AREA, &filenameInput_, "file name", "file name", 12, kb_qwert_, EVENTS::ta_filename_event_cb);
+    // lv_obj_set_size(filenameInput_, 200, 30);
+
+    // Create main text area
+    text_area_protoAnalyse = lv_textarea_create(protoAnalyseScreen_);
+    lv_obj_set_size(text_area_protoAnalyse, 240, 140);
+    lv_obj_align(text_area_protoAnalyse, LV_ALIGN_CENTER, 0, -20);
+    lv_textarea_set_text(text_area_protoAnalyse, "RAW protocol tool.\nSet/get frequency, pulse lenght and bugger size.\nDuring radio operation device may not respond.");
+    lv_obj_set_scrollbar_mode(text_area_protoAnalyse, LV_SCROLLBAR_MODE_OFF); // Disable scrollbar
+
+    // Create button container 1
+    containerHelper.createContainer(&button_container_protoAnalyse1_, protoAnalyseScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+
+    // Create Listen and Save buttons
+    lv_obj_t *listenButton = ButtonHelper::createButton(button_container_protoAnalyse1_, "Listen");
+    lv_obj_t *saveButton = ButtonHelper::createButton(button_container_protoAnalyse1_, "Save");
+
+    // Assign event callbacks to buttons
+    lv_obj_add_event_cb(listenButton, EVENTS::listenRFEvent, LV_EVENT_CLICKED, text_area_); // Assign event callback for Listen
+    lv_obj_add_event_cb(saveButton, EVENTS::saveSignal, LV_EVENT_CLICKED, text_area_);    // Assign event callback for Save
+
+    // Create button container 2
+    containerHelper.createContainer(&button_container_protoAnalyse2_, protoAnalyseScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+
+    // Create Play and Exit buttons
+    lv_obj_t *playButton = ButtonHelper::createButton(button_container_protoAnalyse2_, "Play");
+    lv_obj_t *exitButton = ButtonHelper::createButton(button_container_protoAnalyse2_, "Exit");
+
+    // Assign event callbacks to buttons
+   // lv_obj_add_event_cb(button_3, EVENTS::replayEvent, LV_EVENT_CLICKED, text_area_); // Assign event callback for Play if needed
+    lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, text_area_); // Assign event callback for Exit if needed
+   // lv_obj_add_event_cb(button_2, NULL, LV_EVENT_CLICKED, text_area_); // Assign event callback for Play if needed
+
+
+
+
+
+
+}

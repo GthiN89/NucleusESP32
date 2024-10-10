@@ -9,7 +9,8 @@
 enum InputType {
     TEXT_AREA,
     NUMBER,
-    DROPDOWN
+    DROPDOWN,
+    BUTTON
 };
 
 

@@ -1,7 +1,7 @@
 #ifndef C1101_H
 #define C1101_H
 
-#include "globals.h"
+#include "../../globals.h"
 #define SAMPLE_SIZE 1024
 
    //---------------------------------------------------------------------------//

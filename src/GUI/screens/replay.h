@@ -2,6 +2,9 @@
 #define REPLAY_H
 
 #include "lvgl.h"
+#include <RCSwitch.h>
+
+
 
 // Externální buffery
 extern char frequency_buffer[10];
@@ -12,7 +15,7 @@ extern bool ProtAnaRxEn;
 
 
 // RF Modules
-// extern RCSwitch mySwitch;
+ extern RCSwitch mySwitch;
 // extern CC1101 cc1101;
 
 
@@ -20,7 +23,7 @@ extern bool ProtAnaRxEn;
 void create_c1101_screen(void);
 
 /* Event handler functions for the buttons */
-//void fcnProtAnaRxEn(lv_event_t * e);
+void fcnProtAnaRxEn(lv_event_t * e);
 void saveSignal(lv_event_t * e);
 void fcnProtAnaPlay(lv_event_t * e);
 //void btn_event_subGhzTools(lv_event_t * e);
