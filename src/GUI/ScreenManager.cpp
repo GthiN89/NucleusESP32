@@ -214,7 +214,7 @@ void ScreenManager::createRFMenu()
     lv_obj_add_event_cb(btn_playZero_menu, EVENTS::btn_event_playZero_run, LV_EVENT_ALL, NULL);
 
     lv_obj_t *label_playZero_menu = lv_label_create(btn_playZero_menu);
-    lv_label_set_text(label_playZero_menu, "Transmit Zero codes");
+    lv_label_set_text(label_playZero_menu, "Transmit saved codes");
     lv_obj_center(label_playZero_menu);
 
     lv_obj_t *btn_teslaCharger_menu = lv_btn_create(rfMenu);
@@ -232,7 +232,7 @@ void ScreenManager::createRFMenu()
     lv_obj_add_event_cb(btn_c1101Alanalyzer_menu, EVENTS::btn_event_Replay_run, LV_EVENT_ALL, NULL);
 
     lv_obj_t *label_c1101Alanalyzer_menu = lv_label_create(btn_c1101Alanalyzer_menu);
-    lv_label_set_text(label_c1101Alanalyzer_menu, "subGhz rec/play");
+    lv_label_set_text(label_c1101Alanalyzer_menu, "rec/play bitbang");
     lv_obj_center(label_c1101Alanalyzer_menu);
 
     lv_obj_t *btn_c1101Scan_menu = lv_btn_create(lv_scr_act());
@@ -242,7 +242,7 @@ void ScreenManager::createRFMenu()
 
 
     lv_obj_t *label_c1101Scan_menu = lv_label_create(btn_c1101Scan_menu);
-    lv_label_set_text(label_c1101Scan_menu, "Protocol analyser");
+    lv_label_set_text(label_c1101Scan_menu, "rec/play RCSwitch");
     lv_obj_center(label_c1101Scan_menu);
 
     lv_obj_t *btn_c1101Others_menu = lv_btn_create(lv_scr_act());
@@ -250,7 +250,7 @@ void ScreenManager::createRFMenu()
     lv_obj_set_size(btn_c1101Others_menu, 200, 50);
 
     lv_obj_t *label_c1101Others_menu = lv_label_create(btn_c1101Others_menu);
-    lv_label_set_text(label_c1101Others_menu, "Play Recorded");
+    lv_label_set_text(label_c1101Others_menu, "Advanced");
     lv_obj_center(label_c1101Others_menu);
         // lv_obj_add_event_cb(btn_c1101Scan_menu, btn_event_c1101Scanner_run, LV_EVENT_ALL, NULL);
 
