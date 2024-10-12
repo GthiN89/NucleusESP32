@@ -110,7 +110,7 @@ bool sendTeslaSignal(lv_obj_t* teslaCont, float freq) {
         return false;
     }
 
-    addLineToTeslaContainer(teslaCont, "Code has been send");
+    
 
     ELECHOUSE_cc1101.setGDO(CCGDO0A, CCGDO2A);
     ELECHOUSE_cc1101.setMHZ(freq);
@@ -132,6 +132,7 @@ bool sendTeslaSignal(lv_obj_t* teslaCont, float freq) {
     ELECHOUSE_cc1101.setSidle();
     Serial.println("idle");
     
+    addLineToTeslaContainer(teslaCont, "Code has been send");
     return true;
 }
 

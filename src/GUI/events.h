@@ -34,6 +34,10 @@ static void btn_event_teslaCharger_run(lv_event_t* e);
 static void btn_event_Replay_run(lv_event_t* e);
 static void btn_event_playRecorded_run(lv_event_t* e);
 static void btn_event_c1101Scanner_run(lv_event_t* e);
+static void btn_event_RFSettings_show(lv_event_t* e);
+static void createRFSettingsScreen(lv_event_t* e); 
+static void btn_event_RAW_REC_run(lv_event_t* e);
+static void ta_preset_event_cb(lv_event_t * e);
 
 // Přidání nových event handlerů
 static void ta_freq_event_cb(lv_event_t * e);
@@ -50,7 +54,7 @@ static void cancelRFSettingEvent(lv_event_t * e);
 static void replayEvent(lv_event_t * e);
 static void exitReplayEvent(lv_event_t * e);
 static void ta_pulse_event_cb(lv_event_t * e);
-static void btn_event_protoAnalyse_run(lv_event_t* e);
+static void sendCapturedEvent(lv_event_t * e);
 
 static void playFromBuffer();
 static void radioHandlerOnChange();

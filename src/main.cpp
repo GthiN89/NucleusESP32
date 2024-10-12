@@ -8,6 +8,7 @@
 #include "GUI/ScreenManager.h"
 #include "GUI/screens/replay.h"
 #include "GUI/screens/c1101Scan.h"
+#include "modules/RF/CC1101.h"
 #include "modules/ETC/SDcard.h"
 #include "XPT2046_Bitbang.h"
 
@@ -52,8 +53,8 @@ static lv_obj_t *touch_marker = nullptr;
 void radioHandlerOnChange();
 
 // Function prototypes for RF handling
-//void ProtAnalyzerloop();
-void CC1101Scanloop();
+void ProtAnalyzerloop();
+
 
 
 const uint32_t subghz_frequency_list[] = {
@@ -67,6 +68,7 @@ CC1101_CLASS CC1101;
 
 void setup() {
     // Inicializace sériové komunikace
+        //esp_debug_initialize();  // Initialize the GDB stub
     Serial.begin(115200);
     Serial.setDebugOutput(true);
     Serial.println(F("Starting setup..."));
@@ -89,6 +91,13 @@ void setup() {
     auto disp = lv_disp_get_default();
     register_touch(disp);
 
+      Serial.print("Initializing CC1101...");
+  if (CC1101.init())
+  {
+    Serial.print("CC1101 initialized.");
+    CC1101_init = true;
+  }
+
     MainMenuScreen MainMenuScreen;
     MainMenuScreen.initialize(); // Load main menu
 
@@ -97,55 +106,63 @@ void setup() {
 //   if (CC1101.init())
 //   {
 //     Serial.print("CC1101 initialized.");
+//     CC1101_is_initialized = true;
 //   }
 //   else
 //   {
 //     Serial.print("CC1101 not initialized.");
 //   }
-    // Inicializace RF Modules
+//     // Inicializace RF Modules
    
   
-    // Připojení Interrupt Handler
-   // attachInterrupt(digitalPinToInterrupt(CCGDO0A), radioHandlerOnChange, CHANGE);
+//     // Připojení Interrupt Handler
+//     attachInterrupt(digitalPinToInterrupt(CCGDO0A), radioHandlerOnChange, CHANGE);
+//     CC1101_interup_attached = true;
+
 }
 
 void loop() {
     lv_task_handler(); // Handle LVGL tasks
     delay(5); // Minimal delay to allow other tasks to run
-    if(C1101LoadPreset) {
-        digitalWrite(MICRO_SD_IO, HIGH);  
-        CC1101.loadPreset();
-        C1101LoadPreset = false;
-        Serial.print("Preset Loaded");
-    }
 
-    delay(20);
 
     if(C1101CurrentState == STATE_CAPTURE) {
-        ScreenManager& screenMgr = ScreenManager::getInstance();
-        lv_obj_t * text_area = screenMgr.getTextArea();
+        int pinState1 = digitalRead(CC1101_CCGDO0A);
+            Serial.print("CC1101 GDO Pin (CC1101_CCGDO2A) state: ");
+            Serial.println(pinState1 == HIGH ? "HIGH" : "LOW");
+            delay(10);
             CC1101.captureLoop();
-            //  CC1101.showResultRecPlay();
             C1101CurrentState = STATE_IDLE;
-            
-            delay(100);
     }
 
     if(C1101CurrentState == STATE_PULSE_SCAN) {
-        ScreenManager& screenMgr = ScreenManager::getInstance();
-        lv_obj_t * text_area = screenMgr.getTextArea();
         if (CC1101.CheckReceived())
             {
               CC1101.getPulseLenghtLoop();
               CC1101.disableReceiver();
               delay(10);
-            //  CC1101.showResultRecPlay();
               C1101CurrentState = STATE_IDLE;
             }
             delay(1);
     }
 
+    if(C1101CurrentState == STATE_ANALYZER) {
+            if (CC1101.CheckReceived())
+            {
+              CC1101.getPulseLenghtLoop();
+              CC1101.disableReceiver();
+              delay(10);
+              C1101CurrentState = STATE_IDLE;
+            }
+            delay(1);
+
+    }
+
+
     if(C1101CurrentState == STATE_PLAYBACK) {
+                int pinState1 = digitalRead(CC1101_CCGDO2A);
+            Serial.print("CC1101 GDO Pin (CC1101_CCGDO2A) state: ");
+            Serial.println(pinState1 == HIGH ? "HIGH" : "LOW");
       //  CC1101.enableTransmit();
         CC1101.sendCapture();
       //  CC1101.disableTransmit();

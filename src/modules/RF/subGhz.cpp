@@ -20,7 +20,7 @@ String RXbuffer; // RX buffer
 
 // CC1101 parameters
 float CC1101_MHZ_ = 433.92;
-bool CC1101_TX = false;
+bool CC1101_TX_ = false;
 int CC1101_MODULATION_ = 2;
 int CC1101_DRATE = 512;
 float CC1101_RX_BW = 256;
@@ -76,7 +76,7 @@ bool setZeroName(char* current_dir, char* selected_file) {
 
     String fullfilename = "";
     fullfilename += pathBUffer;
-    CC1101_TX = false;
+    CC1101_TX_ = false;
     ELECHOUSE_cc1101.setPA(12);
     Serial.println("Attempting to transmit file");
     if (transmitFlipperFile(String(fullfilename).c_str(), true)) {
@@ -97,7 +97,7 @@ bool initCC1101() {
     ELECHOUSE_cc1101.setGDO(CCGDO0A, CCGDO2A);
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ_);
     ELECHOUSE_cc1101.setPA(12);
-    if (CC1101_TX) {
+    if (CC1101_TX_) {
         ELECHOUSE_cc1101.SetTx();
         pinMode(CCGDO0A, OUTPUT);  
     } else {
@@ -254,8 +254,8 @@ bool transmitFlipperFile(String filename, bool transmit) {
 
 bool sendSamples(int samples[], int samplesLength) {
     Serial.println("Entering sendSamples");
-    if (!CC1101_TX) {
-        CC1101_TX = true;
+    if (!CC1101_TX_) {
+        CC1101_TX_ = true;
         Serial.println("Switching CC1101 to TX mode");
         if (!initCC1101()) {
             Serial.println("Failed to initialize CC1101 for TX");

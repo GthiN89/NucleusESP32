@@ -28,9 +28,10 @@ lv_obj_t* ta = screenMgr.getFreqInput();
 lv_obj_t* text_area = screenMgr.getTextArea();
 
 
-ReplayScreen ReplayScr;
+//ReplayScreen ReplayScr;
 
-char EVENTS::frequency_buffer[10]; char EVENTS::selected_str[32];  
+char EVENTS::frequency_buffer[10];
+char EVENTS::selected_str[32];  
 
 void EVENTS::btn_event_playZero_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -44,13 +45,10 @@ void EVENTS::btn_event_Replay_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
           
-          ReplayScr.initialize();
+          screenMgr.createReplayScreen();
     }
 }
 
-void EVENTS::btn_event_protoAnalyse_run(lv_event_t* e) {
-    screenMgr.protoAnalysScreen();
-}
 
 void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -69,41 +67,28 @@ void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {
 
 void EVENTS::ta_freq_event_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t * kb = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+     lv_obj_t * kb = (lv_obj_t *)lv_event_get_user_data(e); 
+
     ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * text_area = screenMgr.getTextArea();
-    lv_obj_t * ta = screenMgr.getFreqInput();
-    lv_obj_t * presetDropdown = screenMgr.getPresetDropdown();
+     lv_obj_t * ta = screenMgr.getFreqInput();
+    // lv_obj_t * presetDropdown = screenMgr.getPresetDropdown();
 
-    if (ta && kb && text_area) {
-        if (code == LV_EVENT_FOCUSED) {
-            lv_keyboard_set_textarea(kb, ta);
-            lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN); 
-            Serial.println("Numeric Keyboard shown for Frequency");
-            lv_obj_add_flag(text_area, LV_OBJ_FLAG_HIDDEN); 
-            lv_obj_add_flag(presetDropdown, LV_OBJ_FLAG_HIDDEN); 
-        } else if (code == LV_EVENT_DEFOCUSED || code == LV_EVENT_READY) {
-            lv_obj_clear_flag(text_area, LV_OBJ_FLAG_HIDDEN); 
-            lv_keyboard_set_textarea(kb, NULL);
-            lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_clear_flag(presetDropdown, LV_OBJ_FLAG_HIDDEN); 
-            lv_obj_clear_state(text_area, LV_STATE_FOCUSED);
-  
+    if (code == LV_EVENT_FOCUSED) {
+         lv_keyboard_set_textarea(kb, ta);
+         lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN);  // Show the keyboard
+         Serial.println("Keyboard shown");
+     } else if (code == LV_EVENT_DEFOCUSED || code == LV_EVENT_READY) {
+         lv_keyboard_set_textarea(kb, NULL);
+         lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);  // Hide the keyboard
 
-             strncpy(EVENTS::frequency_buffer, lv_textarea_get_text(ta), sizeof(EVENTS::frequency_buffer) - 1);
-             EVENTS::frequency_buffer[sizeof(EVENTS::frequency_buffer) - 1] = '\0'; 
-
-             Serial.print("Frequency set to: ");
-             Serial.println(EVENTS::frequency_buffer);
-             lv_textarea_add_text(text_area, "Frequency set to: ");
-             lv_textarea_add_text(text_area, EVENTS::frequency_buffer);
-             lv_textarea_add_text(text_area, "\n");
-             CC1101_MHZ = atoi(EVENTS::frequency_buffer);
-
-        }
-    } else {
-        Serial.println("Error: Frequency input, keyboard, or text_area is NULL");
-    }
+         strncpy(frequency_buffer, lv_textarea_get_text(ta), sizeof(frequency_buffer) - 1);
+         frequency_buffer[sizeof(frequency_buffer) - 1] = '\0';  // Ensure null termination
+         Serial.print("Frequency set to: \n");
+         lv_textarea_add_text(text_area, "Frequency set to: \n");
+         Serial.println(frequency_buffer);
+         lv_textarea_add_text(text_area, frequency_buffer);
+     }    
 }
 
 void EVENTS::ta_filename_event_cb(lv_event_t * e) {
@@ -196,8 +181,7 @@ void EVENTS::saveSignal(lv_event_t * e) {
 }
 
 
-int receivedProtocol;
-int receivedBitLength;
+
 
 void EVENTS::ProtAnalyzerloop() {
    //
@@ -250,6 +234,11 @@ void EVENTS::replayEvent(lv_event_t * e) {
 void EVENTS::exitReplayEvent(lv_event_t * e) {
     ScreenManager& screenMgr = ScreenManager::getInstance();
     screenMgr.createRFMenu();
+}
+void EVENTS::sendCapturedEvent(lv_event_t * e) {
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    lv_obj_t * text_area = screenMgr.getTextAreaRCSwitchMethod();
+    CC1101.sendRaw();
 }
 
 void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
@@ -319,5 +308,106 @@ void EVENTS::playFromBuffer()
   {
     Serial.print("NOT IDLE");
   }
+}
+
+void EVENTS::btn_event_RFSettings_show(lv_event_t* e) {
+    ScreenManager &screenMgr = ScreenManager::getInstance();
+    screenMgr.createRFSettingsScreen();
+}
+
+void EVENTS::createRFSettingsScreen(lv_event_t* e) {
+    ScreenManager &screenMgr = ScreenManager::getInstance();
+    screenMgr.createRFSettingsScreen();
+}
+
+void EVENTS::ta_preset_event_cb(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+     ScreenManager& screenMgr = ScreenManager::getInstance();
+     lv_obj_t* text_area = screenMgr.getTextArea();
+    // lv_obj_t* dropdown = screenMgr.getPresetDropdown();
+    // lv_dropdown_get_selected_str(dropdown, EVENTS::selected_str, sizeof(EVENTS::selected_str));
+
+    // if (code == LV_EVENT_VALUE_CHANGED) {
+    //     C1101preset = stringToCC1101Preset(EVENTS::selected_str);
+    //     lv_textarea_add_text(text_area, "Preset set to: ");
+    //     lv_textarea_add_text(text_area,EVENTS::selected_str);
+    //     lv_textarea_add_text(text_area, "\n");
+    // }
+    lv_obj_t * dd = lv_event_get_target(e);  // Get the dropdown object
+    uint16_t selected_id = lv_dropdown_get_selected(dd);  // Get the index of the selected option
+    
+    // Get the text of the selected option
+    char selected_text[32];
+    lv_dropdown_get_selected_str(dd, selected_text, sizeof(selected_text));  // Copy selected text to the buffer
+
+    CC1101_PRESET preset = convert_str_to_enum(selected_text);
+
+    C1101preset = preset;
+    CC1101.loadPreset();
+  if (code == LV_EVENT_VALUE_CHANGED) {
+   // lv_textarea_add_text(text_area, "Preset set to: ");
+  //  lv_textarea_add_text(text_area, selected_text);
+  //  lv_textarea_add_text(text_area, "\n");
+  }
+    
+    // Print or handle the selected option
+    printf("Selected option: %s (ID: %d)\n", selected_text, selected_id);
+
+
+
+}
+
+
+// void EVENTS::listenRFEvent(lv_event_t * e) {
+
+
+//     C1101LoadPreset = false;
+
+//     float freq = atof(frequency_buffer);
+//     char freq_str[20]; // Buffer to hold the converted float as a string
+//     snprintf(freq_str, sizeof(freq_str), "%f", freq);
+
+//     lv_textarea_add_text(text_area, freq_str);
+//    // lv_textarea_set_text(text_area, "  " );
+//     lv_textarea_set_text(text_area, String("Capture Started..").c_str());
+
+//     ELECHOUSE_cc1101.setSidle();  // Set to idle state
+//     ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
+    
+//     // Optionally disable chip select (CS) to fully power down the CC1101
+//     digitalWrite(CC1101_CS, HIGH); 
+
+//     CC1101.initrRaw();
+//     delay(20);
+//     C1101CurrentState = STATE_CAPTURE;
+
+// }
+
+
+
+void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
+{
+    char frequency_buffer[10];
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    lv_obj_t * text_area = screenMgr.getTextArea();
+    lv_obj_t * ta = screenMgr.getFreqInput();
+    strncpy(frequency_buffer, lv_textarea_get_text(ta), sizeof(frequency_buffer) - 1);
+    frequency_buffer[sizeof(frequency_buffer) - 1] = '\0'; 
+    C1101CurrentState = STATE_PULSE_SCAN;
+    C1101LoadPreset = true;
+
+     float freq = atof(frequency_buffer);
+        lv_textarea_set_text(text_area, "Waiting for signal.\n");
+//     char freq_str[20]; // Buffer to hold the converted float as a string
+//     snprintf(freq_str, sizeof(freq_str), "%f", freq);
+
+//     lv_textarea_add_text(text_area, freq_str);
+    // lv_textarea_set_text(text_area, "  " );
+ //    lv_textarea_set_text(text_area, String("Capture Started..").c_str());
+
+    CC1101.setFrequency(freq);
+    CC1101.enableReceiver();
+    delay(20);
+C1101CurrentState = STATE_ANALYZER;
 }
 

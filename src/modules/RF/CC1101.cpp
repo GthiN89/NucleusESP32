@@ -14,6 +14,9 @@
 #include "RCSwitch.h"
 #include "modules/ETC/SDcard.h"
 #include <string> 
+#include "../../../../NucleusESP32/src/GUI/events.h"
+
+
 #define SAMPLE_SIZE 1024
 
 #define BufferSize 2048
@@ -21,10 +24,24 @@
 using namespace std;
 
 byte bigrecordingbuffer[2048] = {0};
+long data_to_send[2000];
 
 int receiverGPIO;
 
 int pulseLenght = 0;
+bool recievedSubGhz;
+ char frequency_buffer[10];
+ char selected_str[32]; 
+ bool ProtAnaRxEn;
+ char filename_buffer[32];
+ bool CC1101_TX = false;
+ volatile unsigned long ReceivedValue = 0;
+volatile unsigned int ReceivedBitlength = 0;
+volatile unsigned int ReceivedDelay = 0;
+volatile unsigned int ReceivedProtocol = 0;
+long transmit_push[2000];
+int transmissions = 1;
+String transmit = "";
 
 
 CC1101_PRESET C1101preset = AM650;
@@ -42,6 +59,12 @@ int sample[SAMPLE_SIZE];
 
 int error_toleranz = 200;
 
+bool CC1101_is_initialized = false;
+bool CC1101_recieve_is_running = false;
+bool CC1101_transmit_is_running = false;
+bool CC1101_isiddle = true;
+bool CC1101_interup_attached = false;
+
 
 String fullPath;   
 
@@ -50,66 +73,39 @@ RCSwitch mySwitch;
 void IRAM_ATTR InterruptHandler()
 {    
 
-  const long time = micros();
-  const unsigned int duration = time - lastTime;
-
-  if (duration > 100000){
-    samplecount = 0;
-  }
-
-  if (duration >= 100){
-    sample[samplecount++] = duration;
-  }
-
-  if (samplecount>=SAMPLE_SIZE){
-    detachInterrupt(CC1101_CCGDO0A);
-//    detachInterrupt(RXPin);
-   CC1101_CLASS::CheckReceived();
-  }
-
-
-   if (CC1101_MODULATION == 0) {
-    if (samplecount == 1 and digitalRead(CC1101_CCGDO0A) != HIGH){
-      samplecount = 0;
-    }
-  }
-  
-  
-  lastTime = time;
-
-
     if (!receiverEnabled)
     {
         return;
     }
     
-    // const long time = micros();
-    // const unsigned int duration = time - lastTime;
+    const long time = micros();
+    const unsigned int duration = time - lastTime;
 
-    // if (duration > 100000)
-    // {
-    //     samplecount = 0;
-    // }
+    if (duration > 100000)
+    {
+        samplecount = 0;
+    }
 
-    // if (duration >= 100)
-    // {
-    //     sample[samplecount++] = duration;
-    // }
+    if (duration >= 100)
+    {
+        sample[samplecount++] = duration;
+    }
 
-    // if (samplecount >= SAMPLE_SIZE)
-    // {
-    //     return;
-    // }
+    if (samplecount >= SAMPLE_SIZE)
+    {
+        return;
+    }
 
-    // if (CC1101_MODULATION == 0)
-    // {
-    //     if (samplecount == 1 && digitalRead(CC1101_CCGDO0A) != HIGH)
-    //     {
-    //         samplecount = 0;
-    //     }
-    // }
+    if (CC1101_MODULATION == 0)
+    {
+        if (samplecount == 1 && digitalRead(CC1101_CCGDO0A) != HIGH)
+        {
+            samplecount = 0;
+        }
+    }
 
-    // lastTime = time;
+    lastTime = time;
+
 }
 
 
@@ -195,11 +191,13 @@ bool CC1101_CLASS::init()
     if (ELECHOUSE_cc1101.getCC1101())
     {
         ELECHOUSE_cc1101.setSidle();
+        CC1101_isiddle = true;
         return true;
     }
     else
     {
         ELECHOUSE_cc1101.setSidle();
+        CC1101_isiddle = true;
         return false;
     }
     ELECHOUSE_cc1101.setGDO(CCGDO0A, CCGDO2A);
@@ -301,6 +299,10 @@ void CC1101_CLASS::loadPreset() {
             CC1101_SYNC_MODE = 7;
             break;
         default:
+            CC1101_MODULATION = 2;
+            CC1101_DRATE = 3.79372;
+            CC1101_RX_BW = 270.833333;
+            CC1101_DEVIATION = 1.58;
             break;
     }
 }
@@ -329,176 +331,134 @@ bool CC1101_CLASS::CheckReceived()
 }
 
 void CC1101_CLASS::signalanalyse(){
-  #define signalstorage 10
-  bool lastbin=0;
+      ScreenManager& screenMgr = ScreenManager::getInstance();
+    lv_obj_t * textareaRC = screenMgr.getTextArea();
 
-  ScreenManager& screenMgr = ScreenManager::getInstance();
-  lv_obj_t* text_area = screenMgr.getTextArea();
-  lv_textarea_set_text(text_area, "");
-  int signalanz=0;
-  int timingdelay[signalstorage];
+    lv_textarea_set_text(textareaRC, "New RAW signal, Count: ");
+    lv_textarea_add_text(textareaRC, String(samplecount).c_str());
+    lv_textarea_add_text(textareaRC,"\n");
+    String rawString = "";
 
-  long signaltimings[signalstorage*2];
-  int signaltimingscount[signalstorage];
-  long signaltimingssum[signalstorage];
-  long signalsum=0;
-
-  for (int i = 0; i<signalstorage; i++){
-    signaltimings[i*2] = 100000;
-    signaltimings[i*2+1] = 0;
-    signaltimingscount[i] = 0;
-    signaltimingssum[i] = 0;
-  }
-  for (int i = 1; i<samplecount; i++){
-    signalsum+=sample[i];
-  }
-
-  for (int p = 0; p<signalstorage; p++){
-
-  for (int i = 1; i<samplecount; i++){
-    if (p==0){
-      if (sample[i]<signaltimings[p*2]){
-        signaltimings[p*2]=sample[i];
-      }
-    }else{
-      if (sample[i]<signaltimings[p*2] && sample[i]>signaltimings[p*2-1]){
-        signaltimings[p*2]=sample[i];
-      }
+    for (int i = 1; i < samplecount; i++)
+    {
+        rawString += sample[i];
+        rawString += ",";
     }
-  }
 
-  for (int i = 1; i<samplecount; i++){
-    if (sample[i]<signaltimings[p*2]+error_toleranz && sample[i]>signaltimings[p*2+1]){
-      signaltimings[p*2+1]=sample[i];
-    }
-  }
-
-  for (int i = 1; i<samplecount; i++){
-    if (sample[i]>=signaltimings[p*2] && sample[i]<=signaltimings[p*2+1]){
-      signaltimingscount[p]++;
-      signaltimingssum[p]+=sample[i];
-    }
-  }
-  }
-  
-  int firstsample = signaltimings[0];
-  
-  signalanz=signalstorage;
-  for (int i = 0; i<signalstorage; i++){
-    if (signaltimingscount[i] == 0){
-      signalanz=i;
-      i=signalstorage;
-    }
-  }
-
-  for (int s=1; s<signalanz; s++){
-  for (int i=0; i<signalanz-s; i++){
-    if (signaltimingscount[i] < signaltimingscount[i+1]){
-      int temp1 = signaltimings[i*2];
-      int temp2 = signaltimings[i*2+1];
-      int temp3 = signaltimingssum[i];
-      int temp4 = signaltimingscount[i];
-      signaltimings[i*2] = signaltimings[(i+1)*2];
-      signaltimings[i*2+1] = signaltimings[(i+1)*2+1];
-      signaltimingssum[i] = signaltimingssum[i+1];
-      signaltimingscount[i] = signaltimingscount[i+1];
-      signaltimings[(i+1)*2] = temp1;
-      signaltimings[(i+1)*2+1] = temp2;
-      signaltimingssum[i+1] = temp3;
-      signaltimingscount[i+1] = temp4;
-    }
-  }
-  }
-
-  for (int i=0; i<signalanz; i++){
-    timingdelay[i] = signaltimingssum[i]/signaltimingscount[i];
-  }
-
-  if (firstsample == sample[1] and firstsample < timingdelay[0]){
-    sample[1] = timingdelay[0];
-  }
-
-
- 
-  for (int i=1; i<samplecount; i++){
-    float r = (float)sample[i]/timingdelay[0];
-    int calculate = r;
-    r = r-calculate;
-    r*=10;
-    if (r>=5){calculate+=1;}
-    if (calculate>0){
-      if (lastbin==0){
-        lastbin=1;
-      }else{
-      lastbin=0;
-    }
-      if (lastbin==0 && calculate>8){
-        Serial.print(" [Pause: ");
-            lv_textarea_add_text(text_area, "");
-            string v = to_string(sample[i]);
-//lv_textarea_add_text(text_area, v.c_str());
-         Serial.print(sample[i]);
-        // Serial.println(" samples]");
-        // appendFile(SD, "/logs.txt",NULL, " [Pause: ");
-        // appendFileLong(SD, "/logs.txt", sample[i]);
-        // appendFile(SD, "/logs.txt"," samples]", "\n");
-      }else{
-        for (int b=0; b<calculate; b++){
-          Serial.print(lastbin);
-         // lv_textarea_add_text(text_area, lastbin);
-    //      appendFileLong(SD, "/logs.txt", lastbin);
-        }
-      }
-    }
-  }
-
-  Serial.println();
-  Serial.print("Samples/Symbol: ");
-  // lv_textarea_add_text(text_area, "PulseLenght: ");
-  Serial.println(timingdelay[0]);
-//std::string timingdelayStr = std::to_string(timingdelay[0]);
-//const char* timingdelay1 = timingdelayStr.c_str();
-  pulseLenght = timingdelay[0];
- //  lv_textarea_add_text(text_area, timingdelay1);
-  Serial.println();
-
-
-  for (int i=1; i<samplecount; i++){
-    float r = (float)sample[i]/timingdelay[0];
-    int calculate = r;
-    r = r-calculate;
-    r*=10;
-    if (r>=5){calculate+=1;}
-    if (calculate>0){
-      samplesmooth[smoothcount] = calculate*timingdelay[0];
-      smoothcount++;
-    }
-  }
-  // Serial.println("Rawdata corrected:");
-  // Serial.print("Count=");
-  // Serial.println(smoothcount+1);
-  // lv_textarea_add_text(text_area, "Rawdata corrected:");
-  // lv_textarea_add_text(text_area, "Count=");
-  // lv_textarea_add_text(text_area, to_string(smoothcount+1).c_str());
-  // for (int i=0; i<smoothcount; i++){
-  //   Serial.print(samplesmooth[i]);
-  //   Serial.print(",");
-  // }
-  // Serial.println();
-  // Serial.println();
-  
+    lv_textarea_add_text(textareaRC, "Capture Complete | Sample: ");
+    lv_textarea_add_text(textareaRC, rawString.c_str());
   return;
 }
+
+void CC1101_CLASS::sendRaw() {
+  detachInterrupt(CC1101_CCGDO0A);
+        CC1101_CLASS::initrRaw();
+        ELECHOUSE_cc1101.setCCMode(0); 
+        ELECHOUSE_cc1101.setPktFormat(3);
+        ELECHOUSE_cc1101.SetTx();
+
+        pinMode(CC1101_CCGDO0A, OUTPUT);
+        //start replaying GDO0 bit state from data in the buffer with bitbanging 
+        Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
+     //   lv_textarea_set_text(text_area, "Replaying RAW data from the buffer...\n");
+       
+        
+
+        
+        // for (int i=1; i<BufferSize ; i++)  
+        //    { 
+        //      byte receivedbyte = bigrecordingbuffer[i];
+        //      for(int j=7; j > -1; j--)  // 8 bits in a byte
+        //        {
+        //          digitalWrite(CC1101_CCGDO0A, bitRead(receivedbyte, j)); // Set GDO0 according to recorded byte
+        //          delayMicroseconds(pulseLenght);                      // delay for selected sampling interval
+        //        }; 
+        //    }
+
+    for (int i = 1; i < samplecount; i += 2)
+    {
+        digitalWrite(CC1101_CCGDO0A, 1);
+        delayMicroseconds(sample[i] -100);
+        digitalWrite(CC1101_CCGDO0A, 0);
+        delayMicroseconds(sample[i + 1] -100);
+    }
+
+    //     for (int i = 1; i < samplecount; i += 2)
+    // {
+    //     digitalWrite(CC1101_CCGDO0A, 0);
+    //     delayMicroseconds(sample[i]);
+    //     digitalWrite(CC1101_CCGDO0A, 1);
+    //     delayMicroseconds(sample[i + 1]);
+    // }
+
+        
+
+  //     int counter=0;
+  //     int pos = 0;
+
+  // for (int i = 0; i < transmissions; i++) {
+  //   if (data_to_send[i] > 0) {
+  //     digitalWrite(CC1101_CCGDO0A, HIGH);
+  //   } else {
+  //     digitalWrite(CC1101_CCGDO0A, LOW);
+  //   }
+  //   delayMicroseconds(abs(data_to_send[i]));
+  // }
+
+  //     for (int i = 0; i<transmit.length(); i++){
+  //       if (transmit.substring(i, i+1) == ","){
+  //         data_to_send[counter]=transmit.substring(pos, i).toInt();
+  //         pos = i+1;
+  //         counter++;
+  //       }
+  //     }
+
+  //       for (int r = 0; r<transmissions; r++) {
+  //         for (int i = 0; i<counter; i+=2){
+  //           digitalWrite(CC1101_CCGDO0A,HIGH);
+  //           delayMicroseconds(data_to_send[i]);
+  //           digitalWrite(CC1101_CCGDO0A,LOW);
+  //           delayMicroseconds(data_to_send[i+1]);
+  //           Serial.print(data_to_send[i]);
+  //           Serial.print(",");
+  //         }
+  //         delay(2000); //Set this for the delay between retransmissions
+  //       }    
+
+  //               for (int r = 0; r<transmissions; r++) {
+  //         for (int i = 0; i<counter; i+=2){
+  //           digitalWrite(CC1101_CCGDO0A,LOW);
+  //           delayMicroseconds(data_to_send[i]);
+  //           digitalWrite(CC1101_CCGDO0A,LOW);
+  //           delayMicroseconds(data_to_send[i+1]);
+  //           Serial.print(data_to_send[i]);
+  //           Serial.print(",");
+  //         }
+  //         delay(2000); //Set this for the delay between retransmissions
+  //       }      
+
+                Serial.print(F("\r\nReplaying RAW data complete.\r\n\r\n"));
+      //  lv_textarea_set_text(text_area, "Replaying RAW data complete.\n");
+        ELECHOUSE_cc1101.setSidle(); 
+            ELECHOUSE_cc1101.setSidle();  // Set to idle state
+    ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
+    
+    // Optionally disable chip select (CS) to fully power down the CC1101
+    digitalWrite(CC1101_CS, HIGH); 
+    
+}
+
 
 bool CC1101_CLASS::getPulseLenghtLoop() {
     CC1101_CLASS::signalanalyse();
     ScreenManager& screenMgr = ScreenManager::getInstance();
-    lv_obj_t * text_area = screenMgr.getTextArea();
-    lv_obj_t* pulse_lenght_ta = screenMgr.getPulseLenghtInput();
-    lv_textarea_set_text(pulse_lenght_ta, String(pulseLenght).c_str());
-    lv_textarea_add_text(text_area, "Pulse lenght has been set.");
+  //  lv_obj_t * text_area = screenMgr.getTextAreaRCSwitchMethod();
+  //  lv_obj_t* pulse_lenght_ta = screenMgr.getPulseLenghtInput();
+  //  lv_textarea_set_text(pulse_lenght_ta, String(pulseLenght).c_str());
+   // lv_textarea_set_text(text_area, "Pulse lenght has been set.");
     return true;
 }
+
 
 void CC1101_CLASS::initrRaw() {
   Serial.print("Init CC1101 raw");
@@ -546,7 +506,7 @@ Serial.print(to_string(pulseLenght).c_str());
         // detachInterrupt(CC1101_CCGDO2A);
       //  byte textbuffer[128];
         ScreenManager& screenMgr = ScreenManager::getInstance();
-        lv_obj_t * text_area = screenMgr.getTextArea();
+        lv_obj_t * text_area = screenMgr.getTextAreaRCSwitchMethod();
         // take interval period for samplink
         // setting = atoi(cmdline);
         // if (setting>0)
@@ -572,7 +532,7 @@ Serial.print(to_string(pulseLenght).c_str());
         int setting2;
         // waiting for some data first or serial port signal
         //while (!Serial.available() ||  (digitalRead(gdo0) == LOW) ); 
-        while ( digitalRead(CC1101_CCGDO0A) == LOW ); 
+        while ( digitalRead(CC1101_CCGDO0A) == LOW );
 
         
         //start recording to the buffer with bitbanging of GDO0 pin state
@@ -672,7 +632,7 @@ bool CC1101_CLASS::sendCapture()
   Serial.print("----------------\n");
 
         ScreenManager& screenMgr = ScreenManager::getInstance();
-        lv_obj_t * text_area = screenMgr.getTextArea();
+        lv_obj_t * text_area = screenMgr.getTextAreaRCSwitchMethod();
         // take interval period for sampling
         // setup async mode on CC1101 and go into TX mode
         // with GDO0 pin
@@ -684,6 +644,7 @@ bool CC1101_CLASS::sendCapture()
         ELECHOUSE_cc1101.setCCMode(0); 
         ELECHOUSE_cc1101.setPktFormat(3);
         ELECHOUSE_cc1101.SetTx();
+        ELECHOUSE_cc1101.setPA(12);
         pinMode(CC1101_CCGDO0A, OUTPUT);
         //start replaying GDO0 bit state from data in the buffer with bitbanging 
         Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
@@ -735,7 +696,7 @@ void CC1101_CLASS::enableTransmit()
 
     ELECHOUSE_cc1101.setPA(12);
     ELECHOUSE_cc1101.SetRx();
-    pinMode(CCGDO2A, INPUT);  
+    pinMode(CCGDO2A, OUTPUT);  
 
     mySwitch.enableTransmit(CC1101_CCGDO2A);
 }
@@ -804,6 +765,142 @@ void CC1101_CLASS::saveSignal() {
     SPIFFS.remove(fullPath);
 }
 
+bool  CC1101_CLASS::initCC1101() {
+    digitalWrite(5, HIGH);
+     SPI.begin();
+    Serial.println("Initializing CC1101");
+    ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
+    ELECHOUSE_cc1101.Init();
+    ELECHOUSE_cc1101.setGDO(CCGDO0A, CCGDO2A);
+    ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);
+    ELECHOUSE_cc1101.setPA(12);
+    if (CC1101_TX) {
+        ELECHOUSE_cc1101.SetTx();
+        pinMode(CCGDO0A, OUTPUT);  
+    } else {
+        ELECHOUSE_cc1101.SetRx();
+        pinMode(CCGDO2A, INPUT);  
+    }
+    ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);
+    ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
+    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);
+    ELECHOUSE_cc1101.setPktFormat(CC1101_PKT_FORMAT);
+
+    if (!ELECHOUSE_cc1101.getCC1101()) {
+        Serial.println("CC1101 Connection Error");
+        return false;
+    } else {
+        Serial.println("CC1101 Initialized successfully");
+        return true;
+    }
+}
 
 
+
+void CC1101_CLASS::initRCSwitch()
+{
+ELECHOUSE_cc1101.Init();
+
+    if (CC1101_MODULATION == 2)
+    {
+        ELECHOUSE_cc1101.setDcFilterOff(0);
+    }
+
+    if (CC1101_MODULATION == 0)
+    {
+        ELECHOUSE_cc1101.setDcFilterOff(1);
+    }
+
+    // ELECHOUSE_cc1101.setDcFilterOff(1);
+    ELECHOUSE_cc1101.setSyncMode(CC1101_SYNC);  // Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.
+    ELECHOUSE_cc1101.setPktFormat(CC1101_PKT_FORMAT); // Format of RX and TX data. 0 = Normal mode, use FIFOs for RX and TX.
+                                                      // 1 = Synchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
+                                                      // 2 = Random TX mode; sends random data using PN9 generator. Used for test. Works as normal mode, setting 0 (00), in RX.
+                                                      // 3 = Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
+                                                      // ELECHOUSE_cc1101.setSyncMode(3);       
+    ELECHOUSE_cc1101.setModulation(CC1101_MODULATION); // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
+    ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);               // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
+    ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
+    ELECHOUSE_cc1101.setDRate(CC1101_DRATE); // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
+    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
+
+  // pinMode(CC1101_CCGDO0A,INPUT);
+  // digitalPinToInterrupt(CC1101_CCGDO0A);
+  // ELECHOUSE_cc1101.SetRx();
+  // samplecount = 0;
+  // attachInterrupt(CC1101_CCGDO0A, InterruptHandler, CHANGE); /// predelat interupt
+  
+//   pinMode(CC1101_CCGDO2A,INPUT);
+//   digitalPinToInterrupt(CC1101_CCGDO2A);
+//   ELECHOUSE_cc1101.SetRx();
+//   samplecount = 0;
+//   attachInterrupt(RXPin, receiver, CHANGE);
+
+    
+    pinMode(CC1101_CCGDO0A, INPUT);
+    receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO0A);    
+    ELECHOUSE_cc1101.SetRx();
+/////////////////////////////
+    receiverEnabled = true;
+//////////////////////////////
+       mySwitch.enableReceive(CC1101_CCGDO0A); // Receiver on
+}
+
+
+
+void CC1101_CLASS::disableRCSwitch() 
+{
+    mySwitch.disableReceive();
+    ELECHOUSE_cc1101.setSidle();
+    ELECHOUSE_cc1101.goSleep();
+}
+
+
+
+
+bool CC1101_CLASS::RCmethodResult()
+{
+
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    lv_obj_t * text_are_ = screenMgr.getTextArea();
+ if (mySwitch.available() && !recievedSubGhz) {
+        unsigned long receivedValue = mySwitch.getReceivedValue();
+        unsigned long receivedBitLength = mySwitch.getReceivedBitlength();
+        unsigned long receivedProtocol = mySwitch.getReceivedProtocol();
+        recievedSubGhz = true;
+
+        if (text_are_) {
+            char buffer[32];
+            Serial.println("Received Value:");
+            Serial.println(receivedValue);
+            lv_textarea_add_text(text_are_, "Value: ");
+            sprintf(buffer, "%lu", receivedValue);
+            lv_textarea_add_text(text_are_, buffer);
+            lv_textarea_add_text(text_are_, "\n");
+
+            int receivedBitLength = mySwitch.getReceivedBitlength();
+            Serial.println("Received Bit Length:");
+            Serial.println(receivedBitLength);
+            lv_textarea_add_text(text_are_, "Length: ");
+            sprintf(buffer, "%d", receivedBitLength);
+            lv_textarea_add_text(text_are_, buffer);
+            lv_textarea_add_text(text_are_, "\n");
+
+            int receivedProtocol = mySwitch.getReceivedProtocol();
+            Serial.println("Received Protocol:");
+            Serial.println(receivedProtocol);
+            lv_textarea_add_text(text_are_, "Protocol: ");
+            sprintf(buffer, "%d", receivedProtocol);
+            lv_textarea_add_text(text_are_, buffer);
+            lv_textarea_add_text(text_are_, "\n");
+            return true;
+        }
+        
+    }return false;
+}
+
+void CC1101_CLASS::ResetRCSwitch()
+{
+    mySwitch.resetAvailable();
+}
 
