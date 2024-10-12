@@ -5,7 +5,8 @@
 #include "GUI/screens/replay.h"
 #include "GUI/screens/playRecorded.h"
 
-#include "../screens/c1101Scan.h"
+
+#include "GUI/screens/c1101scan.h"
 
 
 #include "RFmenu.h"

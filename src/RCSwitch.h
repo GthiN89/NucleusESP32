@@ -106,9 +106,13 @@ class RCSwitch {
     void disableTransmit();
     void setPulseLength(int nPulseLength);
     void setRepeatTransmit(int nRepeatTransmit);
+    void sendraw(const char* sFilename);
     #if not defined( RCSwitchDisableReceiving )
     void setReceiveTolerance(int nPercent);
     void setReceiveProtocolMask(unsigned long long mask);
+        void setReceiveUsingProtocolTiming(bool useProtocolTiming);
+    void setReceiveUnknownProtocol(bool showUnknownProtocol);
+    
     #endif
 
     /**
@@ -171,6 +175,7 @@ class RCSwitch {
     #if not defined( RCSwitchDisableReceiving )
     static void handleInterrupt();
     static bool receiveProtocol(const int p, unsigned int changeCount);
+        static void acceptUnknownProtocol(unsigned int changeCount);
     int nReceiverInterrupt;
     #endif
     int nTransmitterPin;
@@ -179,6 +184,8 @@ class RCSwitch {
 
     #if not defined( RCSwitchDisableReceiving )
     static int nReceiveTolerance;
+        static bool receiveUsingProtocolTiming;
+    static bool receiveUnknownProtocol;
     volatile static unsigned long long nReceivedValue;
     volatile static unsigned long long nReceiveProtocolMask;
     volatile static unsigned int nReceivedBitlength;

@@ -64,19 +64,21 @@ enum C1101State
 extern uint8_t C1101CurrentState;
 
 extern bool C1101LoadPreset;
-
-
 extern bool receiverEnabled;
-
 extern float CC1101_MHZ;
 
-// C1101 Presets
-
+//////////////////////////////////////////////////////////////////////////
+//FLAGS
+///////////////////
+extern bool CC1101_init; 
+extern bool CC1101_RCSwitch_init; 
+extern bool CC1101_RCSwitch_listen;
+extern bool CC1101_RCSwitch_play;
 
 // Function declarations
 typedef void (*TouchCallback)();
 
-
+CC1101_PRESET convert_str_to_enum(const char * selected_str);
 
 
 #endif // GLOBALS_H

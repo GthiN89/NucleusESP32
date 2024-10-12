@@ -7,10 +7,20 @@
    //---------------------------------------------------------------------------//
   //-----------------------------Presets-Variables-----------------------------//
  //---------------------------------------------------------------------------//
-
+   //---------------------------------------------------------------------------//
+  //-----------------------------Flags-----------------------------------------//
+ //---------------------------------------------------------------------------//
+ extern bool CC1101_is_initialized;
+ extern bool CC1101_recieve_is_running;
+ extern bool CC1101_transmit_is_running;
+ extern bool CC1101_isiddle;
+ extern bool CC1101_interup_attached;
+ extern bool CC1101_TX;
 
 class CC1101_CLASS {
 public:
+
+
 
 unsigned long samplesmooth[SAMPLE_SIZE];
   int smoothcount=0;
@@ -20,9 +30,17 @@ unsigned long samplesmooth[SAMPLE_SIZE];
     int CC1101_MODULATION;
     float CC1101_DRATE;
     float CC1101_RX_BW;
-    float CC1101_DEVIATION;
+    float CC1101_DEVIATION = 47.60;
     int   CC1101_SYNC_MODE;
     int CC1101_PKT_FORMAT;
+    
+    long tempValue = 0;
+    int tempBitLength = 0;
+    int tempDelay = 0;
+    int tempProtocol = 0;
+    String rawdataString = "";
+
+
     void setCC1101Preset(CC1101_PRESET preset);
     void loadPreset();
     bool init();
@@ -44,6 +62,12 @@ unsigned long samplesmooth[SAMPLE_SIZE];
     bool getPulseLenghtLoop();
     void asciitohex(byte *ascii_ptr, byte *hex_ptr,int len);
     void initrRaw();
+    void initRCSwitch();
+    void disableRCSwitch();
+    bool RCmethodResult();
+    void ResetRCSwitch();
+    bool initCC1101();
+    void sendRaw();
 
 
 private:
