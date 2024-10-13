@@ -156,19 +156,6 @@ void CC1101_CLASS::enableReceiver()
     ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
     ELECHOUSE_cc1101.setDRate(CC1101_DRATE); // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
-
-  // pinMode(CC1101_CCGDO0A,INPUT);
-  // digitalPinToInterrupt(CC1101_CCGDO0A);
-  // ELECHOUSE_cc1101.SetRx();
-  // samplecount = 0;
-  // attachInterrupt(CC1101_CCGDO0A, InterruptHandler, CHANGE); /// predelat interupt
-  
-//   pinMode(CC1101_CCGDO2A,INPUT);
-//   digitalPinToInterrupt(CC1101_CCGDO2A);
-//   ELECHOUSE_cc1101.SetRx();
-//   samplecount = 0;
-//   attachInterrupt(RXPin, receiver, CHANGE);
-
     
     pinMode(CC1101_CCGDO0A, INPUT);
     receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO0A);    
@@ -225,12 +212,13 @@ void CC1101_CLASS::showResultRecPlay()
      Serial.print(String("Capture Complete | Sample: " + String(samplecount)).c_str());
 
     rawString = "";
+    
 }
 
 
 void CC1101_CLASS::disableReceiver()
 {
-    //detachInterrupt((uint8_t)receiverGPIO);
+    detachInterrupt((uint8_t)receiverGPIO);
     receiverEnabled = false;
     ELECHOUSE_cc1101.setSidle();
     ELECHOUSE_cc1101.goSleep();
@@ -309,19 +297,6 @@ void CC1101_CLASS::loadPreset() {
 
 bool CC1101_CLASS::CheckReceived()
 {
-    // Serial.print(String(samplecount));
-    // Serial.print("\n");
-    // delay(1);
-    // if (samplecount >= minsample && micros() - lastTime > 100000)
-    // {
-    //     receiverEnabled = false;
-    //     return 1;
-    // }
-    // else
-    // {
-    //     return 0;
-    // }
-
    delay(1);
   if (samplecount >= minsample && micros()-lastTime >100000){
     return 1;
@@ -351,111 +326,45 @@ void CC1101_CLASS::signalanalyse(){
 }
 
 void CC1101_CLASS::sendRaw() {
-  detachInterrupt(CC1101_CCGDO0A);
-        CC1101_CLASS::initrRaw();
-        ELECHOUSE_cc1101.setCCMode(0); 
-        ELECHOUSE_cc1101.setPktFormat(3);
-        ELECHOUSE_cc1101.SetTx();
+    detachInterrupt(CC1101_CCGDO0A);
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    lv_obj_t * textarea = screenMgr.getTextArea();
+    CC1101_CLASS::initrRaw();
+    ELECHOUSE_cc1101.setCCMode(0); 
+    ELECHOUSE_cc1101.setPktFormat(3);
+    ELECHOUSE_cc1101.SetTx();
 
-        pinMode(CC1101_CCGDO0A, OUTPUT);
-        //start replaying GDO0 bit state from data in the buffer with bitbanging 
-        Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
-     //   lv_textarea_set_text(text_area, "Replaying RAW data from the buffer...\n");
-       
-        
+    pinMode(CC1101_CCGDO0A, OUTPUT);
+    lv_textarea_set_text(textarea, "Replaying RAW data from the buffer...\n");
+    Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
 
-        
-        // for (int i=1; i<BufferSize ; i++)  
-        //    { 
-        //      byte receivedbyte = bigrecordingbuffer[i];
-        //      for(int j=7; j > -1; j--)  // 8 bits in a byte
-        //        {
-        //          digitalWrite(CC1101_CCGDO0A, bitRead(receivedbyte, j)); // Set GDO0 according to recorded byte
-        //          delayMicroseconds(pulseLenght);                      // delay for selected sampling interval
-        //        }; 
-        //    }
-
-    for (int i = 1; i < samplecount; i += 2)
+    Serial.print("Transmitting\n");
+    for (int i = 1; i < samplecount - 1; i += 2)
     {
-        digitalWrite(CC1101_CCGDO0A, 1);
-        delayMicroseconds(sample[i] -100);
-        digitalWrite(CC1101_CCGDO0A, 0);
-        delayMicroseconds(sample[i + 1] -100);
+        // Casting to unsigned long to resolve type mismatch with 0UL
+        unsigned long highTime = max((unsigned long)(sample[i] - 100), 0UL);
+        unsigned long lowTime = max((unsigned long)(sample[i + 1] - 100), 0UL);
+
+        digitalWrite(CC1101_CCGDO0A, HIGH);
+        delayMicroseconds(highTime);
+        digitalWrite(CC1101_CCGDO0A, LOW);
+        delayMicroseconds(lowTime);
     }
+    Serial.print("Transmitted\n");
+    delay(20);
+    digitalWrite(CC1101_CCGDO0A, LOW); 
 
-    //     for (int i = 1; i < samplecount; i += 2)
-    // {
-    //     digitalWrite(CC1101_CCGDO0A, 0);
-    //     delayMicroseconds(sample[i]);
-    //     digitalWrite(CC1101_CCGDO0A, 1);
-    //     delayMicroseconds(sample[i + 1]);
-    // }
-
-        
-
-  //     int counter=0;
-  //     int pos = 0;
-
-  // for (int i = 0; i < transmissions; i++) {
-  //   if (data_to_send[i] > 0) {
-  //     digitalWrite(CC1101_CCGDO0A, HIGH);
-  //   } else {
-  //     digitalWrite(CC1101_CCGDO0A, LOW);
-  //   }
-  //   delayMicroseconds(abs(data_to_send[i]));
-  // }
-
-  //     for (int i = 0; i<transmit.length(); i++){
-  //       if (transmit.substring(i, i+1) == ","){
-  //         data_to_send[counter]=transmit.substring(pos, i).toInt();
-  //         pos = i+1;
-  //         counter++;
-  //       }
-  //     }
-
-  //       for (int r = 0; r<transmissions; r++) {
-  //         for (int i = 0; i<counter; i+=2){
-  //           digitalWrite(CC1101_CCGDO0A,HIGH);
-  //           delayMicroseconds(data_to_send[i]);
-  //           digitalWrite(CC1101_CCGDO0A,LOW);
-  //           delayMicroseconds(data_to_send[i+1]);
-  //           Serial.print(data_to_send[i]);
-  //           Serial.print(",");
-  //         }
-  //         delay(2000); //Set this for the delay between retransmissions
-  //       }    
-
-  //               for (int r = 0; r<transmissions; r++) {
-  //         for (int i = 0; i<counter; i+=2){
-  //           digitalWrite(CC1101_CCGDO0A,LOW);
-  //           delayMicroseconds(data_to_send[i]);
-  //           digitalWrite(CC1101_CCGDO0A,LOW);
-  //           delayMicroseconds(data_to_send[i+1]);
-  //           Serial.print(data_to_send[i]);
-  //           Serial.print(",");
-  //         }
-  //         delay(2000); //Set this for the delay between retransmissions
-  //       }      
-
-                Serial.print(F("\r\nReplaying RAW data complete.\r\n\r\n"));
-      //  lv_textarea_set_text(text_area, "Replaying RAW data complete.\n");
-        ELECHOUSE_cc1101.setSidle(); 
-            ELECHOUSE_cc1101.setSidle();  // Set to idle state
+    Serial.print(F("\r\nReplaying RAW data complete.\r\n\r\n"));
+    lv_textarea_set_text(textarea, "Replaying RAW data complete.\n");
+    ELECHOUSE_cc1101.setSidle();  // Set to idle state
     ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
-    
-    // Optionally disable chip select (CS) to fully power down the CC1101
-    digitalWrite(CC1101_CS, HIGH); 
-    
+    disableTransmit();
 }
 
 
 bool CC1101_CLASS::getPulseLenghtLoop() {
     CC1101_CLASS::signalanalyse();
     ScreenManager& screenMgr = ScreenManager::getInstance();
-  //  lv_obj_t * text_area = screenMgr.getTextAreaRCSwitchMethod();
-  //  lv_obj_t* pulse_lenght_ta = screenMgr.getPulseLenghtInput();
-  //  lv_textarea_set_text(pulse_lenght_ta, String(pulseLenght).c_str());
-   // lv_textarea_set_text(text_area, "Pulse lenght has been set.");
     return true;
 }
 
@@ -823,19 +732,6 @@ ELECHOUSE_cc1101.Init();
     ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
     ELECHOUSE_cc1101.setDRate(CC1101_DRATE); // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
-
-  // pinMode(CC1101_CCGDO0A,INPUT);
-  // digitalPinToInterrupt(CC1101_CCGDO0A);
-  // ELECHOUSE_cc1101.SetRx();
-  // samplecount = 0;
-  // attachInterrupt(CC1101_CCGDO0A, InterruptHandler, CHANGE); /// predelat interupt
-  
-//   pinMode(CC1101_CCGDO2A,INPUT);
-//   digitalPinToInterrupt(CC1101_CCGDO2A);
-//   ELECHOUSE_cc1101.SetRx();
-//   samplecount = 0;
-//   attachInterrupt(RXPin, receiver, CHANGE);
-
     
     pinMode(CC1101_CCGDO0A, INPUT);
     receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO0A);    
