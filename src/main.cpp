@@ -77,11 +77,23 @@ void setup() {
     smartdisplay_init(); // Initialize the display and LVGL
     Serial.println(F("LVGL initialized."));
 
-    // Inicializace SPIFFS
-    if (!SPIFFS.begin(true, "/littlefs")) {
-        Serial.println("SPIFFS Mount Failed");
-        return;
-    }
+     if (!SPIFFS.begin(true, "/littlefs")) {
+         Serial.println("SPIFFS Mount Failed");
+         return;
+     }
+  File root = SPIFFS.open("/");
+ 
+  File file = root.openNextFile();
+ 
+  while(file){
+ 
+      Serial.print("FILE: ");
+      Serial.println(file.name());
+ 
+      file = root.openNextFile();
+  }
+
+
   
 
     // Inicializace touch

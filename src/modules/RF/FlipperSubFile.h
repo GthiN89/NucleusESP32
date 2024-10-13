@@ -10,12 +10,12 @@
 
 class FlipperSubFile {
 public:
-    static void generateRaw(
-        File& file,
-        const CC1101_PRESET& presetName,
-        const std::vector<byte>& customPresetData,
-        std::stringstream& samples,
-        float frequency
+    void generateRaw(
+        File& file,                               // File reference for output
+        const CC1101_PRESET& presetName,          // The preset used (e.g., CUSTOM)
+        const std::vector<byte>& customPresetData,// Custom preset data (if any)
+        String& samples,                          // Raw signal data (as a String)
+        float frequency                           // Frequency of the signal
     );
 
 private:
@@ -23,7 +23,7 @@ private:
 
     static void writeHeader(File& file, float frequency);
     static void writePresetInfo(File& file, const CC1101_PRESET& presetName, const std::vector<byte>& customPresetData);
-    static void writeRawProtocolData(File& file, std::stringstream& samples);
+    static void writeRawProtocolData(File& file, String& samples);
     static std::string getPresetName(const CC1101_PRESET& preset);
 };
 
