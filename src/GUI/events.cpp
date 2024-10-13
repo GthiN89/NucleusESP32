@@ -133,6 +133,7 @@ void EVENTS::kb_qwert_event_cb(lv_event_t * e) {
 
 
 
+
 void EVENTS::ta_pulse_event_cb(lv_event_t * e) {
     char frequency_buffer[10];
     ScreenManager& screenMgr = ScreenManager::getInstance();
@@ -156,6 +157,14 @@ void EVENTS::ta_pulse_event_cb(lv_event_t * e) {
     CC1101.enableReceiver();
     delay(20);
 
+}
+
+void EVENTS::save_RF_to_sd_event(lv_event_t * e) {
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    lv_obj_t* text_area = screenMgr.getTextArea();
+    lv_textarea_set_text(text_area, "Moving to SD\n");
+    CC1101.saveToSD();
+    lv_textarea_set_text(text_area, "Done.");
 }
 
 void EVENTS::ta_buffert_event_cb(lv_event_t * e) {

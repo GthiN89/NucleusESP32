@@ -269,7 +269,7 @@ bool sendSamples(int samples[], int samplesLength) {
 
     for (int i = 0; i < samplesLength; i++) {
         n = 1;
-        delay = samples[i];
+        delay = samples[i] - 100;
         if (delay < 0) {
             delay *= -1;
             n = 0;

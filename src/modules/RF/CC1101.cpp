@@ -17,6 +17,8 @@
 #include "../../../../NucleusESP32/src/GUI/events.h"
 
 
+
+
 #define SAMPLE_SIZE 1024
 
 #define BufferSize 2048
@@ -309,21 +311,61 @@ void CC1101_CLASS::signalanalyse(){
       ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * textareaRC = screenMgr.getTextArea();
 
+    File outputFile;
+
     lv_textarea_set_text(textareaRC, "New RAW signal, Count: ");
     lv_textarea_add_text(textareaRC, String(samplecount).c_str());
     lv_textarea_add_text(textareaRC,"\n");
     String rawString = "";
 
-    for (int i = 1; i < samplecount; i++)
-    {
-        rawString += sample[i];
-        rawString += ",";
-    }
+    for (int i = 0; i < samplecount; i++) {
+            rawString += (i > 0 ? (i % 2 == 1 ? " -" : " ") : "");
+            rawString += sample[i];
+        }
 
     lv_textarea_add_text(textareaRC, "Capture Complete | Sample: ");
     lv_textarea_add_text(textareaRC, rawString.c_str());
-  return;
 }
+
+bool CC1101_CLASS::saveToSD() {
+    FlipperSubFile subFile;
+    if (SDInit()) {
+        if (!SD.exists("/recordedRF/")) {
+            SD.mkdir("/recordedRF/");
+        }
+
+        String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
+        String fullPath = "/recordedRF/" + filename;
+        File outputFile = SD.open(fullPath.c_str(), FILE_WRITE);
+        if (outputFile) {
+            std::vector<byte> customPresetData;
+            if (C1101preset == CUSTOM) {
+                customPresetData.insert(customPresetData.end(), {
+                    CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
+                    CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
+                    CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
+                    CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
+                    CC1101_FREND0,  ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
+                    0x00, 0x00
+                });
+
+                std::array<byte, 8> paTable;
+                ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
+                customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
+            }
+            subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
+            outputFile.close();
+        } else {
+            return false;
+        }
+        SD.end();
+        digitalWrite(MICRO_SD_IO, HIGH);
+        return true;
+    }
+    return false;
+}
+
+
 
 void CC1101_CLASS::sendRaw() {
     detachInterrupt(CC1101_CCGDO0A);

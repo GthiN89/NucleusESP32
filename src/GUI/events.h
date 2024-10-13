@@ -55,6 +55,7 @@ static void replayEvent(lv_event_t * e);
 static void exitReplayEvent(lv_event_t * e);
 static void ta_pulse_event_cb(lv_event_t * e);
 static void sendCapturedEvent(lv_event_t * e);
+static void save_RF_to_sd_event(lv_event_t * e); 
 
 static void playFromBuffer();
 static void radioHandlerOnChange();

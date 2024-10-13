@@ -68,6 +68,7 @@ unsigned long samplesmooth[SAMPLE_SIZE];
     void ResetRCSwitch();
     bool initCC1101();
     void sendRaw();
+    bool saveToSD(); 
 
 
 private:
