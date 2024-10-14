@@ -66,7 +66,6 @@ void FlipperSubFile::writeRawProtocolData(File& file, String& samples) {
     int wordCount = 0;
     
     std::string cppString = std::string(samples.c_str());
-
     std::istringstream stream(cppString);
 
     while (std::getline(stream, sample, ' ')) {
@@ -74,13 +73,14 @@ void FlipperSubFile::writeRawProtocolData(File& file, String& samples) {
             file.println();
             file.print("RAW_Data: ");
         }
-        file.print(sample.c_str());
+        file.print(sample.c_str());  // Corrected line
         file.print(' ');
         wordCount++;
     }
 
     file.println();
 }
+
 std::string FlipperSubFile::getPresetName(const CC1101_PRESET& preset) {
     auto it = presetMapping.find(preset);
     if (it != presetMapping.end()) {

@@ -44,6 +44,7 @@ volatile unsigned int ReceivedProtocol = 0;
 long transmit_push[2000];
 int transmissions = 1;
 String transmit = "";
+String rawString;
 
 
 CC1101_PRESET C1101preset = AM650;
@@ -325,18 +326,16 @@ void CC1101_CLASS::signalanalyse(){
 
     lv_textarea_add_text(textareaRC, "Capture Complete | Sample: ");
     lv_textarea_add_text(textareaRC, rawString.c_str());
-}
 
-bool CC1101_CLASS::saveToSD() {
     FlipperSubFile subFile;
-    if (SDInit()) {
-        if (!SD.exists("/recordedRF/")) {
-            SD.mkdir("/recordedRF/");
-        }
-
+    SD.end();  
+ if (SDInit()) {
+    if (!SD.exists("/recordedRF/" )) {
+        SD.mkdir("/recordedRF/" );
+    }  
         String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
-        String fullPath = "/recordedRF/" + filename;
-        File outputFile = SD.open(fullPath.c_str(), FILE_WRITE);
+        String fullPath = "/recordedRF/" + filename; 
+        outputFile = SD.open(fullPath.c_str(), "w");
         if (outputFile) {
             std::vector<byte> customPresetData;
             if (C1101preset == CUSTOM) {
@@ -349,21 +348,61 @@ bool CC1101_CLASS::saveToSD() {
                     0x00, 0x00
                 });
 
-                std::array<byte, 8> paTable;
+                std::array<byte,8> paTable;
                 ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
                 customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
             }
             subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
+            Serial.print(rawString);
+            outputFile.close();
+        } else {
+
+        }
+        SD.end();
+
+    }
+
+}
+
+bool CC1101_CLASS::saveToSD() {    
+    File outputFile;
+    FlipperSubFile subFile;
+    SD.end();  
+ if (SDInit()) {
+    if (!SD.exists("/recordedRF/" )) {
+        SD.mkdir("/recordedRF/" );
+    }  
+        String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
+        String fullPath = "/recordedRF/" + filename; 
+        outputFile = SD.open(fullPath.c_str(), "w");
+        if (outputFile) {
+            std::vector<byte> customPresetData;
+            if (C1101preset == CUSTOM) {
+                customPresetData.insert(customPresetData.end(), {
+                    CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
+                    CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
+                    CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
+                    CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
+                    CC1101_FREND0,  ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
+                    0x00, 0x00
+                });
+
+                std::array<byte,8> paTable;
+                ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
+                customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
+            }
+            subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
+            Serial.print(rawString);
             outputFile.close();
         } else {
             return false;
         }
         SD.end();
-        digitalWrite(MICRO_SD_IO, HIGH);
         return true;
     }
     return false;
 }
+
 
 
 
