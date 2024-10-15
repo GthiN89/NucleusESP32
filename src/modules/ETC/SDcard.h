@@ -22,8 +22,13 @@
 // Declare the SPIClass object for SD card
 extern SPIClass sd; 
 
+extern float tempFreq;
+extern int tempSample[];
+extern int tempSampleCount;
+
 // Function prototypes
 bool SDInit();        // Function to initialize the SD card
 String disconnectSD();// Function to disconnect the SD card
+bool read_sd_card_flipper_file(String filename);
 
 #endif // SDCARD_H
