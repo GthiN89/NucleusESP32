@@ -181,8 +181,59 @@ void loop() {
       C1101CurrentState = STATE_IDLE;
     };
 
+  if (C1101CurrentState == STATE_SEND_FLIPPER)
+  {
+        if (tempSampleCount % 2 == 0) {
+    Serial.println("Číslo je sudé.");
+    } else {
+    tempSampleCount++;
+    }
+    Serial.print(disconnectSD());
+    int samplesClean[tempSampleCount];
+    Serial.print(String("Send RAW Data, sample count: " + String(tempSampleCount) + String(" | Frequency: ") + String(tempFreq)).c_str());
 
+    for (int i = 0; i < tempSampleCount; i++) {
+    samplesClean[i] = 100;
+    }
+
+        for (int i = 0; i < tempSampleCount; i++) {        
+        if (tempSample[i]>0)
+        {
+            Serial.print(String(tempSample[i]).c_str());
+            samplesClean[i] = tempSample[i];
+            Serial.print(", ");
+        } else {            
+            if(tempSample[i] * -1 > 0) {
+            Serial.print(String(tempSample[i] * -1).c_str());
+            samplesClean[i] = tempSample[i] * -1;
+            }
+            Serial.print(", ");
+        }
+    }
+
+        for (int i = 0; i < tempSampleCount; i++) {        
+        Serial.print(String(samplesClean[i]).c_str());
+            Serial.print(", ");
+        }
+
+
+//    Serial.println(); // Print a newline at the end
+    CC1101_FREQ = tempFreq;
+//    CC1101.sendSamples(sample,tempSampleCount);
+   // CC1101.enableTransmit();
+   // CC1101.sendSamples(tempSample, tempSampleCount);
+    CC1101.sendSamples(samplesClean, tempSampleCount);
+
+
+
+    //lv_label_set_text(ui_lblPresetsStatus, String("Sending Flipper Complete ! \n\nSample: " + String(tempSampleCount) + String(" | Freq: ") + String(tempFreq) + String(" mHz")).c_str());
+    C1101CurrentState = STATE_IDLE;
+
+  }
 }
+
+
+
 
 // Touch input reading function
 void my_touchpad_read(lv_indev_drv_t * indev_driver, lv_indev_data_t * data) {

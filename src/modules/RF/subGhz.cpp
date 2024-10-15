@@ -253,39 +253,34 @@ bool transmitFlipperFile(String filename, bool transmit) {
 }
 
 bool sendSamples(int samples[], int samplesLength) {
-    Serial.println("Entering sendSamples");
-    if (!CC1101_TX_) {
-        CC1101_TX_ = true;
-        Serial.println("Switching CC1101 to TX mode");
-        if (!initCC1101()) {
-            Serial.println("Failed to initialize CC1101 for TX");
-            return false;
-        }
-    }
-
     int delay = 0;
     unsigned long time;
     byte n = 0;
 
-    for (int i = 0; i < samplesLength; i++) {
+    for (int i = 0; i < samplesLength; i++)
+    {
+        // TRANSMIT
         n = 1;
-        delay = samples[i] - 100;
-        if (delay < 0) {
-            delay *= -1;
+        delay = samples[i];
+        if (delay < 0)
+        {
+            // DONT TRANSMIT
+            delay = delay * -1;
             n = 0;
         }
-        digitalWrite(CCGDO0A, n);
+
+        digitalWrite(CC1101_CCGDO0A, n);
+
         delayMicroseconds(delay);
-        Serial.print("Transmitted: ");
-        Serial.print(n);
-        Serial.print(" with delay: ");
-        Serial.println(delay);
     }
 
-    digitalWrite(CCGDO0A, 0);
-    Serial.println("Transmission completed");
-    return true;
+    // STOP TRANSMITTING
+    digitalWrite(CC1101_CCGDO0A, 0);
+        
 }
+
+
+
 
 void handleFlipperCommandLine(String command, String value) {
     Serial.print("Handling command: ");

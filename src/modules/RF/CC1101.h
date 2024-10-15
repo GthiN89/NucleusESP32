@@ -16,6 +16,9 @@
  extern bool CC1101_isiddle;
  extern bool CC1101_interup_attached;
  extern bool CC1101_TX;
+ extern int sample[];
+ extern int samplecount;
+ extern float CC1101_FREQ;
 
 class CC1101_CLASS {
 public:
@@ -69,6 +72,7 @@ unsigned long samplesmooth[SAMPLE_SIZE];
     bool initCC1101();
     void sendRaw();
     bool saveToSD(); 
+    void sendSamples(int samples[], int samplesLength);
 
 
 private:

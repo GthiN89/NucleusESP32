@@ -15,7 +15,7 @@
 #include "modules/ETC/SDcard.h"
 #include <string> 
 #include "../../../../NucleusESP32/src/GUI/events.h"
-
+#include "../ETC/SDcard.h"
 
 
 
@@ -53,6 +53,7 @@ int CC1101_PKT_FORMAT = 0;
 int CC1101_MODULATION = 2;
 
 int CC1101_SYNC = 1;
+float CC1101_FREQ = 433.92;
 
 int samplecount;
 const int minsample = 30;
@@ -461,7 +462,7 @@ void CC1101_CLASS::initrRaw() {
     ELECHOUSE_cc1101.setGDO0(CC1101_CCGDO0A);         // set lib internal gdo pin (gdo0). Gdo2 not use for this example.
     ELECHOUSE_cc1101.setCCMode(1);          // set config for internal transmission mode. value 0 is for RAW recording/replaying
     ELECHOUSE_cc1101.setModulation(2);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
-    ELECHOUSE_cc1101.setMHZ(433.92);        // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
+    ELECHOUSE_cc1101.setMHZ(CC1101_FREQ);        // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
     ELECHOUSE_cc1101.setDeviation(47.60);   // Set the Frequency deviation in kHz. Value from 1.58 to 380.85. Default is 47.60 kHz.
     ELECHOUSE_cc1101.setChannel(0);         // Set the Channelnumber from 0 to 255. Default is cahnnel 0.
     ELECHOUSE_cc1101.setChsp(199.95);       // The channel spacing is multiplied by the channel number CHAN and added to the base frequency in kHz. Value from 25.39 to 405.45. Default is 199.95 kHz.
@@ -668,6 +669,52 @@ bool CC1101_CLASS::sendCapture()
         return true; 
 }
 
+// ---------------------------------------------------------------------
+// void SubGhz::sendSamples(int samples[], int samplesLength)
+// ---------------------------------------------------------------------
+void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
+{
+    
+  //  detachInterrupt(CC1101_CCGDO0A);
+   // ScreenManager& screenMgr = ScreenManager::getInstance();
+ //   lv_obj_t * textarea = screenMgr.getTextArea();
+    disconnectSD();
+    digitalWrite(SDCARD_CS, HIGH);
+    CC1101_CLASS::initrRaw();
+    ELECHOUSE_cc1101.setCCMode(0); 
+    ELECHOUSE_cc1101.setPktFormat(3);
+    ELECHOUSE_cc1101.SetTx();
+
+    pinMode(CC1101_CCGDO0A, OUTPUT);
+  //  lv_textarea_set_text(textarea, "Replaying RAW data from the buffer...\n");
+    Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
+
+    Serial.print("Transmitting\n");
+    Serial.print(samplesLength);
+    Serial.print("\n----------------\n");
+    for (int i = 1; i < samplesLength - 1; i += 2)
+    {
+        // Casting to unsigned long to resolve type mismatch with 0UL
+        unsigned long highTime = max((unsigned long)(samples[i] - 100), 0UL);
+        unsigned long lowTime = max((unsigned long)(samples[i + 1] - 100), 0UL);
+        digitalWrite(CC1101_CCGDO0A, HIGH);
+        delayMicroseconds(highTime);
+        digitalWrite(CC1101_CCGDO0A, LOW);
+        delayMicroseconds(lowTime);
+    }
+    Serial.print("Transmitted\n");
+    delay(20);
+    digitalWrite(CC1101_CCGDO0A, LOW); 
+
+    Serial.print(F("\r\nReplaying RAW data complete.\r\n\r\n"));
+  //  lv_textarea_set_text(textarea, "Replaying RAW data complete.\n");
+    ELECHOUSE_cc1101.setSidle();  // Set to idle state
+    ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
+    disableTransmit();
+    SDInit();
+}
+
+
 void CC1101_CLASS::enableTransmit()
 {
     digitalWrite(CC1101_CS, LOW);
@@ -686,9 +733,9 @@ void CC1101_CLASS::enableTransmit()
 
     ELECHOUSE_cc1101.setPA(12);
     ELECHOUSE_cc1101.SetRx();
-    pinMode(CCGDO2A, OUTPUT);  
+    pinMode(CC1101_CCGDO0A, OUTPUT);  
 
-    mySwitch.enableTransmit(CC1101_CCGDO2A);
+    mySwitch.enableTransmit(CC1101_CCGDO0A);
 }
 
 void CC1101_CLASS::disableTransmit()

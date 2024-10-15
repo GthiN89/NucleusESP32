@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cstring>
 #include "playZero.h"
+#include "modules/RF/CC1101.h"
 
 #define MAX_PATH_LENGTH 256
 
@@ -188,8 +189,15 @@ int getFilteredFileList(const char* directory) {
 }
 
 void load_btn_event_cb(lv_event_t* e) {
+    CC1101_CLASS CC1101;
     Serial.println("Load button clicked.");
     if (strlen(selected_file) > 0) {
+    detachInterrupt(CC1101_CCGDO0A);
+    CC1101.initrRaw();
+    ELECHOUSE_cc1101.setCCMode(0); 
+    ELECHOUSE_cc1101.setPktFormat(3);
+    ELECHOUSE_cc1101.SetTx();
+    pinMode(CC1101_CCGDO0A, OUTPUT);
         Serial.print("Loading file: ");
         Serial.println(selected_file);
         useSelectedFile(selected_file);
@@ -269,28 +277,22 @@ void back_btn_event_cb(lv_event_t* e) {
 
 
 void useSelectedFile(const char* filepath) {
+    SDInit();
     lv_label_set_text(selected_label, "Transmitting");
     String fullPath = String(filepath);
     Serial.print("Using file at path: ");
     Serial.println(fullPath);
 
     if (SD.exists(fullPath.c_str())) {
-        Serial.print("Using file at path: ");
-        Serial.println(fullPath);
-        File flipperFile = SD.open(fullPath);
-        Serial.println("isOpen");
-
-        if (flipperFile) {
-            transmitFlipperFile(fullPath, 1);
-            flipperFile.close();
-        } else {
-            Serial.println("Failed to open file.");
-        }
+        read_sd_card_flipper_file(fullPath.c_str());
+        C1101CurrentState = STATE_SEND_FLIPPER;
+        delay(1000);
     } else {
         Serial.println("File does not exist.");
+        lv_label_set_text(selected_label, "File not found");
+        return;  // Exit if file does not exist
     }
 
+        // Signal transmitted, so let's refresh the screen
     lv_label_set_text(selected_label, "Signal transmitted");
-    SDInit(); 
 }
-
