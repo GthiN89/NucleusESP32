@@ -67,6 +67,15 @@ extern bool C1101LoadPreset;
 extern bool receiverEnabled;
 extern float CC1101_MHZ;
 
+enum BTState
+{
+  STATE_SOUR_APPLE_IDLE,
+  STATE_SOUR_APPLE,
+};
+
+// Current State
+extern uint8_t BTCurrentState;
+
 //////////////////////////////////////////////////////////////////////////
 //FLAGS
 ///////////////////

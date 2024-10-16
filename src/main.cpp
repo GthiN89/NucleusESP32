@@ -18,6 +18,7 @@
 #include "FS.h"
 #include <LittleFS.h>
 #include "SPIFFS.h"
+#include "modules/BLE/SourApple.h"
 
 #define FORMAT_LITTLEFS_IF_FAILED true
 
@@ -138,25 +139,30 @@ void loop() {
     delay(5); // Minimal delay to allow other tasks to run
 
 
-    if(C1101CurrentState == STATE_CAPTURE) {
-        int pinState1 = digitalRead(CC1101_CCGDO0A);
-            Serial.print("CC1101 GDO Pin (CC1101_CCGDO2A) state: ");
-            Serial.println(pinState1 == HIGH ? "HIGH" : "LOW");
-            delay(10);
-            CC1101.captureLoop();
-            C1101CurrentState = STATE_IDLE;
-    }
+    // if(C1101CurrentState == STATE_CAPTURE) {
+    //     int pinState1 = digitalRead(CC1101_CCGDO0A);
+    //         Serial.print("CC1101 GDO Pin (CC1101_CCGDO2A) state: ");
+    //         Serial.println(pinState1 == HIGH ? "HIGH" : "LOW");
+    //         delay(10);
+    //         CC1101.captureLoop();
+    //         C1101CurrentState = STATE_IDLE;
 
-    if(C1101CurrentState == STATE_PULSE_SCAN) {
-        if (CC1101.CheckReceived())
-            {
-              CC1101.getPulseLenghtLoop();
-              CC1101.disableReceiver();
-              delay(10);
-              C1101CurrentState = STATE_IDLE;
-            }
-            delay(1);
-    }
+
+
+
+    // }
+
+    // if(C1101CurrentState == STATE_PULSE_SCAN) {
+    //     if (CC1101.CheckReceived())
+    //         {
+    //           CC1101.getPulseLenghtLoop();
+    //           CC1101.disableReceiver();
+    //           delay(10);
+    //           C1101CurrentState = STATE_IDLE;
+    //         }
+    //         delay(1);
+ 
+    // }
 
     if(C1101CurrentState == STATE_ANALYZER) {
             if (CC1101.CheckReceived())
@@ -172,9 +178,7 @@ void loop() {
 
 
     if(C1101CurrentState == STATE_PLAYBACK) {
-                int pinState1 = digitalRead(CC1101_CCGDO2A);
-            Serial.print("CC1101 GDO Pin (CC1101_CCGDO2A) state: ");
-            Serial.println(pinState1 == HIGH ? "HIGH" : "LOW");
+
       //  CC1101.enableTransmit();
         CC1101.sendCapture();
       //  CC1101.disableTransmit();
@@ -184,7 +188,6 @@ void loop() {
   if (C1101CurrentState == STATE_SEND_FLIPPER)
   {
         if (tempSampleCount % 2 == 0) {
-    Serial.println("Číslo je sudé.");
     } else {
     tempSampleCount++;
     }
@@ -222,6 +225,7 @@ void loop() {
 //    CC1101.sendSamples(sample,tempSampleCount);
    // CC1101.enableTransmit();
    // CC1101.sendSamples(tempSample, tempSampleCount);
+   CC1101.loadPreset();
     CC1101.sendSamples(samplesClean, tempSampleCount);
 
 
@@ -230,6 +234,14 @@ void loop() {
     C1101CurrentState = STATE_IDLE;
 
   }
+
+    if(BTCurrentState == STATE_SOUR_APPLE) {
+        sourApple sa;
+        sa.loop();
+    }
+
+
+
 }
 
 

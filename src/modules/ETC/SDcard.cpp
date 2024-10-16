@@ -2,6 +2,8 @@
 #include "globals.h"
 #include <SD.h>
 #include <SPI.h>
+#include <map>
+#include <string>
 
 SPIClass sd(SDCARD_SPI_HOST);
 
@@ -35,6 +37,19 @@ String disconnectSD() {
 float tempFreq;
 int tempSample[MAX_LENGHT_RAW_ARRAY];
 int tempSampleCount;
+const std::map<CC1101_PRESET, std::string> presetMapping = {
+    {AM270, "FuriHalSubGhzPresetOok270Async"},
+    {AM650, "FuriHalSubGhzPresetOok650Async"},
+    {FM238, "FuriHalSubGhzPreset2FSKDev238Async"},
+    {FM476, "FuriHalSubGhzPreset2FSKDev476Async"},
+    {CUSTOM, "FuriHalSubGhzPresetCustom"}
+};
+
+String line;
+char buf[MAX_LENGHT_RAW_ARRAY];
+char presetValue[MAX_LENGHT_RAW_ARRAY]; // To store the preset value
+
+
 
 bool read_sd_card_flipper_file(String filename)
 {
@@ -78,6 +93,19 @@ bool read_sd_card_flipper_file(String filename)
             {
                 tempFreq = atoi(value) / 1000000.0f;
             }
+
+        if (!strcmp(key, "Preset")) {
+            strncpy(presetValue, value, MAX_LENGHT_RAW_ARRAY - 1); // Store the preset value
+            presetValue[MAX_LENGHT_RAW_ARRAY - 1] = '\0'; // Ensure null termination
+            
+            // Find matching preset in the map
+            for (const auto& pair : presetMapping) {
+                if (strcmp(pair.second.c_str(), presetValue) == 0) {
+                    C1101preset = pair.first;
+                    break;
+                }
+            }
+        }
 
             if (!strcmp(key, "RAW_Data"))
             {

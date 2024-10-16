@@ -603,7 +603,7 @@ void create_c1101_screen(void)
          recievedSubGhz_1 = true;
          lv_obj_t* text_area1; // = ScreenManager::getInstance().getTextArea();
          if (text_area1) {
-             char buffer[32]; 
+             char buffer[16]; 
              Serial.println("Received Value:");
              Serial.println(receivedValue);
              lv_textarea_add_text(text_area1, "Value: ");

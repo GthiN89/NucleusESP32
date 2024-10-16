@@ -21,12 +21,12 @@
 
 #define SAMPLE_SIZE 1024
 
-#define BufferSize 2048
+#define BufferSize 1024
 
 using namespace std;
 
-byte bigrecordingbuffer[2048] = {0};
-long data_to_send[2000];
+byte bigrecordingbuffer[8] = {0};
+//long data_to_send[2000];
 
 int receiverGPIO;
 
@@ -297,6 +297,7 @@ void CC1101_CLASS::loadPreset() {
             CC1101_DEVIATION = 1.58;
             break;
     }
+    Serial.print("preset loaded");
 }
 
 bool CC1101_CLASS::CheckReceived()
@@ -486,85 +487,85 @@ void CC1101_CLASS::initrRaw() {
     ELECHOUSE_cc1101.setPQT(0);             // Preamble quality estimator threshold. The preamble quality estimator increases an internal counter by one each time a bit is received that is different from the previous bit, and decreases the counter by 8 each time a bit is received that is the same as the last bit. A threshold of 4∙PQT for this counter is used to gate sync word detection. When PQT=0 a sync word is always accepted.
 }
 
-bool CC1101_CLASS::captureLoop()
-{
-        if (pulseLenght <= 0) {
-    Serial.println("Invalid pulse length. Cannot proceed with recording.");
-    return false; // or handle the error appropriately
-}
-Serial.print(to_string(pulseLenght).c_str());
-        // detachInterrupt(CC1101_CCGDO0A);
-        // detachInterrupt(CC1101_CCGDO2A);
-      //  byte textbuffer[128];
-        ScreenManager& screenMgr = ScreenManager::getInstance();
-        lv_obj_t * text_area = screenMgr.getTextAreaRCSwitchMethod();
-        // take interval period for samplink
-        // setting = atoi(cmdline);
-        // if (setting>0)
-        // {
-        // setup async mode on CC1101 with GDO0 pin processing
+// bool CC1101_CLASS::captureLoop()
+// {
+//         if (pulseLenght <= 0) {
+//     Serial.println("Invalid pulse length. Cannot proceed with recording.");
+//     return false; // or handle the error appropriately
+// }
+// Serial.print(to_string(pulseLenght).c_str());
+//         // detachInterrupt(CC1101_CCGDO0A);
+//         // detachInterrupt(CC1101_CCGDO2A);
+//       //  byte textbuffer[128];
+//         ScreenManager& screenMgr = ScreenManager::getInstance();
+//         lv_obj_t * text_area = screenMgr.getTextAreaRCSwitchMethod();
+//         // take interval period for samplink
+//         // setting = atoi(cmdline);
+//         // if (setting>0)
+//         // {
+//         // setup async mode on CC1101 with GDO0 pin processing
 
-       // int setting2;
-        ELECHOUSE_cc1101.setCCMode(0); 
-        ELECHOUSE_cc1101.setPktFormat(3);
-        ELECHOUSE_cc1101.SetRx();
+//        // int setting2;
+//         ELECHOUSE_cc1101.setCCMode(0); 
+//         ELECHOUSE_cc1101.setPktFormat(3);
+//         ELECHOUSE_cc1101.SetRx();
 
 
-        //start recording to the buffer with bitbanging of GDO0 pin state
-        Serial.print("Waiting for radio signal to start RAW recording...\n");
-        lv_textarea_set_text(text_area, "Waiting for radio signal...\n");
+//         //start recording to the buffer with bitbanging of GDO0 pin state
+//         Serial.print("Waiting for radio signal to start RAW recording...\n");
+//         lv_textarea_set_text(text_area, "Waiting for radio signal...\n");
 
-        pinMode(CC1101_CCGDO0A, INPUT);
+//         pinMode(CC1101_CCGDO0A, INPUT);
 
-        // this is only for ESP32 boards because they are getting some noise on the beginning
-        //setting2 = digitalRead(CC1101_CCGDO0A);
-        delayMicroseconds(1000);  
+//         // this is only for ESP32 boards because they are getting some noise on the beginning
+//         //setting2 = digitalRead(CC1101_CCGDO0A);
+//         delayMicroseconds(1000);  
 
-        int setting2;
-        // waiting for some data first or serial port signal
-        //while (!Serial.available() ||  (digitalRead(gdo0) == LOW) ); 
-        while ( digitalRead(CC1101_CCGDO0A) == LOW );
+//         int setting2;
+//         // waiting for some data first or serial port signal
+//         //while (!Serial.available() ||  (digitalRead(gdo0) == LOW) ); 
+//         while ( digitalRead(CC1101_CCGDO0A) == LOW );
 
         
-        //start recording to the buffer with bitbanging of GDO0 pin state
-        Serial.print("Starting RAW recording to the buffer...\n");
-        lv_textarea_set_text(text_area, "Starting RAW recording...\n");
-        for (int i=0; i<BufferSize ; i++)  
-           { 
-             byte receivedbyte = 0;
-             for(int j=7; j > -1; j--)  // 8 bits in a byte
-               {
-                 bitWrite(receivedbyte, j, digitalRead(CC1101_CCGDO0A)); // Capture GDO0 state into the byte
-                 delayMicroseconds(pulseLenght);                   // delay for selected sampling interval
-               }; 
-                 // store the output into recording buffer
-             bigrecordingbuffer[i] = receivedbyte;
-           }
-        Serial.print("Recording RAW data complete.\n");
-        lv_textarea_set_text(text_area, "Recording complete.\n");
+//         //start recording to the buffer with bitbanging of GDO0 pin state
+//         Serial.print("Starting RAW recording to the buffer...\n");
+//         lv_textarea_set_text(text_area, "Starting RAW recording...\n");
+//         for (int i=0; i<BufferSize ; i++)  
+//            { 
+//              byte receivedbyte = 0;
+//              for(int j=7; j > -1; j--)  // 8 bits in a byte
+//                {
+//                  bitWrite(receivedbyte, j, digitalRead(CC1101_CCGDO0A)); // Capture GDO0 state into the byte
+//                  delayMicroseconds(pulseLenght);                   // delay for selected sampling interval
+//                }; 
+//                  // store the output into recording buffer
+//              bigrecordingbuffer[i] = receivedbyte;
+//            }
+//         Serial.print("Recording RAW data complete.\n");
+//         lv_textarea_set_text(text_area, "Recording complete.\n");
      
-        C1101CurrentState = STATE_IDLE;
-        ELECHOUSE_cc1101.setSidle();  // Set to idle state
-        ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
+//         C1101CurrentState = STATE_IDLE;
+//         ELECHOUSE_cc1101.setSidle();  // Set to idle state
+//         ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
     
-    // Optionally disable chip select (CS) to fully power down the CC1101
-        digitalWrite(CC1101_CS, HIGH);
-        Serial.print(F("\r\nRecorded RAW data as bit stream:\r\n"));
+//     // Optionally disable chip select (CS) to fully power down the CC1101
+//         digitalWrite(CC1101_CS, HIGH);
+//         Serial.print(F("\r\nRecorded RAW data as bit stream:\r\n"));
 
 
-    //     ELECHOUSE_cc1101.setSidle();  // Set to idle state
-    // ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
+//     //     ELECHOUSE_cc1101.setSidle();  // Set to idle state
+//     // ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
     
-    // // Optionally disable chip select (CS) to fully power down the CC1101
-    // digitalWrite(CC1101_CS, HIGH); 
-            ELECHOUSE_cc1101.setCCMode(1); 
-        ELECHOUSE_cc1101.setPktFormat(0);
-        ELECHOUSE_cc1101.SetRx();
+//     // // Optionally disable chip select (CS) to fully power down the CC1101
+//     // digitalWrite(CC1101_CS, HIGH); 
+//             ELECHOUSE_cc1101.setCCMode(1); 
+//         ELECHOUSE_cc1101.setPktFormat(0);
+//         ELECHOUSE_cc1101.SetRx();
         
-        return true;
-}
+//         return true;
+// }
   
-   //     else { Serial.print(F("Wrong parameters.\r\n")); };
+//    //     else { Serial.print(F("Wrong parameters.\r\n")); };
 
    // 
 void CC1101_CLASS::asciitohex(byte *ascii_ptr, byte *hex_ptr,int len)
@@ -592,7 +593,7 @@ void CC1101_CLASS::asciitohex(byte *ascii_ptr, byte *hex_ptr,int len)
    
 String CC1101_CLASS::generateFilename(float frequency, int modulation, float bandwidth)
 {
-    char filenameBuffer[100];
+    char filenameBuffer[32];
 
     sprintf(filenameBuffer, "%d_%s_%d_%s.sub", static_cast<int>(frequency * 100), modulation == 2 ? "AM" : "FM", static_cast<int>(bandwidth),
             generateRandomString(8).c_str());
@@ -894,7 +895,7 @@ bool CC1101_CLASS::RCmethodResult()
         recievedSubGhz = true;
 
         if (text_are_) {
-            char buffer[32];
+            char buffer[16];
             Serial.println("Received Value:");
             Serial.println(receivedValue);
             lv_textarea_add_text(text_are_, "Value: ");

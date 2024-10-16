@@ -19,6 +19,7 @@
 #include "ELECHOUSE_CC1101_SRC_DRV.h"
 #include "main.h"
 #include "screens/replay.h"
+#include "modules/BLE/SourApple.h"
 using namespace std;
 
 
@@ -31,7 +32,7 @@ lv_obj_t* text_area = screenMgr.getTextArea();
 //ReplayScreen ReplayScr;
 
 char EVENTS::frequency_buffer[10];
-char EVENTS::selected_str[32];  
+char EVENTS::selected_str[16];  
 
 void EVENTS::btn_event_playZero_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -255,6 +256,37 @@ void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
     RFMenuScr.initialize();
 }
 
+ void EVENTS::btn_event_SourApple(lv_event_t * e){
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    screenMgr.createSourAppleScreen();
+    sourApple sa;
+    sa.setup();
+ }
+
+  void EVENTS::btn_event_SourApple_Start(lv_event_t * e){
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    lv_obj_t * ta = screenMgr.getTextAreaSourAple();
+    lv_textarea_set_text(ta, "Running");
+    BTCurrentState = STATE_SOUR_APPLE;
+ }
+
+  void EVENTS::btn_event_SourApple_Stop(lv_event_t * e){
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    lv_obj_t * ta = screenMgr.getTextAreaSourAple();
+    lv_textarea_set_text(ta, "Not running");
+    BTCurrentState = STATE_SOUR_APPLE_IDLE;
+ }
+
+void EVENTS::btn_event_BTTools(lv_event_t * e) {
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    screenMgr.createBTMenu();
+}
+
+void EVENTS::btn_event_mainMenu_run(lv_event_t* e) {
+    MainMenuScreen MainMenuScreen;
+    MainMenuScreen.initialize();
+}
+
 const char* presetStrings[] = {
     "AM650",
     "AM270",
@@ -417,6 +449,7 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     CC1101.setFrequency(freq);
     CC1101.enableReceiver();
     delay(20);
+    CC1101.loadPreset();
 C1101CurrentState = STATE_ANALYZER;
 }
 

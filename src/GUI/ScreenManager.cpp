@@ -20,6 +20,7 @@ ScreenManager &ScreenManager::getInstance()
 // Constructor
 ScreenManager::ScreenManager()
     : ReplayScreen_(nullptr),
+      SourAppleScreen_(nullptr),  
       text_area_(nullptr),
       freqInput_(nullptr),
       settingsButton_(nullptr),
@@ -65,6 +66,11 @@ lv_obj_t *ScreenManager::getTextArea()
 lv_obj_t *ScreenManager::getTextAreaRCSwitchMethod()
 {
     return text_area_;
+}
+
+lv_obj_t *ScreenManager::getTextAreaSourAple()
+{
+    return text_area_SourApple;
 }
 
 lv_obj_t *ScreenManager::getPulseLenghtInput()
@@ -178,6 +184,87 @@ void ScreenManager::createReplayScreen() {
 
 }
 
+void ScreenManager::createSourAppleScreen() {
+    ContainerHelper containerHelper;
+
+    SourAppleScreen_ = lv_obj_create(NULL);
+
+    lv_scr_load(SourAppleScreen_);
+    lv_obj_set_flex_flow(SourAppleScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(SourAppleScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    lv_obj_t * topLabel_container_;
+    containerHelper.createContainer(&topLabel_container_, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
+
+
+    // kb_qwert_ = KeyboardHelper::createKeyboard(SourAppleScreen_, LV_KEYBOARD_MODE_TEXT_LOWER);
+    // kb_freq_ = KeyboardHelper::createKeyboard(SourAppleScreen_, LV_KEYBOARD_MODE_NUMBER);
+    // lv_keyboard_set_textarea(kb_freq_, freqInput_);
+
+
+    // containerHelper.fillTopContainer(topLabel_container_, "Mhz:  ", TEXT_AREA, &freqInput_, "433.92", "433.92", 10, NULL, NULL);
+    // lv_obj_set_size(freqInput_, 70, 30);                   
+    // lv_obj_add_event_cb(freqInput_, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, kb_freq_);
+
+
+    // containerHelper.createContainer(&secondLabel_container_, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    // lv_obj_set_style_border_width(secondLabel_container_, 0, LV_PART_MAIN);
+
+    // lv_obj_t * C1101preset_dropdown_ = lv_dropdown_create(secondLabel_container_);
+    // lv_dropdown_set_options(C1101preset_dropdown_, "AM650\n"
+    //                             "AM270\n"
+    //                             "FM238\n"
+    //                             "FM476\n"
+    //                             "FM95\n"
+    //                             "FM15k\n"
+    //                             "PAGER\n"
+    //                             "HND1\n"
+    //                             "HND2\n"
+    //                             );
+
+    // lv_obj_add_event_cb(C1101preset_dropdown_, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+
+    // buttonSettings_ = lv_btn_create(secondLabel_container_);
+    // lv_obj_set_size(buttonSettings_, 90, 30);
+    // // Create label inside the button, making the button parent of the label
+    // lv_obj_t * labelButton = lv_label_create(buttonSettings_); 
+    // lv_label_set_text(labelButton, "Settings");  // Set label text as the placeholder
+    // lv_obj_center(labelButton);  // Center the label inside the butto
+    // lv_obj_clear_flag(buttonSettings_, LV_OBJ_FLAG_SCROLLABLE); // Double ensure
+    // lv_obj_add_event_cb(buttonSettings_, EVENTS::createRFSettingsScreen, LV_EVENT_CLICKED, NULL);
+
+    // Create main text area
+    text_area_SourApple = lv_textarea_create(SourAppleScreen_);
+    lv_obj_set_size(text_area_SourApple, 240, 140);
+    lv_obj_align(text_area_SourApple, LV_ALIGN_CENTER, 0, -20);
+    lv_textarea_set_text(text_area_SourApple, "Sour Apple\nWill spam BLE devices\nMay cause crash of Apple devices");
+    lv_obj_set_scrollbar_mode(text_area_SourApple, LV_SCROLLBAR_MODE_OFF); 
+    lv_textarea_set_cursor_click_pos(text_area_SourApple, false);
+
+    lv_obj_t *buttonContainer;
+    containerHelper.createContainer(&buttonContainer, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+
+
+    lv_obj_t *listenButton = ButtonHelper::createButton(buttonContainer, "Start");
+    lv_obj_add_event_cb(listenButton, EVENTS::btn_event_SourApple_Start, LV_EVENT_CLICKED, NULL); 
+
+    lv_obj_t *saveButton = ButtonHelper::createButton(buttonContainer, "Stop");
+    lv_obj_add_event_cb(saveButton, EVENTS::btn_event_SourApple_Stop, LV_EVENT_CLICKED, NULL); 
+
+
+    // containerHelper.createContainer(&button_container_RCSwitchMethod2_, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+
+
+    // lv_obj_t *playButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Play");
+    // lv_obj_t *exitButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Exit");
+
+
+    // lv_obj_add_event_cb(playButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, NULL); 
+    // lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
+
+}
+
 
 
 void ScreenManager::createmainMenu()
@@ -192,6 +279,45 @@ void ScreenManager::createmainMenu()
     lv_obj_t *label_subGhz_main = lv_label_create(btn_subGhz_main); /*Add a label to the button*/
     lv_label_set_text(label_subGhz_main, "RF SubGhz Tools");        /*Set the labels text*/
     lv_obj_center(label_subGhz_main);
+
+
+    lv_obj_t *btn_BT_main = lv_btn_create(mainMenu);                                 /*Add a button the current screen*/
+    lv_obj_set_pos(btn_BT_main, 25, 70);                                             /*Set its position*/
+    lv_obj_set_size(btn_BT_main, 150, 50);                                           /*Set its size*/
+    lv_obj_add_event_cb(btn_BT_main, EVENTS::btn_event_BTTools, LV_EVENT_CLICKED, NULL); /*Assign a callback to the button*/
+
+    lv_obj_t *label_BT_main = lv_label_create(btn_BT_main); /*Add a label to the button*/
+    lv_label_set_text(label_BT_main, "BlueTooth");        /*Set the labels text*/
+    lv_obj_center(label_BT_main);
+
+
+}
+
+void ScreenManager::createBTMenu()
+{
+    lv_obj_t *BTMenu = lv_obj_create(NULL);                                            // Create a new screen
+    lv_scr_load(BTMenu);                                                               // Load the new screen, make it active
+    lv_obj_t *btn_BT_main = lv_btn_create(BTMenu);                                 /*Add a button the current screen*/
+    lv_obj_set_pos(btn_BT_main, 25, 10);                                             /*Set its position*/
+    lv_obj_set_size(btn_BT_main, 150, 50);                                           /*Set its size*/
+    lv_obj_add_event_cb(btn_BT_main, EVENTS::btn_event_SourApple, LV_EVENT_CLICKED, NULL); /*Assign a callback to the button*/
+
+    lv_obj_t *label_SourApple_main = lv_label_create(btn_BT_main); /*Add a label to the button*/
+    lv_label_set_text(label_SourApple_main, "Sour Apple");        /*Set the labels text*/
+    lv_obj_center(label_SourApple_main);
+
+
+
+
+       lv_obj_t *btn_c1101Others_menu = lv_btn_create(lv_scr_act());
+    lv_obj_set_pos(btn_c1101Others_menu, 25, 250);
+    lv_obj_set_size(btn_c1101Others_menu, 200, 50);
+
+    lv_obj_t *label_c1101Others_menu = lv_label_create(btn_c1101Others_menu);
+    lv_label_set_text(label_c1101Others_menu, "Back");
+    lv_obj_center(label_c1101Others_menu);
+    lv_obj_add_event_cb(btn_c1101Others_menu, EVENTS::btn_event_mainMenu_run, LV_EVENT_CLICKED, NULL);
+
 }
 
 void ScreenManager::createRFMenu()
@@ -223,7 +349,7 @@ void ScreenManager::createRFMenu()
     lv_obj_add_event_cb(btn_c1101Alanalyzer_menu, EVENTS::btn_event_Replay_run, LV_EVENT_ALL, NULL);
 
     lv_obj_t *label_c1101Alanalyzer_menu = lv_label_create(btn_c1101Alanalyzer_menu);
-    lv_label_set_text(label_c1101Alanalyzer_menu, "rec/play bitbang");
+    lv_label_set_text(label_c1101Alanalyzer_menu, "rec/play");
     lv_obj_center(label_c1101Alanalyzer_menu);
 
 
@@ -232,9 +358,9 @@ void ScreenManager::createRFMenu()
     lv_obj_set_size(btn_c1101Others_menu, 200, 50);
 
     lv_obj_t *label_c1101Others_menu = lv_label_create(btn_c1101Others_menu);
-    lv_label_set_text(label_c1101Others_menu, "Advanced");
+    lv_label_set_text(label_c1101Others_menu, "Back");
     lv_obj_center(label_c1101Others_menu);
-    // lv_obj_add_event_cb(btn_c1101Scan_menu, btn_event_c1101Scanner_run, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(btn_c1101Others_menu, EVENTS::btn_event_mainMenu_run, LV_EVENT_CLICKED, NULL);
 
 }
 

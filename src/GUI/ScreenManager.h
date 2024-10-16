@@ -18,6 +18,8 @@ public:
     void createRFSettingsScreen(); 
     void createSubPlayerScreen();
     void createFileBrowser(lv_obj_t* parent);
+    void createBTMenu();
+    void createSourAppleScreen();
 
     static void btn_event_RFSettings_show(lv_event_t* e);
 
@@ -25,6 +27,7 @@ public:
     lv_obj_t* getFreqInput();  
     lv_obj_t* getTextArea();  
     lv_obj_t* getTextAreaRCSwitchMethod(); 
+    lv_obj_t* getTextAreaSourAple();
     lv_obj_t* getFilenameInput();
     lv_obj_t* getKeyboardFreq();
     lv_obj_t* getPresetDropdown();
@@ -38,6 +41,7 @@ private:
     ~ScreenManager();
 
     lv_obj_t* ReplayScreen_;
+    lv_obj_t* SourAppleScreen_;
     lv_obj_t* text_area_;
     lv_obj_t* freqInput_;
     lv_obj_t* filenameInput_;
@@ -46,6 +50,7 @@ private:
     lv_obj_t* fileName_container_;
     lv_obj_t* topLabel_container_;
     lv_obj_t* text_area_replay;
+    lv_obj_t* text_area_SourApple;
     lv_obj_t* button_container1_;
     lv_obj_t* button_container2_;
     lv_obj_t* button_container_settings;

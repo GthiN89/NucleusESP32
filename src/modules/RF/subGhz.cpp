@@ -52,10 +52,10 @@ bool teslaMenuIsOpen;
 
 
 
-#define MAX_FILE_SIZE 1024 * 1024  // 1MB
-#define BUFFER_SIZE 16 * 1024            // 16KB
+//#define MAX_FILE_SIZE 1024 * 8  // 1MB
+//#define BUFFER_SIZE 8 * 1024            // 16KB
 
-char buffer[BUFFER_SIZE];
+//char buffer[BUFFER_SIZE];
 int bufferIndex = 0;
 
 bool transmitFlipperFile(String filename, bool transmit);
@@ -121,135 +121,135 @@ bool initCC1101() {
 //flipper
 
 bool transmitFlipperFile(String filename, bool transmit) {
-    Serial.println("Entering transmitFlipperFile");
-    Serial.print("Filename: ");
-    Serial.println(filename);
-    Serial.print("Transmit: ");
-    Serial.println(transmit);
+    // Serial.println("Entering transmitFlipperFile");
+    // Serial.print("Filename: ");
+    // Serial.println(filename);
+    // Serial.print("Transmit: ");
+    // Serial.println(transmit);
 
-    // Open the file
-    File flipperFile = SD.open(filename);
-    if (!flipperFile) {
-        Serial.println("Failed to open file");
-        return false;
-    }
+    // // Open the file
+    // File flipperFile = SD.open(filename);
+    // if (!flipperFile) {
+    //     Serial.println("Failed to open file");
+    //     return false;
+    // }
 
-    // Check file size
-    unsigned long fileSize = flipperFile.size();
-    if (fileSize > MAX_FILE_SIZE) {
-        Serial.println("Error: File size too large to process");
-        flipperFile.close();
-        return false;
-    }
+    // // Check file size
+    // unsigned long fileSize = flipperFile.size();
+    // if (fileSize > MAX_FILE_SIZE) {
+    //     Serial.println("Error: File size too large to process");
+    //     flipperFile.close();
+    //     return false;
+    // }
 
-    // Read file content into buffer
-    String command = "";
-    String value = "";
-    int data;
-    char dataChar;
-    bool appendCommand = true;
-    bool breakLoop = false;
-    int samples[512];
-    int currentSample = 0;
+    // // Read file content into buffer
+    // String command = "";
+    // String value = "";
+    // int data;
+    // char dataChar;
+    // bool appendCommand = true;
+    // bool breakLoop = false;
+    // int samples[512];
+    // int currentSample = 0;
 
-    Serial.println("Buffering file data...");
+    // Serial.println("Buffering file data...");
 
-    while ((data = flipperFile.read()) >= 0 && !breakLoop) {
-        dataChar = data;
-        buffer[bufferIndex++] = dataChar;
+    // while ((data = flipperFile.read()) >= 0 && !breakLoop) {
+    //     dataChar = data;
+    //     buffer[bufferIndex++] = dataChar;
 
-        if (bufferIndex >= BUFFER_SIZE) {
-            Serial.println("Buffer full, stopping buffer load.");
-            breakLoop = true;
-        }
+    //     if (bufferIndex >= BUFFER_SIZE) {
+    //         Serial.println("Buffer full, stopping buffer load.");
+    //         breakLoop = true;
+    //     }
 
-        switch (dataChar) {
-            case ':':
-                appendCommand = false;
-                break;
-            case '\n':
-                while (value.startsWith(" ")) {
-                    value = value.substring(1);
-                }
+    //     switch (dataChar) {
+    //         case ':':
+    //             appendCommand = false;
+    //             break;
+    //         case '\n':
+    //             while (value.startsWith(" ")) {
+    //                 value = value.substring(1);
+    //             }
 
-                Serial.println("DUMP:");
-                Serial.println(command + " | " + value);
+    //             Serial.println("DUMP:");
+    //             Serial.println(command + " | " + value);
 
-                if (!transmit) {
-                    handleFlipperCommandLine(command, value);
-                } else {
-                    handleFlipperCommandLine(command, value);
-                    if (command == "RAW_Data" && transmit) {
-                        if (sendSamples(samples, 512)) {
-                            Serial.println("Samples transmitted successfully");
-                        } else {
-                            Serial.println("Sample transmission failed");
-                        }
-                    }
-                }
+    //             if (!transmit) {
+    //                 handleFlipperCommandLine(command, value);
+    //             } else {
+    //                 handleFlipperCommandLine(command, value);
+    //                 if (command == "RAW_Data" && transmit) {
+    //                     if (sendSamples(samples, 512)) {
+    //                         Serial.println("Samples transmitted successfully");
+    //                     } else {
+    //                         Serial.println("Sample transmission failed");
+    //                     }
+    //                 }
+    //             }
 
-                appendCommand = true;
-                command = "";
-                value = "";
-                currentSample = 0;
-                memset(samples, 0, sizeof(samples));
-                break;
-            default:
-                if (appendCommand) {
-                    command += String(dataChar);
-                } else {
-                    value += String(dataChar);
+    //             appendCommand = true;
+    //             command = "";
+    //             value = "";
+    //             currentSample = 0;
+    //             memset(samples, 0, sizeof(samples));
+    //             break;
+    //         default:
+    //             if (appendCommand) {
+    //                 command += String(dataChar);
+    //             } else {
+    //                 value += String(dataChar);
 
-                    if (command == "RAW_Data") {
-                        if (dataChar == ' ') {
-                            value.replace(" ", "");
-                            if (!value.isEmpty()) {
-                                samples[currentSample++] = value.toInt();
-                                value = "";
-                            }
-                        }
-                    }
-                }
-                break;
-        }
-    }
+    //                 if (command == "RAW_Data") {
+    //                     if (dataChar == ' ') {
+    //                         value.replace(" ", "");
+    //                         if (!value.isEmpty()) {
+    //                             samples[currentSample++] = value.toInt();
+    //                             value = "";
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //             break;
+    //     }
+    // }
 
-    if (bufferIndex < BUFFER_SIZE) {
-        Serial.println("File data buffered successfully.");
-    } else {
-        Serial.println("Warning: Buffer was filled before the file was completely read.");
-    }
+    // if (bufferIndex < BUFFER_SIZE) {
+    //     Serial.println("File data buffered successfully.");
+    // } else {
+    //     Serial.println("Warning: Buffer was filled before the file was completely read.");
+    // }
 
-    flipperFile.close();
-
-
-    disconnectSD();
+    // flipperFile.close();
 
 
-    // Initialize CC1101 for transmission after buffering
-    if (transmit) {
-        Serial.println("Re-initializing CC1101 for transmission");
-        if (!initCC1101()) {
-            Serial.println("Failed to initialize CC1101");
-            return false;
-        }
-    }
+    // disconnectSD();
 
-    Serial.println("Starting transmission of buffered data...");
-    for (int i = 0; i < bufferIndex; i++) {
 
-        Serial.write(buffer[i]);
-    }
+    // // Initialize CC1101 for transmission after buffering
+    // if (transmit) {
+    //     Serial.println("Re-initializing CC1101 for transmission");
+    //     if (!initCC1101()) {
+    //         Serial.println("Failed to initialize CC1101");
+    //         return false;
+    //     }
+    // }
 
-    Serial.println("Buffered data transmission completed.");
-     // Reconnect SD card to SPI
-    SPI.begin();
-    if (!SD.begin(MICRO_SD_IO)) {
-        Serial.println("Failed to reinitialize SD card");
-        return false;
-    }
-    Serial.println("SD card reconnected.");
-    return true;
+    // Serial.println("Starting transmission of buffered data...");
+    // for (int i = 0; i < bufferIndex; i++) {
+
+    //     Serial.write(buffer[i]);
+    // }
+
+    // Serial.println("Buffered data transmission completed.");
+    //  // Reconnect SD card to SPI
+    // SPI.begin();
+    // if (!SD.begin(MICRO_SD_IO)) {
+    //     Serial.println("Failed to reinitialize SD card");
+    //     return false;
+    // }
+    // Serial.println("SD card reconnected.");
+    // return true;
 }
 
 bool sendSamples(int samples[], int samplesLength) {
