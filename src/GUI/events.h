@@ -19,7 +19,7 @@ static lv_obj_t* selected_btn;
 static lv_obj_t* container;
 static char selected_file;
 static char frequency_buffer[10];
-static char selected_str[32]; 
+static char selected_str[16]; 
 
 
 
@@ -33,11 +33,16 @@ static void useSelectedFile(const char* filepath);
 static void btn_event_teslaCharger_run(lv_event_t* e);
 static void btn_event_Replay_run(lv_event_t* e);
 static void btn_event_playRecorded_run(lv_event_t* e);
-static void btn_event_c1101Scanner_run(lv_event_t* e);
+static void btn_event_mainMenu_run(lv_event_t* e);
 static void btn_event_RFSettings_show(lv_event_t* e);
 static void createRFSettingsScreen(lv_event_t* e); 
 static void btn_event_RAW_REC_run(lv_event_t* e);
 static void ta_preset_event_cb(lv_event_t * e);
+static void btn_event_BTTools(lv_event_t * e);
+static void btn_event_SourApple(lv_event_t * e);
+static void btn_event_SourApple_Start(lv_event_t * e);
+static void btn_event_SourApple_Stop(lv_event_t * e);
+
 
 // Přidání nových event handlerů
 static void ta_freq_event_cb(lv_event_t * e);

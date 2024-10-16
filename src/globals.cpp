@@ -5,6 +5,7 @@
 
 
 uint8_t C1101CurrentState = STATE_IDLE;
+uint8_t BTCurrentState = STATE_IDLE;
 
 bool C1101LoadPreset = true;
 

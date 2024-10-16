@@ -27,8 +27,8 @@ extern float CC1101_LAST_AVG_RSSI;
 extern int CC1101ScanEn;
 
 // Buffers for Flipper Sub Player
-extern char filebuffer[1024];
-extern char folderbuffer[1024];
+extern char filebuffer[16];
+extern char folderbuffer[32];
 
 //tesla stuff
 extern bool teslaMenuIsOpen;
