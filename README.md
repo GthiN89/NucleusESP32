@@ -10,7 +10,7 @@ Happy Hacking!</br>
 </br>
 have:</br>
 -C1101 raw replay - now work more similar to flipper</br>
--*.sub files player-raw files does work, its possible only AM270 preset</br>
+-*.sub files player-raw files does work, tested for AM270 and AM650</br>
 -Tesla charger open - this works great</br>
 </br>
 planned:
@@ -20,8 +20,16 @@ planned:
 -Bad USB</br>
 -2.4ghz</br>
 -mousejack</br>
-
-<img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/IMG_20240924_193407_DRO.jpg">
+</br>
+Timing tollerance is in about 1-5 micros, "quality" of transmision from .sub is as shown:</br>
+</br>
+AM270:</br>
+<img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/AM270.png"></br>
+</br>
+AM650:</br>
+<img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/AM650.png">
+</br>
+<img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/IMG_20240924_193407_DRO.jpg"></br>
 </br>
 Cheap yellow display, CYD, ESP32-2432S028R, ESP32-2432S028Rv2</br>
 </br>
