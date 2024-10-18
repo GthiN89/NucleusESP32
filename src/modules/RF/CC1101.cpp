@@ -302,7 +302,7 @@ void CC1101_CLASS::loadPreset() {
 
 bool CC1101_CLASS::CheckReceived()
 {
-   delay(1);
+  // delay(1);
   if (samplecount >= minsample && micros()-lastTime >100000){
     return 1;
   }else{
@@ -311,23 +311,125 @@ bool CC1101_CLASS::CheckReceived()
 }
 
 void CC1101_CLASS::signalanalyse(){
+ #define signalstorage 10
+
+  int signalanz=0;
+  int timingdelay[signalstorage];
+  float pulse[signalstorage];
+  long signaltimings[signalstorage*2];
+  int signaltimingscount[signalstorage];
+  long signaltimingssum[signalstorage];
+  long signalsum=0;
+
+  for (int i = 0; i<signalstorage; i++){
+    signaltimings[i*2] = 100000;
+    signaltimings[i*2+1] = 0;
+    signaltimingscount[i] = 0;
+    signaltimingssum[i] = 0;
+  }
+  for (int i = 1; i<samplecount; i++){
+    signalsum+=sample[i];
+  }
+
+  for (int p = 0; p<signalstorage; p++){
+
+  for (int i = 1; i<samplecount; i++){
+    if (p==0){
+      if (sample[i]<signaltimings[p*2]){
+        signaltimings[p*2]=sample[i];
+      }
+    }else{
+      if (sample[i]<signaltimings[p*2] && sample[i]>signaltimings[p*2-1]){
+        signaltimings[p*2]=sample[i];
+      }
+    }
+  }
+
+  for (int i = 1; i<samplecount; i++){
+    if (sample[i]<signaltimings[p*2]+error_toleranz && sample[i]>signaltimings[p*2+1]){
+      signaltimings[p*2+1]=sample[i];
+    }
+  }
+
+  for (int i = 1; i<samplecount; i++){
+    if (sample[i]>=signaltimings[p*2] && sample[i]<=signaltimings[p*2+1]){
+      signaltimingscount[p]++;
+      signaltimingssum[p]+=sample[i];
+    }
+  }
+  }
+  
+  int firstsample = signaltimings[0];
+  
+  signalanz=signalstorage;
+  for (int i = 0; i<signalstorage; i++){
+    if (signaltimingscount[i] == 0){
+      signalanz=i;
+      i=signalstorage;
+    }
+  }
+
+  for (int s=1; s<signalanz; s++){
+  for (int i=0; i<signalanz-s; i++){
+    if (signaltimingscount[i] < signaltimingscount[i+1]){
+      int temp1 = signaltimings[i*2];
+      int temp2 = signaltimings[i*2+1];
+      int temp3 = signaltimingssum[i];
+      int temp4 = signaltimingscount[i];
+      signaltimings[i*2] = signaltimings[(i+1)*2];
+      signaltimings[i*2+1] = signaltimings[(i+1)*2+1];
+      signaltimingssum[i] = signaltimingssum[i+1];
+      signaltimingscount[i] = signaltimingscount[i+1];
+      signaltimings[(i+1)*2] = temp1;
+      signaltimings[(i+1)*2+1] = temp2;
+      signaltimingssum[i+1] = temp3;
+      signaltimingscount[i+1] = temp4;
+    }
+  }
+  }
+
+  for (int i=0; i<signalanz; i++){
+    timingdelay[i] = signaltimingssum[i]/signaltimingscount[i];
+  }
+
+  if (firstsample == sample[1] and firstsample < timingdelay[0]){
+    sample[1] = timingdelay[0];
+  }
+
+    int smoothcount=0;
+  for (int i=1; i<samplecount; i++){
+    float r = (float)sample[i]/timingdelay[0];
+    int calculate = r;
+    r = r-calculate;
+    r*=10;
+    if (r>=5){calculate+=1;}
+    if (calculate>0){
+      samplesmooth[smoothcount] = calculate*timingdelay[0];
+      smoothcount++;
+    }
+  }
+
       ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * textareaRC = screenMgr.getTextArea();
 
     File outputFile;
 
     lv_textarea_set_text(textareaRC, "New RAW signal, Count: ");
-    lv_textarea_add_text(textareaRC, String(samplecount).c_str());
+    lv_textarea_add_text(textareaRC, String(smoothcount).c_str());
     lv_textarea_add_text(textareaRC,"\n");
     String rawString = "";
 
-    for (int i = 0; i < samplecount; i++) {
+    for (int i = 0; i < smoothcount; i++) {
             rawString += (i > 0 ? (i % 2 == 1 ? " -" : " ") : "");
-            rawString += sample[i];
+            rawString += samplesmooth[i];
         }
 
     lv_textarea_add_text(textareaRC, "Capture Complete | Sample: ");
     lv_textarea_add_text(textareaRC, rawString.c_str());
+
+
+
+
 
     FlipperSubFile subFile;
     SD.end();  
@@ -422,11 +524,11 @@ void CC1101_CLASS::sendRaw() {
     Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
 
     Serial.print("Transmitting\n");
-    for (int i = 1; i < samplecount - 1; i += 2)
+    for (int i = 1; i < smoothcount - 1; i += 2)
     {
         // Casting to unsigned long to resolve type mismatch with 0UL
-        unsigned long highTime = max((unsigned long)(sample[i] - 100), 0UL);
-        unsigned long lowTime = max((unsigned long)(sample[i + 1] - 100), 0UL);
+        unsigned long highTime = max((unsigned long)(samplesmooth[i]), 0UL);
+        unsigned long lowTime = max((unsigned long)(samplesmooth[i + 1]), 0UL);
 
         digitalWrite(CC1101_CCGDO0A, HIGH);
         delayMicroseconds(highTime);
@@ -463,28 +565,28 @@ void CC1101_CLASS::initrRaw() {
     ELECHOUSE_cc1101.setGDO0(CC1101_CCGDO0A);         // set lib internal gdo pin (gdo0). Gdo2 not use for this example.
     ELECHOUSE_cc1101.setCCMode(1);          // set config for internal transmission mode. value 0 is for RAW recording/replaying
     ELECHOUSE_cc1101.setModulation(2);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
-    ELECHOUSE_cc1101.setMHZ(CC1101_FREQ);        // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
-    ELECHOUSE_cc1101.setDeviation(47.60);   // Set the Frequency deviation in kHz. Value from 1.58 to 380.85. Default is 47.60 kHz.
-    ELECHOUSE_cc1101.setChannel(0);         // Set the Channelnumber from 0 to 255. Default is cahnnel 0.
-    ELECHOUSE_cc1101.setChsp(199.95);       // The channel spacing is multiplied by the channel number CHAN and added to the base frequency in kHz. Value from 25.39 to 405.45. Default is 199.95 kHz.
-    ELECHOUSE_cc1101.setRxBW(812.50);       // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
-    ELECHOUSE_cc1101.setDRate(9.6);         // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
-    ELECHOUSE_cc1101.setPA(10);             // Set TxPower. The following settings are possible depending on the frequency band.  (-30  -20  -15  -10  -6    0    5    7    10   11   12) Default is max!
-    ELECHOUSE_cc1101.setSyncMode(2);        // Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.
-    ELECHOUSE_cc1101.setSyncWord(211, 145); // Set sync word. Must be the same for the transmitter and receiver. Default is 211,145 (Syncword high, Syncword low)
-    ELECHOUSE_cc1101.setAdrChk(0);          // Controls address check configuration of received packages. 0 = No address check. 1 = Address check, no broadcast. 2 = Address check and 0 (0x00) broadcast. 3 = Address check and 0 (0x00) and 255 (0xFF) broadcast.
-    ELECHOUSE_cc1101.setAddr(0);            // Address used for packet filtration. Optional broadcast addresses are 0 (0x00) and 255 (0xFF).
-    ELECHOUSE_cc1101.setWhiteData(0);       // Turn data whitening on / off. 0 = Whitening off. 1 = Whitening on.
-    ELECHOUSE_cc1101.setPktFormat(0);       // Format of RX and TX data. 0 = Normal mode, use FIFOs for RX and TX. 1 = Synchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins. 2 = Random TX mode; sends random data using PN9 generator. Used for test. Works as normal mode, setting 0 (00), in RX. 3 = Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
-    ELECHOUSE_cc1101.setLengthConfig(1);    // 0 = Fixed packet length mode. 1 = Variable packet length mode. 2 = Infinite packet length mode. 3 = Reserved
-    ELECHOUSE_cc1101.setPacketLength(0);    // Indicates the packet length when fixed packet length mode is enabled. If variable packet length mode is used, this value indicates the maximum packet length allowed.
-    ELECHOUSE_cc1101.setCrc(0);             // 1 = CRC calculation in TX and CRC check in RX enabled. 0 = CRC disabled for TX and RX.
-    ELECHOUSE_cc1101.setCRC_AF(0);          // Enable automatic flush of RX FIFO when CRC is not OK. This requires that only one packet is in the RXIFIFO and that packet length is limited to the RX FIFO size.
-    ELECHOUSE_cc1101.setDcFilterOff(0);     // Disable digital DC blocking filter before demodulator. Only for data rates ≤ 250 kBaud The recommended IF frequency changes when the DC blocking is disabled. 1 = Disable (current optimized). 0 = Enable (better sensitivity).
-    ELECHOUSE_cc1101.setManchester(0);      // Enables Manchester encoding/decoding. 0 = Disable. 1 = Enable.
-    ELECHOUSE_cc1101.setFEC(0);             // Enable Forward Error Correction (FEC) with interleaving for packet payload (Only supported for fixed packet length mode. 0 = Disable. 1 = Enable.
-    ELECHOUSE_cc1101.setPRE(0);             // Sets the minimum number of preamble bytes to be transmitted. Values: 0 : 2, 1 : 3, 2 : 4, 3 : 6, 4 : 8, 5 : 12, 6 : 16, 7 : 24
-    ELECHOUSE_cc1101.setPQT(0);             // Preamble quality estimator threshold. The preamble quality estimator increases an internal counter by one each time a bit is received that is different from the previous bit, and decreases the counter by 8 each time a bit is received that is the same as the last bit. A threshold of 4∙PQT for this counter is used to gate sync word detection. When PQT=0 a sync word is always accepted.
+  //  ELECHOUSE_cc1101.setMHZ(CC1101_FREQ);        // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
+    ELECHOUSE_cc1101.setDeviation(0);   // Set the Frequency deviation in kHz. Value from 1.58 to 380.85. Default is 47.60 kHz.
+   // ELECHOUSE_cc1101.setChannel(0);         // Set the Channelnumber from 0 to 255. Default is cahnnel 0.
+    //ELECHOUSE_cc1101.setChsp(199.95);       // The channel spacing is multiplied by the channel number CHAN and added to the base frequency in kHz. Value from 25.39 to 405.45. Default is 199.95 kHz.
+    //ELECHOUSE_cc1101.setRxBW(812.50);       // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
+    //ELECHOUSE_cc1101.setDRate(9.6);         // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
+   // ELECHOUSE_cc1101.setPA(10);             // Set TxPower. The following settings are possible depending on the frequency band.  (-30  -20  -15  -10  -6    0    5    7    10   11   12) Default is max!
+   // ELECHOUSE_cc1101.setSyncMode(2);        // Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.
+   // ELECHOUSE_cc1101.setSyncWord(211, 145); // Set sync word. Must be the same for the transmitter and receiver. Default is 211,145 (Syncword high, Syncword low)
+   // ELECHOUSE_cc1101.setAdrChk(0);          // Controls address check configuration of received packages. 0 = No address check. 1 = Address check, no broadcast. 2 = Address check and 0 (0x00) broadcast. 3 = Address check and 0 (0x00) and 255 (0xFF) broadcast.
+   // ELECHOUSE_cc1101.setAddr(0);            // Address used for packet filtration. Optional broadcast addresses are 0 (0x00) and 255 (0xFF).
+   // ELECHOUSE_cc1101.setWhiteData(0);       // Turn data whitening on / off. 0 = Whitening off. 1 = Whitening on.
+    // ELECHOUSE_cc1101.setPktFormat(0);       // Format of RX and TX data. 0 = Normal mode, use FIFOs for RX and TX. 1 = Synchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins. 2 = Random TX mode; sends random data using PN9 generator. Used for test. Works as normal mode, setting 0 (00), in RX. 3 = Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
+    // ELECHOUSE_cc1101.setLengthConfig(1);    // 0 = Fixed packet length mode. 1 = Variable packet length mode. 2 = Infinite packet length mode. 3 = Reserved
+    // ELECHOUSE_cc1101.setPacketLength(0);    // Indicates the packet length when fixed packet length mode is enabled. If variable packet length mode is used, this value indicates the maximum packet length allowed.
+    // ELECHOUSE_cc1101.setCrc(0);             // 1 = CRC calculation in TX and CRC check in RX enabled. 0 = CRC disabled for TX and RX.
+    // ELECHOUSE_cc1101.setCRC_AF(0);          // Enable automatic flush of RX FIFO when CRC is not OK. This requires that only one packet is in the RXIFIFO and that packet length is limited to the RX FIFO size.
+    // ELECHOUSE_cc1101.setDcFilterOff(0);     // Disable digital DC blocking filter before demodulator. Only for data rates ≤ 250 kBaud The recommended IF frequency changes when the DC blocking is disabled. 1 = Disable (current optimized). 0 = Enable (better sensitivity).
+    // ELECHOUSE_cc1101.setManchester(0);      // Enables Manchester encoding/decoding. 0 = Disable. 1 = Enable.
+    // ELECHOUSE_cc1101.setFEC(0);             // Enable Forward Error Correction (FEC) with interleaving for packet payload (Only supported for fixed packet length mode. 0 = Disable. 1 = Enable.
+    // ELECHOUSE_cc1101.setPRE(0);             // Sets the minimum number of preamble bytes to be transmitted. Values: 0 : 2, 1 : 3, 2 : 4, 3 : 6, 4 : 8, 5 : 12, 6 : 16, 7 : 24
+    // ELECHOUSE_cc1101.setPQT(0);             // Preamble quality estimator threshold. The preamble quality estimator increases an internal counter by one each time a bit is received that is different from the previous bit, and decreases the counter by 8 each time a bit is received that is the same as the last bit. A threshold of 4∙PQT for this counter is used to gate sync word detection. When PQT=0 a sync word is always accepted.
 }
 
 // bool CC1101_CLASS::captureLoop()
@@ -696,8 +798,8 @@ void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
     for (int i = 1; i < samplesLength - 1; i += 2)
     {
         // Casting to unsigned long to resolve type mismatch with 0UL
-        unsigned long highTime = max((unsigned long)(samples[i] - 100), 0UL);
-        unsigned long lowTime = max((unsigned long)(samples[i + 1] - 100), 0UL);
+        unsigned long highTime = max((unsigned long)(samples[i]), 0UL);
+        unsigned long lowTime = max((unsigned long)(samples[i + 1]), 0UL);
         digitalWrite(CC1101_CCGDO0A, HIGH);
         delayMicroseconds(highTime);
         digitalWrite(CC1101_CCGDO0A, LOW);

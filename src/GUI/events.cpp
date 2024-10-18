@@ -32,7 +32,7 @@ lv_obj_t* text_area = screenMgr.getTextArea();
 //ReplayScreen ReplayScr;
 
 char EVENTS::frequency_buffer[10];
-char EVENTS::selected_str[16];  
+char EVENTS::selected_str[32];  
 
 void EVENTS::btn_event_playZero_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -434,8 +434,8 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     lv_obj_t * ta = screenMgr.getFreqInput();
     strncpy(frequency_buffer, lv_textarea_get_text(ta), sizeof(frequency_buffer) - 1);
     frequency_buffer[sizeof(frequency_buffer) - 1] = '\0'; 
-    C1101CurrentState = STATE_PULSE_SCAN;
-    C1101LoadPreset = true;
+  //  C1101CurrentState = STATE_PULSE_SCAN;
+ //   C1101LoadPreset = true;
 
      float freq = atof(frequency_buffer);
         lv_textarea_set_text(text_area, "Waiting for signal.\n");
@@ -445,11 +445,13 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 //     lv_textarea_add_text(text_area, freq_str);
     // lv_textarea_set_text(text_area, "  " );
  //    lv_textarea_set_text(text_area, String("Capture Started..").c_str());
-
-    CC1101.setFrequency(freq);
-    CC1101.enableReceiver();
-    delay(20);
+    CC1101.init();
+    C1101preset = AM650;
     CC1101.loadPreset();
+    CC1101.enableReceiver();
+    CC1101.setFrequency(freq);
+    delay(20);
+    
 C1101CurrentState = STATE_ANALYZER;
 }
 
