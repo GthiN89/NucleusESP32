@@ -19,7 +19,7 @@ static lv_obj_t* selected_btn;
 static lv_obj_t* container;
 static char selected_file;
 static char frequency_buffer[10];
-static char selected_str[16]; 
+static char selected_str[32]; 
 
 
 

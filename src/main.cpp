@@ -100,16 +100,16 @@ void setup() {
     // Inicializace touch
     init_touch([]() { Serial.println(F("Single touch detected!")); }, []() { Serial.println(F("Double touch detected!")); });
 
-    // Register touch input device with LVGL
+  //  Register touch input device with LVGL
     auto disp = lv_disp_get_default();
     register_touch(disp);
 
-      Serial.print("Initializing CC1101...");
-  if (CC1101.init())
-  {
-    Serial.print("CC1101 initialized.");
-    CC1101_init = true;
-  }
+//       Serial.print("Initializing CC1101...");
+//   if (CC1101.init())
+//   {
+//     Serial.print("CC1101 initialized.");
+//     CC1101_init = true;
+//   }
 
     MainMenuScreen MainMenuScreen;
     MainMenuScreen.initialize(); // Load main menu
@@ -167,7 +167,7 @@ void loop() {
     if(C1101CurrentState == STATE_ANALYZER) {
             if (CC1101.CheckReceived())
             {
-              CC1101.getPulseLenghtLoop();
+              CC1101.signalanalyse();
               CC1101.disableReceiver();
               delay(10);
               C1101CurrentState = STATE_IDLE;
@@ -196,7 +196,7 @@ void loop() {
     Serial.print(String("Send RAW Data, sample count: " + String(tempSampleCount) + String(" | Frequency: ") + String(tempFreq)).c_str());
 
     for (int i = 0; i < tempSampleCount; i++) {
-    samplesClean[i] = 100;
+    samplesClean[i] = 1;
     }
 
         for (int i = 0; i < tempSampleCount; i++) {        
