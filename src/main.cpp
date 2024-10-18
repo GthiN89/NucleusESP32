@@ -187,7 +187,7 @@ void loop() {
 
   if (C1101CurrentState == STATE_SEND_FLIPPER)
   {
-        if (tempSampleCount % 2 == 0) {
+    if (tempSampleCount % 2 == 0) {
     } else {
     tempSampleCount++;
     }

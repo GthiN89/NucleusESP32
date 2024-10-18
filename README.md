@@ -29,7 +29,7 @@ AM270:</br>
 AM650:</br>
 <img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/AM650.PNG">
 </br>
-<img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/IMG_20240924_193407_DRO.jpg"></br>
+<img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/capture times.bmp"></br>
 </br>
 Cheap yellow display, CYD, ESP32-2432S028R, ESP32-2432S028Rv2</br>
 </br>
