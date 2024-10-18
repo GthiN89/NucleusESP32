@@ -24,10 +24,10 @@ planned:
 Timing tollerance is in about 1-5 micros, "quality" of transmision from .sub is as shown:</br>
 </br>
 AM270:</br>
-<img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/AM270.png"></br>
+<img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/AM270.PNG"></br>
 </br>
 AM650:</br>
-<img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/AM650.png">
+<img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/AM650.PNG">
 </br>
 <img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/IMG_20240924_193407_DRO.jpg"></br>
 </br>
