@@ -6,6 +6,8 @@
 #include <cstring>
 #include "playZero.h"
 #include "modules/RF/CC1101.h"
+#include "modules/dataProcessing/SubGHzParser.h"
+#include "modules/dataProcessing/dataProcessing.h"
 
 #define MAX_PATH_LENGTH 256
 
@@ -277,6 +279,11 @@ void back_btn_event_cb(lv_event_t* e) {
 
 
 void useSelectedFile(const char* filepath) {
+    SubGHzParser parser;
+    parser.loadFile(filepath);
+    SubGHzData data = parser.parseContent();
+    parser.printParsedData(data);
+
     SDInit();
     lv_label_set_text(selected_label, "Transmitting");
     String fullPath = String(filepath);
