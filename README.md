@@ -23,6 +23,8 @@ planned:
 </br>
 Timing tollerance is in about 1-5 micros, "quality" of transmision from .sub is as shown:</br>
 </br>
+To build it, pleasse use .pio from archive
+</br>
 AM270:</br>
 <img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/AM270.PNG"></br>
 </br>
