@@ -7,6 +7,13 @@
 uint8_t C1101CurrentState = STATE_IDLE;
 uint8_t BTCurrentState = STATE_IDLE;
 
+char* current_dir;
+char* selected_file;
+lv_obj_t* selected_label;
+lv_obj_t* selected_btn;
+
+
+
 bool C1101LoadPreset = true;
 
 bool receiverEnabled;

@@ -2,7 +2,7 @@
 #define SCREEN_MANAGER_H
 
 #include "lvgl.h"
-#include "settingsButton.h" 
+//#include "settingsButton.h" 
 
 
 class ScreenManager {
@@ -34,6 +34,12 @@ public:
     lv_obj_t* getSyncDropdown();
     lv_obj_t* getPTKDropdown();
     lv_obj_t* getPulseLenghtInput();
+
+    void updateFileList(const char* directory);
+    void useSelectedFile(const char* filepath); 
+
+
+
 
 
 private:
@@ -72,9 +78,11 @@ private:
     lv_obj_t* button_container_RCSwitchMethod2_; 
     lv_obj_t* settingsButton_; 
     lv_obj_t* secondLabel_container_;
+
+    int getFilteredFileList(const char* directory);
+
     
-    char* current_dir;
-    char* selected_file;
+    
 };
 
 #endif 

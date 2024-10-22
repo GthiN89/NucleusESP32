@@ -1,15 +1,15 @@
-#include "replayScreen.h"
+#include "subPlayerScreen.h"
 #include "modules/RF/CC1101.h"
 #include "globals.h"
 
-ReplayScreen::ReplayScreen()
+SubPlayerScreen::SubPlayerScreen()
     : screenManager_(ScreenManager::getInstance()) {
 }
 
-ReplayScreen::~ReplayScreen() {
+SubPlayerScreen::~SubPlayerScreen() {
     // Cleanup pokud je potřeba
 }
 
-void ReplayScreen::initialize() {
+void SubPlayerScreen::initialize() {
     screenManager_.createReplayScreen();
 }

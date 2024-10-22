@@ -4,7 +4,7 @@
 #define EVENTS_H
 
 #include <lvgl.h>
-#include <RCSwitch.h>
+//#include <RCSwitch.h>
 #include "globals.h"
 #include "main.h"
 
@@ -14,12 +14,10 @@ class EVENTS {
 public:
 
 static lv_obj_t* list;
-static lv_obj_t* selected_label;
-static lv_obj_t* selected_btn;
 static lv_obj_t* container;
-static char selected_file;
 static char frequency_buffer[10];
 static char selected_str[32]; 
+
 
 
 
@@ -42,6 +40,10 @@ static void btn_event_BTTools(lv_event_t * e);
 static void btn_event_SourApple(lv_event_t * e);
 static void btn_event_SourApple_Start(lv_event_t * e);
 static void btn_event_SourApple_Stop(lv_event_t * e);
+
+static void load_btn_event_cb_sub(lv_event_t* e);
+static void back_btn_event_cb_sub(lv_event_t* e);
+static void file_btn_event_cb_sub(lv_event_t* e);
 
 
 // Přidání nových event handlerů

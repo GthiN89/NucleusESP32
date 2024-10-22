@@ -89,5 +89,11 @@ typedef void (*TouchCallback)();
 
 CC1101_PRESET convert_str_to_enum(const char * selected_str);
 
+extern char* current_dir;
+extern char* selected_file;
+extern lv_obj_t* selected_label;
+extern lv_obj_t* selected_btn;
+
+
 
 #endif // GLOBALS_H

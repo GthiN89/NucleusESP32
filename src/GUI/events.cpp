@@ -22,6 +22,8 @@
 #include "modules/BLE/SourApple.h"
 using namespace std;
 
+#define MAX_PATH_LENGTH 256
+
 
 
 ScreenManager& screenMgr = ScreenManager::getInstance();
@@ -34,10 +36,12 @@ lv_obj_t* text_area = screenMgr.getTextArea();
 char EVENTS::frequency_buffer[10];
 char EVENTS::selected_str[32];  
 
+
+
 void EVENTS::btn_event_playZero_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-        playZeroScreen();
+        screenMgr.createSubPlayerScreen();
     }
 }
 
@@ -54,7 +58,7 @@ void EVENTS::btn_event_Replay_run(lv_event_t* e) {
 void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-        teslaScreen();
+     //   teslaScreen();
         // Uncomment and use if needed:
         // if (sendTeslaSignal(433.92)) {
         //     teslaSucessFlag = true;
@@ -455,3 +459,90 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 C1101CurrentState = STATE_ANALYZER;
 }
 
+void  EVENTS::back_btn_event_cb_sub(lv_event_t* e) {
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    Serial.println("Back button clicked.");
+
+    char* last_slash = strrchr(current_dir, '/');
+    if (last_slash && last_slash != current_dir) {
+        *last_slash = '\0';  // Remove the last directory from the path
+
+        // Ensure the path ends with '/'
+        last_slash = strrchr(current_dir, '/');
+        if (last_slash) {
+            *(last_slash + 1) = '\0';
+        } else {
+            current_dir[0] = '/';
+            current_dir[1] = '\0';
+        }
+
+        Serial.print("Updated current_dir (after going back): ");
+        Serial.println(current_dir);
+        screenMgr.updateFileList(current_dir);
+    }
+}
+
+void  EVENTS::load_btn_event_cb_sub(lv_event_t* e) {
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    CC1101_CLASS CC1101;
+    Serial.println("Load button clicked.");
+    if (strlen(selected_file) > 0) {
+    detachInterrupt(CC1101_CCGDO0A);
+    CC1101.initrRaw();
+    ELECHOUSE_cc1101.setCCMode(0); 
+    ELECHOUSE_cc1101.setPktFormat(3);
+    ELECHOUSE_cc1101.SetTx();
+    pinMode(CC1101_CCGDO0A, OUTPUT);
+        Serial.print("Loading file: ");
+        Serial.println(selected_file);
+        screenMgr.useSelectedFile(selected_file);
+    } else {
+        Serial.println("No file selected.");
+    }
+}
+
+void EVENTS::file_btn_event_cb_sub(lv_event_t* e) {
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    delay(500);
+    Serial.println("File button clicked.");
+    
+ //   lv_obj_t* btn = lv_event_get_target(e);  // Get the button that was clicked THIS NEED TO FIX
+    const char* file_or_folder_name = (const char*)lv_event_get_user_data(e);  // Get the file/folder name from user data
+
+    Serial.print("File/Folder selected: ");
+    Serial.println(file_or_folder_name);
+
+    if (file_or_folder_name[strlen(file_or_folder_name) - 1] == '/') {  // If it's a folder
+        Serial.println("Detected as a folder.");
+
+        size_t dir_len = strlen(current_dir);
+        size_t item_len = strlen(file_or_folder_name);
+
+        if (dir_len + item_len < MAX_PATH_LENGTH) {
+            // Append folder name to current directory
+            // Ensure that the path is relative to the mount point
+            strcat(current_dir, file_or_folder_name);
+            Serial.print("Updated current_dir (after entering folder): ");
+            Serial.println(current_dir);
+            size_t length = strlen(current_dir);
+            screenMgr.updateFileList(std::string(current_dir, length - 1).c_str());
+        } else {
+            Serial.println("Directory path too long, can't navigate.");
+        }
+    } else {  // If it's a file
+        Serial.println("Detected as a file.");
+
+        if (selected_btn) {
+            lv_obj_set_style_bg_color(selected_btn, lv_color_white(), 0);  // Reset previous selection
+            Serial.println("Reset previous selection.");
+        }
+       // selected_btn = btn;
+     //   lv_obj_set_style_bg_color(selected_btn, lv_color_hex(0x88DD88), 0);  // Highlight selected file
+        Serial.println("Highlighted selected file.");
+
+        snprintf(selected_file, MAX_PATH_LENGTH, "%s%s", current_dir, file_or_folder_name);
+        lv_label_set_text_fmt(selected_label, "Selected: %s", file_or_folder_name);
+        Serial.print("Updated selected_file: ");
+        Serial.println(selected_file);
+    }
+}
