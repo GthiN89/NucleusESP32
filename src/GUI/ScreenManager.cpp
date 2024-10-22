@@ -4,11 +4,29 @@
 #include "ButtonHelper.h"
 #include "globals.h"
 #include "events.h"
-#include "settingsButton.h"
+//#include "settingsButton.h"
 #include "FS.h"
-#include "fileBrowserHelper.h"
+#//include "fileBrowserHelper.h"
+#include "modules/ETC/SDcard.h"
+#include "modules/dataProcessing/SubGHzParser.h"
+#include "modules/dataProcessing/dataProcessing.h"
+
+
+
+#define MAX_PATH_LENGTH 256
 
 EVENTS events;
+
+
+
+char** file_list;  // Array of strings for file names
+int file_count = 0;
+lv_obj_t* list;
+
+const char* pathBUffer;
+
+lv_obj_t* previous_screen = NULL;  // To store the previous screen
+
 
 // Singleton instance management
 ScreenManager &ScreenManager::getInstance()
@@ -410,28 +428,41 @@ void ScreenManager::createRFSettingsScreen()
 }
 
 void ScreenManager::createSubPlayerScreen() {
-    ContainerHelper containerHelper;
-
-    lv_obj_t *SubPlayerScreen_ = lv_obj_create(NULL);
-
-    lv_scr_load(SubPlayerScreen_);
+Serial.println("Initializing playZeroScreen...");
     
-    ScreenManager::createFileBrowser(SubPlayerScreen_);
+    SDInit();
+    
+    // Initialize dynamic memory
+    current_dir = new char[MAX_PATH_LENGTH];
+    strcpy(current_dir, "/");
+    Serial.print("Initialized current_dir: ");
+    Serial.println(current_dir);
+    
+    selected_file = new char[MAX_PATH_LENGTH];
+    Serial.println("Initialized selected_file.");
+
+    file_list = nullptr;  // Initially, no files are allocated
+    Serial.println("file_list set to nullptr.");
+    
+    // Store the current screen before switching
+    previous_screen = lv_scr_act();
+
+    // Create a new screen
+    lv_obj_t* new_screen = lv_obj_create(NULL);  // Create a new screen
+    lv_scr_load(new_screen);  // Load the new screen to clear the previous screen
+
+    createFileBrowser(new_screen);  // Create the file browser on the new screen
+    Serial.println("Created file browser on new screen.");
+    
+    ScreenManager::createFileBrowser(new_screen);
 }
 
 void ScreenManager::createFileBrowser(lv_obj_t* parent) {
     
-    FileBrowserHelper fileBrowserHelper;
+       Serial.println("Setting up file browser...");
 
-    char** file_list;  // Array of strings for file names
-    int file_count = 0;
-    lv_obj_t* list;
-    lv_obj_t* selected_label;
-    lv_obj_t* selected_btn = NULL;
-    File flipperFile;
- 
     lv_obj_set_flex_flow(parent, LV_FLEX_FLOW_COLUMN);
-    fileBrowserHelper.updateFileList(current_dir);  // Update the list with files and folders
+    ScreenManager::updateFileList(current_dir);  // Update the list with files and folders
 
     // Label to show selected file
     selected_label = lv_label_create(parent);
@@ -444,18 +475,143 @@ void ScreenManager::createFileBrowser(lv_obj_t* parent) {
     lv_obj_set_size(button_container, LV_PCT(100), 50); // Set container width to 100% of the parent and height to 50px
     lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW); // Arrange children in a row
     lv_obj_set_flex_align(button_container, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER); // Align buttons in the container
+    lv_obj_clear_flag(button_container, LV_OBJ_FLAG_SCROLLABLE); // Double ensure
+
 
  // Button to load the selected file
     lv_obj_t* load_btn = lv_btn_create(button_container);
-    lv_obj_add_event_cb(load_btn, FileBrowserHelper::load_btn_event_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(load_btn, EVENTS::load_btn_event_cb_sub, LV_EVENT_CLICKED, NULL);
     lv_obj_t* label = lv_label_create(load_btn);
     lv_label_set_text(label, "Load File");
 
     // Back button for navigating to the parent directory
     lv_obj_t* back_btn = lv_btn_create(button_container);
-    lv_obj_add_event_cb(back_btn, FileBrowserHelper::back_btn_event_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(back_btn, EVENTS::back_btn_event_cb_sub, LV_EVENT_CLICKED, NULL);
     lv_obj_t* back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, LV_SYMBOL_LEFT "Back");
+
+    Serial.println("File browser setup complete.");
 }
+
+
+void ScreenManager::updateFileList(const char* directory) {
+    Serial.print("Updating file list for directory: ");
+    Serial.println(directory);
+
+    if (list == NULL) {
+        list = lv_list_create(lv_scr_act());  // Create list on the current active screen
+        lv_obj_set_size(list, 240, 240);
+        Serial.println("Created new list object.");
+    } else {
+        lv_obj_clean(list);  // Clear the existing buttons
+        Serial.println("Cleared existing list.");
+    }
+
+    // Get the list of files and folders
+    file_count = ScreenManager::getFilteredFileList(directory);
+    Serial.print("File count: ");
+    Serial.println(file_count);
+
+    // Populate the list with file names
+    if (file_count > 0) {
+        for (int i = 0; i < file_count; i++) {
+            lv_obj_t* btn = lv_list_add_btn(list, 
+                            file_list[i][strlen(file_list[i]) - 1] == '/' ? LV_SYMBOL_DIRECTORY : LV_SYMBOL_FILE, 
+                            file_list[i]);
+            lv_obj_set_user_data(btn, (void*)i);  // Store the file index in user data
+            lv_obj_add_event_cb(btn, EVENTS::file_btn_event_cb_sub, LV_EVENT_CLICKED, file_list[i]);
+            Serial.print("Added button for file: ");
+            Serial.println(file_list[i]);
+        }
+    } else {
+        Serial.println("No files or folders found.");
+    }
+}
+
+
+int ScreenManager::getFilteredFileList(const char* directory) {
+    Serial.print("Opening directory: ");
+    Serial.println(directory);
+
+    File dir = SD.open(directory);
+    if (!dir) {
+        Serial.print("Failed to open directory: ");
+        Serial.println(directory);
+        return 0;
+    }
+
+    int count = 0;
+    while (true) {
+        File entry = dir.openNextFile();
+        if (!entry) {
+            break; 
+        }
+        count++;
+        entry.close();
+    }
+    Serial.print("Number of entries found: ");
+    Serial.println(count);
+
+    // Allocate memory for file_list after counting files
+    file_list = new char*[count];
+
+    dir.rewindDirectory();  // Reset directory reading to the start
+
+    count = 0;
+    while (true) {
+        File entry = dir.openNextFile();
+        if (!entry) {
+            break;
+        }
+
+        int name_length = strlen(entry.name()) + (entry.isDirectory() ? 2 : 1); // Account for "/" if directory
+        file_list[count] = new char[name_length];
+        if (entry.isDirectory()) {
+            snprintf(file_list[count], name_length, "%s/", entry.name());
+        } else {
+            snprintf(file_list[count], name_length, "%s", entry.name());
+        }
+        Serial.print("Added entry to file_list[");
+        Serial.print(count);
+        Serial.print("]: ");
+        Serial.println(file_list[count]);
+
+        count++;
+        entry.close();
+    }
+
+    dir.close();
+    Serial.println("Directory closed.");
+    return count;
+}
+
+
+
+void ScreenManager::useSelectedFile(const char* filepath) {
+    SubGHzParser parser;
+    parser.loadFile(filepath);
+    SubGHzData data = parser.parseContent();
+    parser.printParsedData(data);
+
+    SDInit();
+    lv_label_set_text(selected_label, "Transmitting");
+    String fullPath = String(filepath);
+    Serial.print("Using file at path: ");
+    Serial.println(fullPath);
+
+    if (SD.exists(fullPath.c_str())) {
+        read_sd_card_flipper_file(fullPath.c_str());
+        C1101CurrentState = STATE_SEND_FLIPPER;
+        delay(1000);
+    } else {
+        Serial.println("File does not exist.");
+        lv_label_set_text(selected_label, "File not found");
+        return;  // Exit if file does not exist
+    }
+
+        // Signal transmitted, so let's refresh the screen
+    lv_label_set_text(selected_label, "Signal transmitted");
+}
+
 
 
