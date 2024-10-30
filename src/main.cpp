@@ -19,6 +19,7 @@
 #include <LittleFS.h>
 #include "SPIFFS.h"
 #include "modules/BLE/SourApple.h"
+#include "modules/BLE/BLESpam.h"
 
 #define FORMAT_LITTLEFS_IF_FAILED true
 
@@ -114,18 +115,18 @@ void setup() {
     MainMenuScreen MainMenuScreen;
     MainMenuScreen.initialize(); // Load main menu
 
-//       Serial.print("Initializing CC1101...");
+      Serial.print("Initializing CC1101...");
 
-//   if (CC1101.init())
-//   {
-//     Serial.print("CC1101 initialized.");
-//     CC1101_is_initialized = true;
-//   }
-//   else
-//   {
-//     Serial.print("CC1101 not initialized.");
-//   }
-//     // Inicializace RF Modules
+  if (CC1101.init())
+  {
+    Serial.print("CC1101 initialized.");
+    CC1101_is_initialized = true;
+  }
+  else
+  {
+    Serial.print("CC1101 not initialized.");
+  }
+    // Inicializace RF Modules
    
   
 //     // Připojení Interrupt Handler
@@ -180,7 +181,7 @@ void loop() {
     if(C1101CurrentState == STATE_PLAYBACK) {
 
       //  CC1101.enableTransmit();
-        CC1101.sendCapture();
+        CC1101.sendRaw();
       //  CC1101.disableTransmit();
       C1101CurrentState = STATE_IDLE;
     };
@@ -238,8 +239,12 @@ void loop() {
     if(BTCurrentState == STATE_SOUR_APPLE) {
         sourApple sa;
         sa.loop();
-    }
+    } 
 
+    if(BTCurrentState == STATE_BT_IDDLE) {
+        BLESpam spam;
+        spam.aj_adv(SpamDevice);
+    }
 
 
 }

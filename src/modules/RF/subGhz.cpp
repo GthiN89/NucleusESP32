@@ -94,15 +94,12 @@ bool initCC1101() {
     Serial.println("Initializing CC1101");
     ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
     ELECHOUSE_cc1101.Init();
-    ELECHOUSE_cc1101.setGDO(CCGDO0A, CCGDO2A);
+    ELECHOUSE_cc1101.setGDO0(CCGDO0A);
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ_);
     ELECHOUSE_cc1101.setPA(12);
     if (CC1101_TX_) {
         ELECHOUSE_cc1101.SetTx();
         pinMode(CCGDO0A, OUTPUT);  
-    } else {
-        ELECHOUSE_cc1101.SetRx();
-        pinMode(CCGDO2A, INPUT);  
     }
     ELECHOUSE_cc1101.setModulation(CC1101_MODULATION_);
     ELECHOUSE_cc1101.setDRate(CC1101_DRATE);

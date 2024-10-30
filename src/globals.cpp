@@ -12,6 +12,8 @@ char* selected_file;
 lv_obj_t* selected_label;
 lv_obj_t* selected_btn;
 
+CC1101_PRESET C1101preset = AM650;
+
 
 
 bool C1101LoadPreset = true;
@@ -47,4 +49,19 @@ CC1101_PRESET convert_str_to_enum(const char * selected_str) {
     else if (strcmp(selected_str, "HND1") == 0) return HND1;
     else if (strcmp(selected_str, "HND2") == 0) return HND2;
     else return CUSTOM;  // Default to CUSTOM if no match is found
+}
+
+const char* presetToString(CC1101_PRESET preset) {
+    switch (preset) {
+        case AM650: return "AM650";
+        case AM270: return "AM270";
+        case FM238: return "FM238";
+        case FM476: return "FM476";
+        case FM95:  return "FM95";
+        case FM15k: return "FM15k";
+        case PAGER: return "PAGER";
+        case HND1:  return "HND1";
+        case HND2:  return "HND2";
+        default:    return "Unknown";
+    }
 }

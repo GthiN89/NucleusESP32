@@ -26,6 +26,22 @@ bool SDInit() {
     }
 }
 
+bool  deleteFile(const char *path) {
+    if (SD.exists(path)) {
+        if (SD.remove(path)) {
+            Serial.println("File deleted successfully");
+            return true;
+        } else {
+            Serial.println("File deletion failed");
+            return false;
+        }
+    } else {
+        Serial.println("File doesn't exist");
+        return false;
+    }
+}
+
+
 String disconnectSD() {
     SPI.endTransaction();
     digitalWrite(SDCARD_CS, HIGH);  

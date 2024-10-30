@@ -16,6 +16,7 @@
 #include <string> 
 #include "../../../../NucleusESP32/src/GUI/events.h"
 #include "../ETC/SDcard.h"
+#include "flipper_configs.hpp"
 
 
 
@@ -47,7 +48,7 @@ String transmit = "";
 String rawString;
 
 
-CC1101_PRESET C1101preset = AM650;
+
 int CC1101_PKT_FORMAT = 0;
 
 int CC1101_MODULATION = 2;
@@ -155,11 +156,11 @@ void CC1101_CLASS::enableReceiver()
                                                       // 2 = Random TX mode; sends random data using PN9 generator. Used for test. Works as normal mode, setting 0 (00), in RX.
                                                       // 3 = Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
                                                       // ELECHOUSE_cc1101.setSyncMode(3);       
-    ELECHOUSE_cc1101.setModulation(CC1101_MODULATION); // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
+    //ELECHOUSE_cc1101.setModulation(CC1101_MODULATION); // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);               // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
-    ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
+    //ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
     ELECHOUSE_cc1101.setDRate(CC1101_DRATE); // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
-    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
+    //ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
     
     pinMode(CC1101_CCGDO0A, INPUT);
     receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO0A);    
@@ -229,31 +230,50 @@ void CC1101_CLASS::disableReceiver()
     digitalWrite(CC1101_CS, HIGH);  
 }
 
+
 void CC1101_CLASS::loadPreset() {
+    int i = 0;
     switch (C1101preset) {
         case AM650:
             CC1101_MODULATION = 2;
             CC1101_DRATE = 3.79372;
             CC1101_RX_BW = 650.00;
             CC1101_DEVIATION = 1.58;
-            break;
+
+            // while (subghz_device_cc1101_preset_ook_650khz_async_regs[i] != 0) {
+            //     ELECHOUSE_cc1101.SpiWriteReg(subghz_device_cc1101_preset_ook_650khz_async_regs[i], subghz_device_cc1101_preset_ook_650khz_async_regs[i + 1]);
+            //     i += 2;
+            // }
+            // break;
         case AM270:
             CC1101_MODULATION = 2;
             CC1101_DRATE = 3.79372;
             CC1101_RX_BW = 270.833333;
             CC1101_DEVIATION = 1.58;
+            // while (subghz_device_cc1101_preset_ook_270khz_async_regs[i] != 0) {
+            //     ELECHOUSE_cc1101.SpiWriteReg(subghz_device_cc1101_preset_ook_270khz_async_regs[i], subghz_device_cc1101_preset_ook_270khz_async_regs[i + 1]);
+            //     i += 2;
+            // }
             break;
         case FM238:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 4.79794;
             CC1101_RX_BW = 270.833333;
             CC1101_DEVIATION = 2.380371;
+            // while (subghz_device_cc1101_preset_2fsk_dev2_38khz_async_regs[i] != 0) {
+            //     ELECHOUSE_cc1101.SpiWriteReg(subghz_device_cc1101_preset_2fsk_dev2_38khz_async_regs[i], subghz_device_cc1101_preset_2fsk_dev2_38khz_async_regs[i + 1]);
+            //     i += 2;
+            // }
             break;
         case FM476:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 4.79794;
             CC1101_RX_BW = 270.833333;
             CC1101_DEVIATION = 47.60742;
+            // while (subghz_device_cc1101_preset_2fsk_dev47_6khz_async_regs[i] != 0) {
+            //     ELECHOUSE_cc1101.SpiWriteReg(subghz_device_cc1101_preset_2fsk_dev47_6khz_async_regs[i], subghz_device_cc1101_preset_2fsk_dev47_6khz_async_regs[i + 1]);
+            //     i += 2;
+            // }
             break;
         case FM95:
             CC1101_MODULATION = 0;
@@ -261,7 +281,11 @@ void CC1101_CLASS::loadPreset() {
             CC1101_RX_BW = 270;
             CC1101_DEVIATION = 9.521;
             CC1101_SYNC_MODE = 6;
-            break;
+            // while (subghz_device_cc1101_preset_msk_99_97kb_async_regs[i] != 0) {
+            //     ELECHOUSE_cc1101.SpiWriteReg(subghz_device_cc1101_preset_msk_99_97kb_async_regs[i], subghz_device_cc1101_preset_msk_99_97kb_async_regs[i + 1]);
+            //     i += 2;
+            // }
+            // break;
         case FM15k:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 3.794;
@@ -293,10 +317,15 @@ void CC1101_CLASS::loadPreset() {
         default:
             CC1101_MODULATION = 2;
             CC1101_DRATE = 3.79372;
-            CC1101_RX_BW = 270.833333;
+            CC1101_RX_BW = 650.00;
             CC1101_DEVIATION = 1.58;
             break;
     }
+
+    ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);
+    ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
+    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);
+    ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
     Serial.print("preset loaded");
 }
 
@@ -508,8 +537,6 @@ bool CC1101_CLASS::saveToSD() {
 }
 
 
-
-
 void CC1101_CLASS::sendRaw() {
     detachInterrupt(CC1101_CCGDO0A);
     ScreenManager& screenMgr = ScreenManager::getInstance();
@@ -546,25 +573,16 @@ void CC1101_CLASS::sendRaw() {
     disableTransmit();
 }
 
-
-bool CC1101_CLASS::getPulseLenghtLoop() {
-    CC1101_CLASS::signalanalyse();
-    ScreenManager& screenMgr = ScreenManager::getInstance();
-    return true;
-}
-
-
 void CC1101_CLASS::initrRaw() {
   Serial.print("Init CC1101 raw");
    // initializing library with custom pins selected
      ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
-     ELECHOUSE_cc1101.setGDO(CC1101_CCGDO0A, CC1101_CCGDO2A);
 
     // Main part to tune CC1101 with proper frequency, modulation and encoding    
     ELECHOUSE_cc1101.Init();                // must be set to initialize the cc1101!
     ELECHOUSE_cc1101.setGDO0(CC1101_CCGDO0A);         // set lib internal gdo pin (gdo0). Gdo2 not use for this example.
-    ELECHOUSE_cc1101.setCCMode(1);          // set config for internal transmission mode. value 0 is for RAW recording/replaying
-    ELECHOUSE_cc1101.setModulation(2);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
+    ELECHOUSE_cc1101.setCCMode(0);          // set config for internal transmission mode. value 0 is for RAW recording/replaying
+    ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
   //  ELECHOUSE_cc1101.setMHZ(CC1101_FREQ);        // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
     ELECHOUSE_cc1101.setDeviation(0);   // Set the Frequency deviation in kHz. Value from 1.58 to 380.85. Default is 47.60 kHz.
    // ELECHOUSE_cc1101.setChannel(0);         // Set the Channelnumber from 0 to 255. Default is cahnnel 0.
@@ -697,7 +715,7 @@ String CC1101_CLASS::generateFilename(float frequency, int modulation, float ban
 {
     char filenameBuffer[32];
 
-    sprintf(filenameBuffer, "%d_%s_%d_%s.sub", static_cast<int>(frequency * 100), modulation == 2 ? "AM" : "FM", static_cast<int>(bandwidth),
+    sprintf(filenameBuffer, "%d_%s_%s.sub", static_cast<int>(frequency * 100), presetToString(C1101preset),
             generateRandomString(8).c_str());
 
     return String(filenameBuffer);
@@ -721,55 +739,55 @@ String CC1101_CLASS::generateRandomString(int length)
 
 bool CC1101_CLASS::sendCapture()
 {
-  Serial.print("\n----------------");
-  Serial.print(to_string(pulseLenght).c_str());
-  Serial.print("----------------\n");
+//   Serial.print("\n----------------");
+//   Serial.print(to_string(pulseLenght).c_str());
+//   Serial.print("----------------\n");
 
-        ScreenManager& screenMgr = ScreenManager::getInstance();
-        lv_obj_t * text_area = screenMgr.getTextAreaRCSwitchMethod();
-        // take interval period for sampling
-        // setup async mode on CC1101 and go into TX mode
-        // with GDO0 pin
-        if (pulseLenght <= 0) {
-    Serial.println("Invalid pulse length. Cannot proceed with transmission.");
-    return false;
-}
-        CC1101_CLASS::initrRaw();
-        ELECHOUSE_cc1101.setCCMode(0); 
-        ELECHOUSE_cc1101.setPktFormat(3);
-        ELECHOUSE_cc1101.SetTx();
-        ELECHOUSE_cc1101.setPA(12);
-        pinMode(CC1101_CCGDO0A, OUTPUT);
-        //start replaying GDO0 bit state from data in the buffer with bitbanging 
-        Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
-        lv_textarea_set_text(text_area, "Replaying RAW data from the buffer...\n");
+//         ScreenManager& screenMgr = ScreenManager::getInstance();
+//         lv_obj_t * text_area = screenMgr.getTextAreaRCSwitchMethod();
+//         // take interval period for sampling
+//         // setup async mode on CC1101 and go into TX mode
+//         // with GDO0 pin
+//         if (pulseLenght <= 0) {
+//     Serial.println("Invalid pulse length. Cannot proceed with transmission.");
+//     return false;
+// }
+//         CC1101_CLASS::initrRaw();
+//         ELECHOUSE_cc1101.setCCMode(0); 
+//         ELECHOUSE_cc1101.setPktFormat(3);
+//         ELECHOUSE_cc1101.SetTx();
+//         ELECHOUSE_cc1101.setPA(12);
+//         pinMode(CC1101_CCGDO0A, OUTPUT);
+//         //start replaying GDO0 bit state from data in the buffer with bitbanging 
+//         Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
+//         lv_textarea_set_text(text_area, "Replaying RAW data from the buffer...\n");
        
         
 
         
-        for (int i=1; i<BufferSize ; i++)  
-           { 
-             byte receivedbyte = bigrecordingbuffer[i];
-             for(int j=7; j > -1; j--)  // 8 bits in a byte
-               {
-                 digitalWrite(CC1101_CCGDO0A, bitRead(receivedbyte, j)); // Set GDO0 according to recorded byte
-                 delayMicroseconds(pulseLenght);                      // delay for selected sampling interval
-               }; 
-           }
+//         for (int i=1; i<BufferSize ; i++)  
+//            { 
+//              byte receivedbyte = bigrecordingbuffer[i];
+//              for(int j=7; j > -1; j--)  // 8 bits in a byte
+//                {
+//                  digitalWrite(CC1101_CCGDO0A, bitRead(receivedbyte, j)); // Set GDO0 according to recorded byte
+//                  delayMicroseconds(pulseLenght);                      // delay for selected sampling interval
+//                }; 
+//            }
 
         
-        Serial.print(F("\r\nReplaying RAW data complete.\r\n\r\n"));
-        lv_textarea_set_text(text_area, "Replaying RAW data complete.\n");
-        ELECHOUSE_cc1101.setSidle(); 
-            ELECHOUSE_cc1101.setSidle();  // Set to idle state
-    ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
+//         Serial.print(F("\r\nReplaying RAW data complete.\r\n\r\n"));
+//         lv_textarea_set_text(text_area, "Replaying RAW data complete.\n");
+//         ELECHOUSE_cc1101.setSidle(); 
+//             ELECHOUSE_cc1101.setSidle();  // Set to idle state
+//     ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
     
-    // Optionally disable chip select (CS) to fully power down the CC1101
-    digitalWrite(CC1101_CS, HIGH); 
-        // setting normal pkt format again
+//     // Optionally disable chip select (CS) to fully power down the CC1101
+//     digitalWrite(CC1101_CS, HIGH); 
+//         // setting normal pkt format again
     
-        // pinMode(gdo0pin, INPUT);   
-        return true; 
+//         // pinMode(gdo0pin, INPUT);   
+//         return true; 
 }
 
 // ---------------------------------------------------------------------
@@ -1031,3 +1049,64 @@ void CC1101_CLASS::ResetRCSwitch()
     mySwitch.resetAvailable();
 }
 
+void CC1101_CLASS::sendBrute(int type) {
+    #include "../RFBrute/came12bit.h"
+    #include "../RFBrute/czech_bell_6bit.h"
+    disconnectSD();
+    digitalWrite(SDCARD_CS, HIGH);
+    digitalWrite(CC1101_CS, LOW);
+    CC1101_CLASS::initrRaw();
+    pinMode(CC1101_CCGDO0A, OUTPUT);
+    ELECHOUSE_cc1101.setCCMode(0); 
+    ELECHOUSE_cc1101.setPktFormat(3);
+    ELECHOUSE_cc1101.SetTx();
+
+
+    // types:
+    // 1 - czech bell (6-bit combinations)
+    // 2 - came 12-bit combinations
+    int count6 = 64;  
+    int count12 = 4096;  
+    int i = 0;  
+    switch (type) {
+        case 1:
+            i = 0; 
+            while (i < count6)  
+            {
+                int j = 0;
+                while (i < 6) {
+                    if((int)binary_combinations_czech_bell[i][j] == 1) {
+                        unsigned long highTime = 820;
+                        unsigned long lowTime = 420;
+                        digitalWrite(CC1101_CCGDO0A, HIGH);
+                        delayMicroseconds(highTime);
+                        digitalWrite(CC1101_CCGDO0A, LOW);
+                        delayMicroseconds(lowTime);
+                } else {
+                        unsigned long highTime = 1;
+                        unsigned long lowTime = 820 + 420;
+                        digitalWrite(CC1101_CCGDO0A, HIGH);
+                        delayMicroseconds(highTime);
+                        digitalWrite(CC1101_CCGDO0A, LOW);
+                        delayMicroseconds(lowTime);
+                }
+                        digitalWrite(CC1101_CCGDO0A, LOW);
+                        delayMicroseconds(900);
+                }
+            i++;  
+            }
+            break;
+        case 2:
+            while (i < count12)  
+            {
+               // ELECHOUSE_cc1101.SendData((char*)binary_combinations_came_12bit[i], 12);
+               // i++;  
+            }
+            break;
+        default:
+            break;
+    }
+
+    delay(20);
+    digitalWrite(CC1101_CCGDO0A, LOW); 
+}

@@ -30,5 +30,6 @@ extern int tempSampleCount;
 bool SDInit();        // Function to initialize the SD card
 String disconnectSD();// Function to disconnect the SD card
 bool read_sd_card_flipper_file(String filename);
+bool  deleteFile(const char *path);
 
 #endif // SDCARD_H
