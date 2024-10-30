@@ -42,8 +42,6 @@ ScreenManager::ScreenManager()
       BTSpamScreen_(nullptr),   
       text_area_(nullptr),
       freqInput_(nullptr),
-      settingsButton_(nullptr),
-      filenameInput_(nullptr),
       kb_freq_(nullptr),
       kb_qwert_(nullptr),
       fileName_container_(nullptr),
@@ -57,8 +55,6 @@ ScreenManager::ScreenManager()
       C1101PTK_container_(nullptr),
       C1101PTK_dropdown_(nullptr),
       C1101SYNC_container_(nullptr),
-      C1101pulseLenght_container_(nullptr),
-      pulseLenghInput_(nullptr),
       topLabel_RCSwitchMethod_container_(nullptr),
       secondLabel_container_(nullptr),
       text_area_replay(nullptr),
@@ -98,16 +94,6 @@ lv_obj_t *ScreenManager::getTextAreaSourAple()
 lv_obj_t *ScreenManager::getTextAreaBTSpam()
 {
     return text_area_BTSpam;
-}
-
-lv_obj_t *ScreenManager::getPulseLenghtInput()
-{
-    return pulseLenghInput_;
-}
-
-lv_obj_t *ScreenManager::getFilenameInput()
-{
-    return filenameInput_;
 }
 
 lv_obj_t *ScreenManager::getKeyboardFreq()
@@ -183,7 +169,7 @@ void ScreenManager::createReplayScreen() {
     text_area_replay = lv_textarea_create(ReplayScreen_);
     lv_obj_set_size(text_area_replay, 240, 140);
     lv_obj_align(text_area_replay, LV_ALIGN_CENTER, 0, -20);
-    lv_textarea_set_text(text_area_replay, "RAW protocol tool.\nSet/get frequency, pulse lenght and bugger size.\nDuring radio operation device may not respond.");
+    lv_textarea_set_text(text_area_replay, "RAW protocol tool.\nDuring radio operation device may not respond.");
     lv_obj_set_scrollbar_mode(text_area_replay, LV_SCROLLBAR_MODE_OFF); 
     lv_textarea_set_cursor_click_pos(text_area_replay, false);
 
