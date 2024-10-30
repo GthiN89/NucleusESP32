@@ -71,6 +71,8 @@ enum BTState
 {
   STATE_SOUR_APPLE_IDLE,
   STATE_SOUR_APPLE,
+  STATE_BTSPAM,
+  STATE_BT_IDDLE,
 };
 
 // Current State
@@ -88,6 +90,7 @@ extern bool CC1101_RCSwitch_play;
 typedef void (*TouchCallback)();
 
 CC1101_PRESET convert_str_to_enum(const char * selected_str);
+const char* presetToString(CC1101_PRESET preset);
 
 extern char* current_dir;
 extern char* selected_file;

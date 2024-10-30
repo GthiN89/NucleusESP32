@@ -8,6 +8,8 @@ I got SDR, so i managed to implement RAW protocol for replay by simle bitBang, a
 Now i can put back RCswitch and .sub (flipper) file player, which are on old GUI, and are not implemented in to the new one.</br>
 Happy Hacking!</br>
 </br>
+Last "Working" version is compiled in bin files, i fuck it up time to time, so for "tests" use that
+</br>
 have:</br>
 -C1101 raw replay - now work more similar to flipper</br>
 -*.sub files player-raw files does work, tested for AM270 and AM650</br>
@@ -22,8 +24,6 @@ planned:
 -mousejack</br>
 </br>
 Timing tollerance is in about 1-5 micros, "quality" of transmision from .sub is as shown:</br>
-</br>
-To build it, pleasse use .pio from archive
 </br>
 AM270:</br>
 <img src="https://github.com/GthiN89/NucleusESP32/blob/main/images/AM270.PNG"></br>

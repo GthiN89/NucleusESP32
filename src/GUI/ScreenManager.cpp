@@ -38,7 +38,8 @@ ScreenManager &ScreenManager::getInstance()
 // Constructor
 ScreenManager::ScreenManager()
     : ReplayScreen_(nullptr),
-      SourAppleScreen_(nullptr),  
+      SourAppleScreen_(nullptr), 
+      BTSpamScreen_(nullptr),   
       text_area_(nullptr),
       freqInput_(nullptr),
       settingsButton_(nullptr),
@@ -47,6 +48,8 @@ ScreenManager::ScreenManager()
       kb_qwert_(nullptr),
       fileName_container_(nullptr),
       topLabel_container_(nullptr),
+      browserButton_container_(nullptr),
+      browserButton2_container_(nullptr),
       RCSwitchMethodScreen_(nullptr),
       button_container1_(nullptr),
       button_container2_(nullptr),
@@ -60,7 +63,8 @@ ScreenManager::ScreenManager()
       secondLabel_container_(nullptr),
       text_area_replay(nullptr),
       button_container_RCSwitchMethod2_(nullptr),
-      button_container_RCSwitchMethod1_(nullptr)
+      button_container_RCSwitchMethod1_(nullptr),
+      brute_dropdown_(nullptr)
       
 {
 }
@@ -91,6 +95,11 @@ lv_obj_t *ScreenManager::getTextAreaSourAple()
     return text_area_SourApple;
 }
 
+lv_obj_t *ScreenManager::getTextAreaBTSpam()
+{
+    return text_area_BTSpam;
+}
+
 lv_obj_t *ScreenManager::getPulseLenghtInput()
 {
     return pulseLenghInput_;
@@ -108,7 +117,7 @@ lv_obj_t *ScreenManager::getKeyboardFreq()
 
 lv_obj_t *ScreenManager::getPresetDropdown()
 {
-    return C1101buffer_dropdown_;
+    return C1101preset_dropdown_;
 }
 
 lv_obj_t *ScreenManager::getSyncDropdown()
@@ -119,6 +128,14 @@ lv_obj_t *ScreenManager::getSyncDropdown()
 lv_obj_t *ScreenManager::getPTKDropdown()
 {
     return C1101PTK_dropdown_;
+}
+
+lv_obj_t *ScreenManager::getTextAreaBrute(){
+    return text_area__BruteForce;
+}
+
+lv_obj_t *ScreenManager::getBruteDropdown(){
+    return brute_dropdown_;
 }
 
 void ScreenManager::createReplayScreen() {
@@ -148,7 +165,7 @@ void ScreenManager::createReplayScreen() {
     containerHelper.createContainer(&secondLabel_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
     lv_obj_set_style_border_width(secondLabel_container_, 0, LV_PART_MAIN);
 
-    lv_obj_t * C1101preset_dropdown_ = lv_dropdown_create(secondLabel_container_);
+   C1101preset_dropdown_ = lv_dropdown_create(secondLabel_container_);
     lv_dropdown_set_options(C1101preset_dropdown_, "AM650\n"
                                 "AM270\n"
                                 "FM238\n"
@@ -160,16 +177,16 @@ void ScreenManager::createReplayScreen() {
                                 "HND2\n"
                                 );
 
-    lv_obj_add_event_cb(C1101preset_dropdown_, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(C1101preset_dropdown_, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, C1101preset_dropdown_);
 
-    buttonSettings_ = lv_btn_create(secondLabel_container_);
-    lv_obj_set_size(buttonSettings_, 90, 30);
-    // Create label inside the button, making the button parent of the label
-    lv_obj_t * labelButton = lv_label_create(buttonSettings_); 
-    lv_label_set_text(labelButton, "Settings");  // Set label text as the placeholder
-    lv_obj_center(labelButton);  // Center the label inside the butto
-    lv_obj_clear_flag(buttonSettings_, LV_OBJ_FLAG_SCROLLABLE); // Double ensure
-    lv_obj_add_event_cb(buttonSettings_, EVENTS::createRFSettingsScreen, LV_EVENT_CLICKED, NULL);
+    // buttonSettings_ = lv_btn_create(secondLabel_container_);
+    // lv_obj_set_size(buttonSettings_, 90, 30);
+    // // Create label inside the button, making the button parent of the label
+    // lv_obj_t * labelButton = lv_label_create(buttonSettings_); 
+    // lv_label_set_text(labelButton, "Settings");  // Set label text as the placeholder
+    // lv_obj_center(labelButton);  // Center the label inside the butto
+    // lv_obj_clear_flag(buttonSettings_, LV_OBJ_FLAG_SCROLLABLE); // Double ensure
+    // lv_obj_add_event_cb(buttonSettings_, EVENTS::createRFSettingsScreen, LV_EVENT_CLICKED, NULL);
 
     // Create main text area
     text_area_replay = lv_textarea_create(ReplayScreen_);
@@ -202,6 +219,70 @@ void ScreenManager::createReplayScreen() {
 
 }
 
+void ScreenManager::createBruteForceScreen() {
+    ContainerHelper containerHelper;
+
+    BruteForceScreen_ = lv_obj_create(NULL);
+
+    lv_scr_load(BruteForceScreen_);
+    lv_obj_set_flex_flow(BruteForceScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(BruteForceScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+
+    containerHelper.createContainer(&topLabel_BruteForce_container_, BruteForceScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    lv_obj_set_style_border_width(BruteForceScreen_, 0, LV_PART_MAIN);
+
+    kb_freq_ = KeyboardHelper::createKeyboard(BruteForceScreen_, LV_KEYBOARD_MODE_NUMBER);
+    lv_keyboard_set_textarea(kb_freq_, freqInput_);
+
+
+    containerHelper.fillTopContainer(topLabel_BruteForce_container_, "Mhz:  ", TEXT_AREA, &freqInput_, "433.92", "433.92", 10, NULL, NULL);
+    lv_obj_set_size(freqInput_, 70, 30);                   
+    lv_obj_add_event_cb(freqInput_, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, kb_freq_);
+
+
+    containerHelper.createContainer(&secondLabel_BruteForce_container_, BruteForceScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    lv_obj_set_style_border_width(secondLabel_BruteForce_container_, 0, LV_PART_MAIN);
+
+    brute_dropdown_ = lv_dropdown_create(secondLabel_BruteForce_container_);
+    lv_dropdown_set_options(brute_dropdown_, "Czech Bells\n"
+                                "Empty\n"
+                                );
+
+    lv_obj_add_event_cb(brute_dropdown_, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, brute_dropdown_);
+
+
+    // Create main text area
+    text_area__BruteForce = lv_textarea_create(BruteForceScreen_);
+    lv_obj_set_size(text_area__BruteForce, 240, 140);
+    lv_obj_align(text_area__BruteForce, LV_ALIGN_CENTER, 0, -20);
+    lv_textarea_set_text(text_area__BruteForce, "SubGhz BruteForce.\nSet/get frequency,type, and start attack.\nDuring radio operation device may not respond.");
+    lv_obj_set_scrollbar_mode(text_area__BruteForce, LV_SCROLLBAR_MODE_OFF); 
+    lv_textarea_set_cursor_click_pos(text_area__BruteForce, false);
+
+
+    containerHelper.createContainer(&button_container_BruteForce1_, BruteForceScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+
+
+    lv_obj_t *listenButton = ButtonHelper::createButton(button_container_BruteForce1_, "Start");
+    lv_obj_add_event_cb(listenButton, EVENTS::btn_event_brute_run, LV_EVENT_CLICKED, NULL); 
+
+    lv_obj_t *saveButton = ButtonHelper::createButton(button_container_BruteForce1_, "Pause");
+    lv_obj_add_event_cb(saveButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL); 
+
+
+    containerHelper.createContainer(&button_container_BruteForce2_, BruteForceScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+
+
+    lv_obj_t *playButton = ButtonHelper::createButton(button_container_BruteForce2_, "Save");
+    lv_obj_t *exitButton = ButtonHelper::createButton(button_container_BruteForce2_, "Exit");
+
+
+    lv_obj_add_event_cb(playButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, NULL); 
+    lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
+
+}
+
 void ScreenManager::createSourAppleScreen() {
     ContainerHelper containerHelper;
 
@@ -214,43 +295,6 @@ void ScreenManager::createSourAppleScreen() {
     lv_obj_t * topLabel_container_;
     containerHelper.createContainer(&topLabel_container_, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
     lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
-
-
-    // kb_qwert_ = KeyboardHelper::createKeyboard(SourAppleScreen_, LV_KEYBOARD_MODE_TEXT_LOWER);
-    // kb_freq_ = KeyboardHelper::createKeyboard(SourAppleScreen_, LV_KEYBOARD_MODE_NUMBER);
-    // lv_keyboard_set_textarea(kb_freq_, freqInput_);
-
-
-    // containerHelper.fillTopContainer(topLabel_container_, "Mhz:  ", TEXT_AREA, &freqInput_, "433.92", "433.92", 10, NULL, NULL);
-    // lv_obj_set_size(freqInput_, 70, 30);                   
-    // lv_obj_add_event_cb(freqInput_, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, kb_freq_);
-
-
-    // containerHelper.createContainer(&secondLabel_container_, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-    // lv_obj_set_style_border_width(secondLabel_container_, 0, LV_PART_MAIN);
-
-    // lv_obj_t * C1101preset_dropdown_ = lv_dropdown_create(secondLabel_container_);
-    // lv_dropdown_set_options(C1101preset_dropdown_, "AM650\n"
-    //                             "AM270\n"
-    //                             "FM238\n"
-    //                             "FM476\n"
-    //                             "FM95\n"
-    //                             "FM15k\n"
-    //                             "PAGER\n"
-    //                             "HND1\n"
-    //                             "HND2\n"
-    //                             );
-
-    // lv_obj_add_event_cb(C1101preset_dropdown_, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
-
-    // buttonSettings_ = lv_btn_create(secondLabel_container_);
-    // lv_obj_set_size(buttonSettings_, 90, 30);
-    // // Create label inside the button, making the button parent of the label
-    // lv_obj_t * labelButton = lv_label_create(buttonSettings_); 
-    // lv_label_set_text(labelButton, "Settings");  // Set label text as the placeholder
-    // lv_obj_center(labelButton);  // Center the label inside the butto
-    // lv_obj_clear_flag(buttonSettings_, LV_OBJ_FLAG_SCROLLABLE); // Double ensure
-    // lv_obj_add_event_cb(buttonSettings_, EVENTS::createRFSettingsScreen, LV_EVENT_CLICKED, NULL);
 
     // Create main text area
     text_area_SourApple = lv_textarea_create(SourAppleScreen_);
@@ -269,19 +313,58 @@ void ScreenManager::createSourAppleScreen() {
 
     lv_obj_t *saveButton = ButtonHelper::createButton(buttonContainer, "Stop");
     lv_obj_add_event_cb(saveButton, EVENTS::btn_event_SourApple_Stop, LV_EVENT_CLICKED, NULL); 
-
-
-    // containerHelper.createContainer(&button_container_RCSwitchMethod2_, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-
-
-    // lv_obj_t *playButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Play");
-    // lv_obj_t *exitButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Exit");
-
-
-    // lv_obj_add_event_cb(playButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, NULL); 
-    // lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
-
 }
+
+void ScreenManager::createBTSPamScreen() {
+    ContainerHelper containerHelper;
+
+    BTSpamScreen_ = lv_obj_create(NULL);
+
+    lv_scr_load(BTSpamScreen_);
+    lv_obj_set_flex_flow(BTSpamScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(BTSpamScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    lv_obj_t * topLabel_container_;
+    containerHelper.createContainer(&topLabel_container_, BTSpamScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
+
+    // Create main text area
+    text_area_BTSpam = lv_textarea_create(BTSpamScreen_);
+    lv_obj_set_size(text_area_BTSpam, 240, 140);
+    lv_obj_align(text_area_BTSpam, LV_ALIGN_CENTER, 0, -20);
+    lv_textarea_set_text(text_area_BTSpam, "Will spam BLE devices\nMay cause crash of some");
+    lv_obj_set_scrollbar_mode(text_area_BTSpam, LV_SCROLLBAR_MODE_OFF); 
+    lv_textarea_set_cursor_click_pos(text_area_BTSpam, false);
+
+    lv_obj_t *buttonContainer;
+    containerHelper.createContainer(&buttonContainer, BTSpamScreen_, LV_FLEX_FLOW_ROW_WRAP, 120, 240);
+    lv_obj_set_flex_align(buttonContainer, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+
+    int applle = 0;
+    int Microsoft = 1;
+    int Samsung = 2;
+    int Android = 3;
+    int ALL = 4;
+
+    lv_obj_t *startButton = ButtonHelper::createButton(buttonContainer, "Start Apple");
+    lv_obj_add_event_cb(startButton, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &applle); 
+
+    lv_obj_t *startButton1 = ButtonHelper::createButton(buttonContainer, "Start Microsoft");
+    lv_obj_add_event_cb(startButton1, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &Microsoft); 
+
+    lv_obj_t *startButton2 = ButtonHelper::createButton(buttonContainer, "Start Samsung");
+    lv_obj_add_event_cb(startButton2, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &Samsung); 
+
+    lv_obj_t *startButton3 = ButtonHelper::createButton(buttonContainer, "Start Android");
+    lv_obj_add_event_cb(startButton3, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &Android); 
+
+    lv_obj_t *startButton4 = ButtonHelper::createButton(buttonContainer, "Start ALL");
+    lv_obj_add_event_cb(startButton4, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &ALL); 
+
+    lv_obj_t *saveButton = ButtonHelper::createButton(buttonContainer, "Stop");
+    lv_obj_add_event_cb(saveButton, EVENTS::btn_event_SourApple_Stop, LV_EVENT_CLICKED, NULL); 
+}
+
 
 
 
@@ -320,8 +403,17 @@ void ScreenManager::createBTMenu()
     lv_obj_set_size(btn_BT_main, 150, 50);                                           /*Set its size*/
     lv_obj_add_event_cb(btn_BT_main, EVENTS::btn_event_SourApple, LV_EVENT_CLICKED, NULL); /*Assign a callback to the button*/
 
-    lv_obj_t *label_SourApple_main = lv_label_create(btn_BT_main); /*Add a label to the button*/
-    lv_label_set_text(label_SourApple_main, "Sour Apple");        /*Set the labels text*/
+    lv_obj_t *label_BLESPAM_main = lv_label_create(btn_BT_main); /*Add a label to the button*/
+    lv_label_set_text(label_BLESPAM_main, "Sour Apple");        /*Set the labels text*/
+    lv_obj_center(label_BLESPAM_main);
+
+    lv_obj_t *btn_BT_maspam = lv_btn_create(BTMenu);                                 /*Add a button the current screen*/
+    lv_obj_set_pos(btn_BT_maspam, 25, 70);                                             /*Set its position*/
+    lv_obj_set_size(btn_BT_maspam, 150, 50);
+    lv_obj_add_event_cb(btn_BT_maspam, EVENTS::btn_event_BTSpam, LV_EVENT_CLICKED, NULL); /*Assign a callback to the button*/
+
+    lv_obj_t *label_SourApple_main = lv_label_create(btn_BT_maspam); /*Add a label to the button*/
+    lv_label_set_text(label_SourApple_main, "BLE spam");        /*Set the labels text*/
     lv_obj_center(label_SourApple_main);
 
 
@@ -370,6 +462,14 @@ void ScreenManager::createRFMenu()
     lv_label_set_text(label_c1101Alanalyzer_menu, "rec/play");
     lv_obj_center(label_c1101Alanalyzer_menu);
 
+        lv_obj_t *btn_SubGhzBruteForce_menu = lv_btn_create(lv_scr_act());
+    lv_obj_set_pos(btn_SubGhzBruteForce_menu, 25, 190);
+    lv_obj_set_size(btn_SubGhzBruteForce_menu, 200, 50);
+    lv_obj_add_event_cb(btn_SubGhzBruteForce_menu, EVENTS::btn_event_BruteForce_run, LV_EVENT_ALL, NULL);
+
+    lv_obj_t *label_SubGhzBruteForce_menu = lv_label_create(btn_SubGhzBruteForce_menu);
+    lv_label_set_text(label_SubGhzBruteForce_menu, "Brute Force");
+    lv_obj_center(label_SubGhzBruteForce_menu);
 
     lv_obj_t *btn_c1101Others_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_c1101Others_menu, 25, 250);
@@ -451,13 +551,14 @@ Serial.println("Initializing playZeroScreen...");
     lv_obj_t* new_screen = lv_obj_create(NULL);  // Create a new screen
     lv_scr_load(new_screen);  // Load the new screen to clear the previous screen
 
-    createFileBrowser(new_screen);  // Create the file browser on the new screen
+   // createFileBrowser(new_screen);  // Create the file browser on the new screen
     Serial.println("Created file browser on new screen.");
     
     ScreenManager::createFileBrowser(new_screen);
 }
 
 void ScreenManager::createFileBrowser(lv_obj_t* parent) {
+    ContainerHelper containerHelper;
     
        Serial.println("Setting up file browser...");
 
@@ -470,26 +571,26 @@ void ScreenManager::createFileBrowser(lv_obj_t* parent) {
     lv_obj_set_flex_flow(parent, LV_FLEX_FLOW_COLUMN); // Arrange children in a row
     lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER); // Align buttons in the container
 
-    //  // Create a horizontal container for the buttons
-    lv_obj_t* button_container = lv_obj_create(lv_scr_act());
-    lv_obj_set_size(button_container, LV_PCT(100), 50); // Set container width to 100% of the parent and height to 50px
-    lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW); // Arrange children in a row
-    lv_obj_set_flex_align(button_container, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER); // Align buttons in the container
-    lv_obj_clear_flag(button_container, LV_OBJ_FLAG_SCROLLABLE); // Double ensure
 
 
- // Button to load the selected file
-    lv_obj_t* load_btn = lv_btn_create(button_container);
+    containerHelper.createContainer(&browserButton_container_, parent, LV_FLEX_FLOW_ROW, 35, 240);
+
+    lv_obj_t* load_btn = ButtonHelper::createButton(browserButton_container_, "Load File");
     lv_obj_add_event_cb(load_btn, EVENTS::load_btn_event_cb_sub, LV_EVENT_CLICKED, NULL);
-    lv_obj_t* label = lv_label_create(load_btn);
-    lv_label_set_text(label, "Load File");
 
-    // Back button for navigating to the parent directory
-    lv_obj_t* back_btn = lv_btn_create(button_container);
+
+    lv_obj_t* back_btn = ButtonHelper::createButton(browserButton_container_, "Back");
     lv_obj_add_event_cb(back_btn, EVENTS::back_btn_event_cb_sub, LV_EVENT_CLICKED, NULL);
-    lv_obj_t* back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, LV_SYMBOL_LEFT "Back");
 
+    containerHelper.createContainer(&browserButton2_container_, parent, LV_FLEX_FLOW_ROW, 35, 240);
+
+
+    lv_obj_t* delete_btn = ButtonHelper::createButton(browserButton2_container_, "Delete File");
+    lv_obj_add_event_cb(delete_btn, EVENTS::delete_btn_event_cb_sub, LV_EVENT_CLICKED, selected_file);
+
+
+    lv_obj_t* rename_btn = ButtonHelper::createButton(browserButton2_container_, "Rename File");
+    lv_obj_add_event_cb(rename_btn, EVENTS::back_btn_event_cb_sub, LV_EVENT_CLICKED, NULL);
     Serial.println("File browser setup complete.");
 }
 
@@ -500,7 +601,7 @@ void ScreenManager::updateFileList(const char* directory) {
 
     if (list == NULL) {
         list = lv_list_create(lv_scr_act());  // Create list on the current active screen
-        lv_obj_set_size(list, 240, 240);
+        lv_obj_set_size(list, 240, 200);
         Serial.println("Created new list object.");
     } else {
         lv_obj_clean(list);  // Clear the existing buttons

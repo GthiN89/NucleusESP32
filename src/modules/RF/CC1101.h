@@ -30,9 +30,9 @@ unsigned long samplesmooth[SAMPLE_SIZE];
     String rawString = "";
     int BufferSize = 32;
     int pulseLenght;
-    int CC1101_MODULATION;
-    float CC1101_DRATE;
-    float CC1101_RX_BW;
+    int CC1101_MODULATION = 2;
+    float CC1101_DRATE = 3.79372;;
+    float CC1101_RX_BW = 650.00;;
     float CC1101_DEVIATION = 47.60;
     int   CC1101_SYNC_MODE;
     int CC1101_PKT_FORMAT;
@@ -49,7 +49,6 @@ unsigned long samplesmooth[SAMPLE_SIZE];
     bool init();
     void showResultRecPlay();
     void disableReceiver();
-    bool captureLoop();
     void setFrequency(float freq);
     void enableReceiver();
     void setSync(int sync);
@@ -62,7 +61,6 @@ unsigned long samplesmooth[SAMPLE_SIZE];
     void saveSignal();
     void signalanalyse();
     static bool CheckReceived(void);
-    bool getPulseLenghtLoop();
     void asciitohex(byte *ascii_ptr, byte *hex_ptr,int len);
     void initrRaw();
     void initRCSwitch();
@@ -73,6 +71,7 @@ unsigned long samplesmooth[SAMPLE_SIZE];
     void sendRaw();
     bool saveToSD(); 
     void sendSamples(int samples[], int samplesLength);
+    void sendBrute(int type);
 
 
 private:

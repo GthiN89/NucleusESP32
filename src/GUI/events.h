@@ -10,6 +10,8 @@
 
 #define EVENTS_MAX_PATH_LENGTH 64
 
+extern int SpamDevice;
+
 class EVENTS {
 public:
 
@@ -17,6 +19,8 @@ static lv_obj_t* list;
 static lv_obj_t* container;
 static char frequency_buffer[10];
 static char selected_str[32]; 
+
+
 
 
 
@@ -40,6 +44,11 @@ static void btn_event_BTTools(lv_event_t * e);
 static void btn_event_SourApple(lv_event_t * e);
 static void btn_event_SourApple_Start(lv_event_t * e);
 static void btn_event_SourApple_Stop(lv_event_t * e);
+static void btn_event_BTSpam(lv_event_t * e);
+static void btn_event_BTSpam_Start(lv_event_t * e);
+static void btn_event_BTSpam_Stop(lv_event_t * e);
+static void btn_event_BruteForce_run(lv_event_t* e);
+static void btn_event_brute_run(lv_event_t* e);
 
 static void load_btn_event_cb_sub(lv_event_t* e);
 static void back_btn_event_cb_sub(lv_event_t* e);
@@ -63,6 +72,7 @@ static void exitReplayEvent(lv_event_t * e);
 static void ta_pulse_event_cb(lv_event_t * e);
 static void sendCapturedEvent(lv_event_t * e);
 static void save_RF_to_sd_event(lv_event_t * e); 
+static void delete_btn_event_cb_sub(lv_event_t* e);
 
 static void playFromBuffer();
 static void radioHandlerOnChange();
