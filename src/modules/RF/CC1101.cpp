@@ -210,28 +210,28 @@ void CC1101_CLASS::loadPreset() {
             CC1101_DRATE = 3.79372;
             CC1101_RX_BW = 650.00;
             CC1101_DEVIATION = 1.58;
-            CC1101_SYNC = 0;
+            CC1101_SYNC = 2;
             break;
         case AM270:
             CC1101_MODULATION = 2;
             CC1101_DRATE = 3.79372;
             CC1101_RX_BW = 270.833333;
             CC1101_DEVIATION = 1.58;
-            CC1101_SYNC = 0;
+            CC1101_SYNC = 2;
             break;
         case FM238:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 4.79794;
             CC1101_RX_BW = 270.833333;
             CC1101_DEVIATION = 2.380371;
-            CC1101_SYNC = 0;
+            CC1101_SYNC = 2;
             break;
         case FM476:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 4.79794;
             CC1101_RX_BW = 270.833333;
             CC1101_DEVIATION = 47.60742;
-            CC1101_SYNC = 0;
+            CC1101_SYNC = 2;
             break;
         case FM95:
             CC1101_MODULATION = 0;
@@ -273,7 +273,7 @@ void CC1101_CLASS::loadPreset() {
             CC1101_DRATE = 3.79372;
             CC1101_RX_BW = 650.00;
             CC1101_DEVIATION = 1.58;
-            CC1101_SYNC = 0;
+            CC1101_SYNC = 2;
             break;
     }
 
