@@ -1,9 +1,6 @@
-#include "screens.h"
-//#include "modules/RF/subGhz.h"
 #include <lvgl.h>
 #include <iostream>
 #include <cstring>
-#include "playZero.h"
 #include "sendTesla.h"
 #include "../events.h"
 #include "globals.h"

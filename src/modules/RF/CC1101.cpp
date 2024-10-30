@@ -16,7 +16,6 @@
 #include <string> 
 #include "../../../../NucleusESP32/src/GUI/events.h"
 #include "../ETC/SDcard.h"
-#include "flipper_configs.hpp"
 
 
 
@@ -69,6 +68,9 @@ bool CC1101_recieve_is_running = false;
 bool CC1101_transmit_is_running = false;
 bool CC1101_isiddle = true;
 bool CC1101_interup_attached = false;
+
+int smoothcount;
+unsigned long samplesmooth[SAMPLE_SIZE];
 
 
 String fullPath;   
@@ -192,7 +194,7 @@ bool CC1101_CLASS::init()
         CC1101_isiddle = true;
         return false;
     }
-    ELECHOUSE_cc1101.setGDO(CCGDO0A, CCGDO2A);
+    ELECHOUSE_cc1101.setGDO0(CCGDO0A);
 }
 
 void CC1101_CLASS::showResultRecPlay()
@@ -239,41 +241,24 @@ void CC1101_CLASS::loadPreset() {
             CC1101_DRATE = 3.79372;
             CC1101_RX_BW = 650.00;
             CC1101_DEVIATION = 1.58;
-
-            // while (subghz_device_cc1101_preset_ook_650khz_async_regs[i] != 0) {
-            //     ELECHOUSE_cc1101.SpiWriteReg(subghz_device_cc1101_preset_ook_650khz_async_regs[i], subghz_device_cc1101_preset_ook_650khz_async_regs[i + 1]);
-            //     i += 2;
-            // }
-            // break;
+            break;
         case AM270:
             CC1101_MODULATION = 2;
             CC1101_DRATE = 3.79372;
             CC1101_RX_BW = 270.833333;
             CC1101_DEVIATION = 1.58;
-            // while (subghz_device_cc1101_preset_ook_270khz_async_regs[i] != 0) {
-            //     ELECHOUSE_cc1101.SpiWriteReg(subghz_device_cc1101_preset_ook_270khz_async_regs[i], subghz_device_cc1101_preset_ook_270khz_async_regs[i + 1]);
-            //     i += 2;
-            // }
             break;
         case FM238:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 4.79794;
             CC1101_RX_BW = 270.833333;
             CC1101_DEVIATION = 2.380371;
-            // while (subghz_device_cc1101_preset_2fsk_dev2_38khz_async_regs[i] != 0) {
-            //     ELECHOUSE_cc1101.SpiWriteReg(subghz_device_cc1101_preset_2fsk_dev2_38khz_async_regs[i], subghz_device_cc1101_preset_2fsk_dev2_38khz_async_regs[i + 1]);
-            //     i += 2;
-            // }
             break;
         case FM476:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 4.79794;
             CC1101_RX_BW = 270.833333;
             CC1101_DEVIATION = 47.60742;
-            // while (subghz_device_cc1101_preset_2fsk_dev47_6khz_async_regs[i] != 0) {
-            //     ELECHOUSE_cc1101.SpiWriteReg(subghz_device_cc1101_preset_2fsk_dev47_6khz_async_regs[i], subghz_device_cc1101_preset_2fsk_dev47_6khz_async_regs[i + 1]);
-            //     i += 2;
-            // }
             break;
         case FM95:
             CC1101_MODULATION = 0;
@@ -281,11 +266,7 @@ void CC1101_CLASS::loadPreset() {
             CC1101_RX_BW = 270;
             CC1101_DEVIATION = 9.521;
             CC1101_SYNC_MODE = 6;
-            // while (subghz_device_cc1101_preset_msk_99_97kb_async_regs[i] != 0) {
-            //     ELECHOUSE_cc1101.SpiWriteReg(subghz_device_cc1101_preset_msk_99_97kb_async_regs[i], subghz_device_cc1101_preset_msk_99_97kb_async_regs[i + 1]);
-            //     i += 2;
-            // }
-            // break;
+            break;
         case FM15k:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 3.794;
@@ -425,7 +406,7 @@ void CC1101_CLASS::signalanalyse(){
     sample[1] = timingdelay[0];
   }
 
-    int smoothcount=0;
+    smoothcount=0;
   for (int i=1; i<samplecount; i++){
     float r = (float)sample[i]/timingdelay[0];
     int calculate = r;
@@ -494,69 +475,33 @@ void CC1101_CLASS::signalanalyse(){
         SD.end();
 
     }
-
-}
-
-bool CC1101_CLASS::saveToSD() {    
-    File outputFile;
-    FlipperSubFile subFile;
-    SD.end();  
- if (SDInit()) {
-    if (!SD.exists("/recordedRF/" )) {
-        SD.mkdir("/recordedRF/" );
-    }  
-        String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
-        String fullPath = "/recordedRF/" + filename; 
-        outputFile = SD.open(fullPath.c_str(), "w");
-        if (outputFile) {
-            std::vector<byte> customPresetData;
-            if (C1101preset == CUSTOM) {
-                customPresetData.insert(customPresetData.end(), {
-                    CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
-                    CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
-                    CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
-                    CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
-                    CC1101_FREND0,  ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
-                    0x00, 0x00
-                });
-
-                std::array<byte,8> paTable;
-                ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
-                customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
-            }
-            subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
-            Serial.print(rawString);
-            outputFile.close();
-        } else {
-            return false;
-        }
-        SD.end();
-        return true;
-    }
-    return false;
 }
 
 
 void CC1101_CLASS::sendRaw() {
+      //  detachInterrupt(CC1101_CCGDO0A);
+   // ScreenManager& screenMgr = ScreenManager::getInstance();
+ //   lv_obj_t * textarea = screenMgr.getTextArea();
     detachInterrupt(CC1101_CCGDO0A);
-    ScreenManager& screenMgr = ScreenManager::getInstance();
-    lv_obj_t * textarea = screenMgr.getTextArea();
+    disconnectSD();
+    digitalWrite(SDCARD_CS, HIGH);
     CC1101_CLASS::initrRaw();
     ELECHOUSE_cc1101.setCCMode(0); 
     ELECHOUSE_cc1101.setPktFormat(3);
     ELECHOUSE_cc1101.SetTx();
 
     pinMode(CC1101_CCGDO0A, OUTPUT);
-    lv_textarea_set_text(textarea, "Replaying RAW data from the buffer...\n");
+  //  lv_textarea_set_text(textarea, "Replaying RAW data from the buffer...\n");
     Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
 
     Serial.print("Transmitting\n");
+    Serial.print(smoothcount);
+    Serial.print("\n----------------\n");
     for (int i = 1; i < smoothcount - 1; i += 2)
     {
         // Casting to unsigned long to resolve type mismatch with 0UL
         unsigned long highTime = max((unsigned long)(samplesmooth[i]), 0UL);
         unsigned long lowTime = max((unsigned long)(samplesmooth[i + 1]), 0UL);
-
         digitalWrite(CC1101_CCGDO0A, HIGH);
         delayMicroseconds(highTime);
         digitalWrite(CC1101_CCGDO0A, LOW);
@@ -567,10 +512,44 @@ void CC1101_CLASS::sendRaw() {
     digitalWrite(CC1101_CCGDO0A, LOW); 
 
     Serial.print(F("\r\nReplaying RAW data complete.\r\n\r\n"));
-    lv_textarea_set_text(textarea, "Replaying RAW data complete.\n");
-    ELECHOUSE_cc1101.setSidle();  // Set to idle state
-    ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
-    disableTransmit();
+//   //  lv_textarea_set_text(textarea, "Replaying RAW data complete.\n");
+//     ELECHOUSE_cc1101.setSidle();  // Set to idle state
+//     ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
+//     disableTransmit();
+//     SDInit();
+//     detachInterrupt(CC1101_CCGDO0A);
+//     ScreenManager& screenMgr = ScreenManager::getInstance();
+//     lv_obj_t * textarea = screenMgr.getTextArea();
+//     CC1101_CLASS::initrRaw();
+//     ELECHOUSE_cc1101.setCCMode(0); 
+//     ELECHOUSE_cc1101.setPktFormat(3);
+//     ELECHOUSE_cc1101.SetTx();
+
+//     pinMode(CC1101_CCGDO0A, OUTPUT);
+//     lv_textarea_set_text(textarea, "Replaying RAW data from the buffer...\n");
+//     Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
+
+//     Serial.print("Transmitting\n");
+//     for (int i = 1; i < smoothcount - 1; i += 2)
+//     {
+//         // Casting to unsigned long to resolve type mismatch with 0UL
+//         unsigned long highTime = max((unsigned long)(samplesmooth[i]), 0UL);
+//         unsigned long lowTime = max((unsigned long)(samplesmooth[i + 1]), 0UL);
+
+//         digitalWrite(CC1101_CCGDO0A, HIGH);
+//         delayMicroseconds(highTime);
+//         digitalWrite(CC1101_CCGDO0A, LOW);
+//         delayMicroseconds(lowTime);
+//     }
+//     Serial.print("Transmitted\n");
+//     delay(20);
+//     digitalWrite(CC1101_CCGDO0A, LOW); 
+
+//     Serial.print(F("\r\nReplaying RAW data complete.\r\n\r\n"));
+//     lv_textarea_set_text(textarea, "Replaying RAW data complete.\n");
+//     ELECHOUSE_cc1101.setSidle();  // Set to idle state
+//     ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
+//     disableTransmit();
 }
 
 void CC1101_CLASS::initrRaw() {
@@ -932,13 +911,6 @@ bool  CC1101_CLASS::initCC1101() {
     ELECHOUSE_cc1101.setGDO(CCGDO0A, CCGDO2A);
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);
     ELECHOUSE_cc1101.setPA(12);
-    if (CC1101_TX) {
-        ELECHOUSE_cc1101.SetTx();
-        pinMode(CCGDO0A, OUTPUT);  
-    } else {
-        ELECHOUSE_cc1101.SetRx();
-        pinMode(CCGDO2A, INPUT);  
-    }
     ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);
     ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);
@@ -1050,16 +1022,93 @@ void CC1101_CLASS::ResetRCSwitch()
 }
 
 void CC1101_CLASS::sendBrute(int type) {
+
+ //initializing library with custom pins selected
+
     #include "../RFBrute/came12bit.h"
     #include "../RFBrute/czech_bell_6bit.h"
-    disconnectSD();
-    digitalWrite(SDCARD_CS, HIGH);
+    Serial.println("Brute1");  
+    ELECHOUSE_cc1101.setSidle();
+    digitalWrite(CC1101_CS, HIGH);
+    delayMicroseconds(150);
+    SPI.endTransaction();
+    digitalWrite(SDCARD_CS, HIGH);  
+    delayMicroseconds(100);
     digitalWrite(CC1101_CS, LOW);
+    delayMicroseconds(150);
+    CC1101_CLASS::init();
     CC1101_CLASS::initrRaw();
-    pinMode(CC1101_CCGDO0A, OUTPUT);
-    ELECHOUSE_cc1101.setCCMode(0); 
-    ELECHOUSE_cc1101.setPktFormat(3);
-    ELECHOUSE_cc1101.SetTx();
+    CC1101_CLASS::setCC1101Preset(AM650);
+    CC1101_CLASS::loadPreset();
+    CC1101_CLASS::enableTransmit();
+
+
+
+           
+
+        Serial.println("Brute2");  
+        Serial.println("Brute3");
+        delay(20);
+
+
+
+    if(ELECHOUSE_cc1101.getCC1101()){
+    Serial.println("jo");
+    }
+    Serial.println("jo2");
+    digitalWrite(CC1101_CCGDO0A, HIGH);
+    delayMicroseconds(1500);
+    digitalWrite(CC1101_CCGDO0A, LOW);
+    delayMicroseconds(1500);
+        Serial.println("Brute7");
+        delay(20);
+            digitalWrite(CC1101_CCGDO0A, HIGH);
+    delayMicroseconds(1500);
+    digitalWrite(CC1101_CCGDO0A, LOW);
+    delayMicroseconds(1500);
+    Serial.println("Brute7");
+            Serial.println("Brute7");
+        delay(20);
+            digitalWrite(CC1101_CCGDO0A, HIGH);
+    delayMicroseconds(1500);
+    digitalWrite(CC1101_CCGDO0A, LOW);
+    delayMicroseconds(1500);
+    Serial.println("Brute7");
+            Serial.println("Brute7");
+        delay(20);
+            digitalWrite(CC1101_CCGDO0A, HIGH);
+    delayMicroseconds(1500);
+    digitalWrite(CC1101_CCGDO0A, LOW);
+    delayMicroseconds(1500);
+    Serial.println("Brute7");
+            Serial.println("Brute7");
+        delay(20);
+            digitalWrite(CC1101_CCGDO0A, HIGH);
+    delayMicroseconds(1500);
+    digitalWrite(CC1101_CCGDO0A, LOW);
+    delayMicroseconds(1500);
+    Serial.println("Brute7");
+            Serial.println("Brute7");
+        delay(20);
+            digitalWrite(CC1101_CCGDO0A, HIGH);
+    delayMicroseconds(1500);
+    digitalWrite(CC1101_CCGDO0A, LOW);
+    delayMicroseconds(1500);
+    Serial.println("Brute7");
+            Serial.println("Brute7");
+        delay(20);
+            digitalWrite(CC1101_CCGDO0A, HIGH);
+    delayMicroseconds(1500);
+    digitalWrite(CC1101_CCGDO0A, LOW);
+    delayMicroseconds(1500);
+    Serial.println("Brute7");
+            Serial.println("Brute7");
+        delay(20);
+            digitalWrite(CC1101_CCGDO0A, HIGH);
+    delayMicroseconds(1500);
+    digitalWrite(CC1101_CCGDO0A, LOW);
+    delayMicroseconds(1500);
+    Serial.println("Brute7");
 
 
     // types:
@@ -1090,10 +1139,13 @@ void CC1101_CLASS::sendBrute(int type) {
                         digitalWrite(CC1101_CCGDO0A, LOW);
                         delayMicroseconds(lowTime);
                 }
-                        digitalWrite(CC1101_CCGDO0A, LOW);
-                        delayMicroseconds(900);
+                j++;                    
                 }
-            i++;  
+                digitalWrite(CC1101_CCGDO0A, LOW);
+                delayMicroseconds(1500);
+                Serial.println(binary_combinations_czech_bell[i]);
+            i++;
+            Serial.println(i);  
             }
             break;
         case 2:

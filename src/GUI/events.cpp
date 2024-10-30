@@ -1,39 +1,27 @@
 // File: src/events/events.cpp
 
-#include "events.h"
 #include "GUI/ScreenManager.h"
 #include "modules/ETC/SDcard.h"
 #include <RCSwitch.h>
 #include <Arduino.h>
-//#include "GUI/constants.h"
-#include "GUI/menus/RFMenu.h"
 #include "modules/RF/CC1101.h"
-#include "GUI/screens/replay.h"
-#include "GUI/screens/playZero.h"
 #include "globals.h"
-#include "GUI/screens/replayScreen.h"
-#include "GUI/menus/RFMenu.h"
 #include <cstring> 
 #include <iostream>
 #include <unordered_map>
 #include "ELECHOUSE_CC1101_SRC_DRV.h"
 #include "main.h"
-#include "screens/replay.h"
 #include "modules/BLE/SourApple.h"
 #include "modules/BLE/BLESpam.h"
+#include "events.h"
 using namespace std;
 
 #define MAX_PATH_LENGTH 256
 
 int SpamDevice = 1;
 
-
 ScreenManager& screenMgr = ScreenManager::getInstance();
-lv_obj_t* ta = screenMgr.getFreqInput();
-lv_obj_t* text_area = screenMgr.getTextArea();
 
-
-//ReplayScreen ReplayScr;
 
 char EVENTS::frequency_buffer[10];
 char EVENTS::selected_str[32];  
@@ -83,7 +71,6 @@ void EVENTS::ta_freq_event_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
      lv_obj_t * kb = (lv_obj_t *)lv_event_get_user_data(e); 
 
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * text_area = screenMgr.getTextArea();
      lv_obj_t * ta = screenMgr.getFreqInput();
     // lv_obj_t * presetDropdown = screenMgr.getPresetDropdown();
@@ -110,8 +97,6 @@ void EVENTS::ta_filename_event_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * kb = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
 
-
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t* ta = screenMgr.getFilenameInput();
     lv_obj_t* text_area = screenMgr.getTextArea();
 
@@ -147,61 +132,16 @@ void EVENTS::kb_qwert_event_cb(lv_event_t * e) {
 }
 
 
-
-
-// void EVENTS::ta_pulse_event_cb(lv_event_t * e) {
-//     char frequency_buffer[10];
-//     ScreenManager& screenMgr = ScreenManager::getInstance();
-//     lv_obj_t * text_area = screenMgr.getTextArea();
-//     lv_obj_t * ta = screenMgr.getFreqInput();
-//     strncpy(frequency_buffer, lv_textarea_get_text(ta), sizeof(frequency_buffer) - 1);
-//     frequency_buffer[sizeof(frequency_buffer) - 1] = '\0'; 
-//     C1101CurrentState = STATE_PULSE_SCAN;
-//     C1101LoadPreset = true;
-
-//      float freq = atof(frequency_buffer);
-//         lv_textarea_set_text(text_area, "Waiting for signal.\n");
-// //     char freq_str[20]; // Buffer to hold the converted float as a string
-// //     snprintf(freq_str, sizeof(freq_str), "%f", freq);
-
-// //     lv_textarea_add_text(text_area, freq_str);
-// //    // lv_textarea_set_text(text_area, "  " );
-// //     lv_textarea_set_text(text_area, String("Capture Started..").c_str());
-
-//     CC1101.setFrequency(freq);
-//     CC1101.enableReceiver();
-//     delay(20);
-
-// }
-
 void EVENTS::save_RF_to_sd_event(lv_event_t * e) {
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t* text_area = screenMgr.getTextArea();
     lv_textarea_set_text(text_area, "Moving to SD\n");
-    CC1101.saveToSD();
+   // CC1101.saveToSD();
     lv_textarea_set_text(text_area, "Done.");
 }
-
-// void EVENTS::ta_buffert_event_cb(lv_event_t * e) {
-//     lv_event_code_t code = lv_event_get_code(e);
-//     ScreenManager& screenMgr = ScreenManager::getInstance();
-//     lv_obj_t* text_area = screenMgr.getTextArea();
-//     lv_obj_t* dropdown = screenMgr.getPresetDropdown();
-//     lv_dropdown_get_selected_str(dropdown, EVENTS::selected_str, sizeof(EVENTS::selected_str));
-
-//     if (code == LV_EVENT_VALUE_CHANGED) {
-
-//         lv_textarea_add_text(text_area, "Buffer size: ");
-//         lv_textarea_add_text(text_area,EVENTS::selected_str);
-//         lv_textarea_add_text(text_area, "\n");
-//     }
-
-// }
 
 void EVENTS::saveSignal(lv_event_t * e) {
     Serial.print("event se spustil");
     CC1101.saveSignal();
-
 }
 
 
@@ -212,52 +152,15 @@ void EVENTS::ProtAnalyzerloop() {
     
 }
 
-bool EVENTS::initCC1101() {
-  return false;
-}
-
-void EVENTS::listenRFEvent(lv_event_t * e) {
-//     char frequency_buffer[10];
-//     ScreenManager& screenMgr = ScreenManager::getInstance();
-//     lv_obj_t * text_area = screenMgr.getTextArea();
-//     lv_obj_t * ta = screenMgr.getFreqInput();
-//     strncpy(frequency_buffer, lv_textarea_get_text(ta), sizeof(frequency_buffer) - 1);
-//     frequency_buffer[sizeof(frequency_buffer) - 1] = '\0'; 
-
-//     C1101LoadPreset = false;
-
-//     float freq = atof(frequency_buffer);
-//     char freq_str[20]; // Buffer to hold the converted float as a string
-//     snprintf(freq_str, sizeof(freq_str), "%f", freq);
-
-//     lv_textarea_add_text(text_area, freq_str);
-//    // lv_textarea_set_text(text_area, "  " );
-//     lv_textarea_set_text(text_area, String("Capture Started..").c_str());
-
-//     ELECHOUSE_cc1101.setSidle();  // Set to idle state
-//     ELECHOUSE_cc1101.goSleep();   // Put CC1101 into sleep mode
-    
-//     // Optionally disable chip select (CS) to fully power down the CC1101
-//     digitalWrite(CC1101_CS, HIGH); 
-
-//     CC1101.initrRaw();
-//     delay(20);
-//     C1101CurrentState = STATE_CAPTURE;
-
-}
-
 void EVENTS::replayEvent(lv_event_t * e) {
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * text_area = screenMgr.getTextArea();
     lv_textarea_set_text(text_area, "Sending signal from buffer");
 
       Serial.print("event_playback_rec_play");
 
   if (C1101CurrentState == STATE_IDLE)
-  {
-    // ScreenManager &screenMgr = ScreenManager::getInstance();
-    // lv_obj_t *ta = screenMgr.getTextArea();
-
+  {     
+    lv_obj_t *ta = screenMgr.getTextArea();
     float freq = String(lv_textarea_get_text(ta)).toFloat();
     CC1101.setFrequency(freq);
 
@@ -271,43 +174,34 @@ void EVENTS::replayEvent(lv_event_t * e) {
 }
 
 void EVENTS::exitReplayEvent(lv_event_t * e) {
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     screenMgr.createRFMenu();
 }
 void EVENTS::sendCapturedEvent(lv_event_t * e) {
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * text_area = screenMgr.getTextAreaRCSwitchMethod();
     CC1101.sendRaw();
 }
 
 void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
-    RFMenuScreen RFMenuScr;
-    RFMenuScr.initialize();
+    screenMgr.createRFMenu();
 }
 
  void EVENTS::btn_event_SourApple(lv_event_t * e){
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     screenMgr.createSourAppleScreen();
     sourApple sa;
     sa.setup();
  }
 
   void EVENTS::btn_event_BTSpam(lv_event_t * e){
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     screenMgr.createBTSPamScreen();
-    //sourApple sa;
-    //sa.setup();
  }
 
   void EVENTS::btn_event_SourApple_Start(lv_event_t * e){
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * ta = screenMgr.getTextAreaSourAple();
     lv_textarea_set_text(ta, "Running");
     BTCurrentState = STATE_SOUR_APPLE;
  }
 
   void EVENTS::btn_event_SourApple_Stop(lv_event_t * e){
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * ta = screenMgr.getTextAreaSourAple();
     lv_textarea_set_text(ta, "Not running");
     BTCurrentState = STATE_SOUR_APPLE_IDLE;
@@ -315,7 +209,6 @@ void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
 
    void EVENTS::btn_event_BTSpam_Start(lv_event_t * e){
     //BLEDevice::init("");
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * ta = screenMgr.getTextAreaBTSpam();
     lv_textarea_set_text(ta, "Running");
     int *SpamDevice = (int *)lv_event_get_user_data(e); 
@@ -324,7 +217,6 @@ void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
  }
 
   void EVENTS::btn_event_BTSpam_Stop(lv_event_t * e){
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * ta = screenMgr.getTextAreaBTSpam();
     lv_textarea_set_text(ta, "Not running");
     BLESpam spam;
@@ -334,13 +226,11 @@ void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
  
 
 void EVENTS::btn_event_BTTools(lv_event_t * e) {
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     screenMgr.createBTMenu();
 }
 
-void EVENTS::btn_event_mainMenu_run(lv_event_t* e) {
-    MainMenuScreen MainMenuScreen;
-    MainMenuScreen.initialize();
+void EVENTS::btn_event_mainMenu_run(lv_event_t* e) {   
+    screenMgr.createmainMenu();
 }
 
 const char* presetStrings[] = {
@@ -369,7 +259,6 @@ CC1101_PRESET EVENTS::stringToCC1101Preset(String presetStr) {
     return AM650; 
 }
 void EVENTS::saveRFSettingEvent(lv_event_t *e) {
-    ScreenManager &screenMgr = ScreenManager::getInstance();
     lv_obj_t *dropdownSync = screenMgr.getSyncDropdown();
     lv_obj_t *dropdownPTK = screenMgr.getPTKDropdown();
 
@@ -383,29 +272,21 @@ void EVENTS::saveRFSettingEvent(lv_event_t *e) {
 }
 
 void EVENTS::cancelRFSettingEvent(lv_event_t *e) {
-    ScreenManager &screenMgr = ScreenManager::getInstance();
     screenMgr.createReplayScreen();
 }
 
-// void EVENTS::playFromBuffer()
-// {
-// //
-// }
 
 void EVENTS::btn_event_RFSettings_show(lv_event_t* e) {
-    ScreenManager &screenMgr = ScreenManager::getInstance();
     screenMgr.createRFSettingsScreen();
 }
 
 void EVENTS::createRFSettingsScreen(lv_event_t* e) {
-    ScreenManager &screenMgr = ScreenManager::getInstance();
     screenMgr.createRFSettingsScreen();
 }
 
 void EVENTS::ta_preset_event_cb(lv_event_t * e) {
      char selected_text[32];
      lv_event_code_t code = lv_event_get_code(e);
-     ScreenManager& screenMgr = ScreenManager::getInstance();
      lv_obj_t* text_area = screenMgr.getTextArea();
 
     lv_dropdown_get_selected_str(screenMgr.C1101preset_dropdown_, selected_text, sizeof(selected_text));  // Copy selected text to the buffer
@@ -455,7 +336,6 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 {
     char selected_text[32];
     char frequency_buffer[10];
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * text_area = screenMgr.getTextArea();
     lv_obj_t * ta = screenMgr.getFreqInput();
     strncpy(frequency_buffer, lv_textarea_get_text(ta), sizeof(frequency_buffer) - 1);
@@ -466,17 +346,18 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 
 
     lv_textarea_set_text(text_area, "Waiting for signal.\n");
-    CC1101.init();
-    C1101preset = convert_str_to_enum(selected_text);
-    CC1101.loadPreset();
-    CC1101.enableReceiver();
-    delay(20);
+
+     CC1101.init();
+     CC1101.setCC1101Preset(convert_str_to_enum(selected_text));
+     CC1101.loadPreset();
+     CC1101.enableReceiver();
+     CC1101.setFrequency(CC1101_MHZ);
+     delay(20);
     
     C1101CurrentState = STATE_ANALYZER;
 }
 
 void  EVENTS::back_btn_event_cb_sub(lv_event_t* e) {
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     Serial.println("Back button clicked.");
 
     char* last_slash = strrchr(current_dir, '/');
@@ -507,7 +388,6 @@ void  EVENTS::back_btn_event_cb_sub(lv_event_t* e) {
 }
 
 void  EVENTS::load_btn_event_cb_sub(lv_event_t* e) {
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     CC1101_CLASS CC1101;
     Serial.println("Load button clicked.");
     if (strlen(selected_file) > 0) {
@@ -526,7 +406,6 @@ void  EVENTS::load_btn_event_cb_sub(lv_event_t* e) {
 }
 
 void  EVENTS::delete_btn_event_cb_sub(lv_event_t* e) {
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     const char *path = (const char *)lv_event_get_user_data(e); 
     if(deleteFile(path)){
             lv_label_set_text(selected_label, "File has been deleted");
@@ -535,7 +414,6 @@ void  EVENTS::delete_btn_event_cb_sub(lv_event_t* e) {
 }
 
 void EVENTS::file_btn_event_cb_sub(lv_event_t* e) {
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     delay(500);
     Serial.println("File button clicked.");
     
@@ -581,19 +459,13 @@ void EVENTS::file_btn_event_cb_sub(lv_event_t* e) {
 }
 
 void EVENTS::btn_event_brute_run(lv_event_t* e) {
-    CC1101.init();
-    C1101preset = AM650;
-    CC1101.loadPreset();
-    CC1101.initCC1101();
-    detachInterrupt(CC1101_CCGDO0A);
-    CC1101.initrRaw();
-    ELECHOUSE_cc1101.setCCMode(0); 
-    ELECHOUSE_cc1101.setPktFormat(3);
-    ELECHOUSE_cc1101.SetTx();
-    pinMode(CC1101_CCGDO0A, OUTPUT);
     char string[32];
+     //CC1101.setCC1101Preset(AM650);
+   //  CC1101.loadPreset();
+  //   CC1101.setFrequency(CC1101_MHZ);
+   
+    CC1101.setFrequency(433.92);
     Serial.println("czech bells1");
-    ScreenManager& screenMgr = ScreenManager::getInstance();
     Serial.println("czech bells2");
     lv_obj_t * text_area__BruteForce = screenMgr.getTextAreaBrute();
     Serial.println("czech bells3");
@@ -602,11 +474,11 @@ void EVENTS::btn_event_brute_run(lv_event_t* e) {
     
     lv_textarea_set_text(text_area__BruteForce, "Brute forcing");
     delay(1000);
-
+  //  CC1101.enableTransmit();
     if(strcmp(string, "Czech Bells") == 0) {
         Serial.println("czech bells");
-        CC1101.sendBrute(1);
     }
+    C1101CurrentState = STATE_BRUTE;
 
     lv_textarea_set_text(text_area__BruteForce, "Brute forcing done");
 }
