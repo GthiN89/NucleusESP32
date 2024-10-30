@@ -3,8 +3,6 @@
 
 #include <RCSwitch.h>
 #include <lvgl.h>
-#include "GUI/menus/MainMenuScreen.h"
-#include "GUI/menus/RFMenu.h"
 #include "ELECHOUSE_CC1101_SRC_DRV.h"
    //---------------------------------------------------------------------------//
   //-----------------------------SETINGS---------------------------------------//
@@ -58,6 +56,7 @@ enum C1101State
   STATE_WIFI_SCAN,
   STATE_SEND_BLESPAM,
   STATE_PULSE_SCAN,
+  STATE_BRUTE,
 };
 
 // Current State

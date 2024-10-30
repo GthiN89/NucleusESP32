@@ -6,14 +6,11 @@
 #include <lvgl.h>
 #include "globals.h"
 #include "GUI/ScreenManager.h"
-#include "GUI/screens/replay.h"
-#include "GUI/screens/c1101Scan.h"
 #include "modules/RF/CC1101.h"
 #include "modules/ETC/SDcard.h"
 #include "XPT2046_Bitbang.h"
 
 #include "GUI/events.h"
-#include "GUI/menus/RFMenu.h"
 #include "modules/RF/CC1101.h"
 #include "FS.h"
 #include <LittleFS.h>
@@ -112,8 +109,8 @@ void setup() {
 //     CC1101_init = true;
 //   }
 
-    MainMenuScreen MainMenuScreen;
-    MainMenuScreen.initialize(); // Load main menu
+ScreenManager& screenMgr = ScreenManager::getInstance();
+    screenMgr.createmainMenu();
 
       Serial.print("Initializing CC1101...");
 
@@ -132,14 +129,16 @@ void setup() {
 //     // Připojení Interrupt Handler
 //     attachInterrupt(digitalPinToInterrupt(CCGDO0A), radioHandlerOnChange, CHANGE);
 //     CC1101_interup_attached = true;
+    // Main part to tune CC1101 with proper frequency, modulation and encoding    
 
 }
 
-void loop() {
+void loop() {+
+
     lv_task_handler(); // Handle LVGL tasks
     delay(5); // Minimal delay to allow other tasks to run
 
-
+    Serial.println(digitalRead(CC1101_CCGDO0A));
     // if(C1101CurrentState == STATE_CAPTURE) {
     //     int pinState1 = digitalRead(CC1101_CCGDO0A);
     //         Serial.print("CC1101 GDO Pin (CC1101_CCGDO2A) state: ");
@@ -165,6 +164,15 @@ void loop() {
  
     // }
 
+     // initializing library with custom pins selected
+
+          // Preamble quality estimator threshold. The preamble quality estimator increases an internal counter by one each time a bit is received that is different from the previous bit, and decreases the counter by 8 each time a bit is received that is the same as the last bit. A threshold of 4∙PQT for this counter is used to gate sync word detection. When PQT=0 a sync word is always accepted.
+
+
+
+
+
+
     if(C1101CurrentState == STATE_ANALYZER) {
             if (CC1101.CheckReceived())
             {
@@ -177,12 +185,20 @@ void loop() {
 
     }
 
+    if(C1101CurrentState == STATE_BRUTE) {
+
+        CC1101.enableTransmit();
+        CC1101.sendBrute(1);
+        CC1101.disableTransmit();
+      C1101CurrentState = STATE_IDLE;
+    };
+
 
     if(C1101CurrentState == STATE_PLAYBACK) {
 
-      //  CC1101.enableTransmit();
+        CC1101.enableTransmit();
         CC1101.sendRaw();
-      //  CC1101.disableTransmit();
+        CC1101.disableTransmit();
       C1101CurrentState = STATE_IDLE;
     };
 
