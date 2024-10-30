@@ -17,7 +17,6 @@
 #include "../../../../NucleusESP32/src/GUI/events.h"
 #include "../ETC/SDcard.h"
 
-#define SAMPLE_SIZE 512
 using namespace std;
 int receiverGPIO;
 
@@ -205,7 +204,6 @@ void CC1101_CLASS::disableReceiver()
 
 
 void CC1101_CLASS::loadPreset() {
-    int i = 0;
     switch (C1101preset) {
         case AM650:
             CC1101_MODULATION = 2;
@@ -304,7 +302,6 @@ void CC1101_CLASS::signalanalyse(){
 
   int signalanz=0;
   int timingdelay[signalstorage];
-  float pulse[signalstorage];
   long signaltimings[signalstorage*2];
   int signaltimingscount[signalstorage];
   long signaltimingssum[signalstorage];
