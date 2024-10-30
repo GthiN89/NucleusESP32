@@ -20,6 +20,8 @@ using namespace std;
 
 int SpamDevice = 1;
 
+CC1101_CLASS cc1101;
+
 ScreenManager& screenMgr = ScreenManager::getInstance();
 
 
@@ -49,8 +51,6 @@ void EVENTS::btn_event_BruteForce_run(lv_event_t* e) {
           screenMgr.createBruteForceScreen();
     }
 }
-
-
 
 void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -86,7 +86,8 @@ void EVENTS::ta_freq_event_cb(lv_event_t * e) {
          strncpy(frequency_buffer, lv_textarea_get_text(ta), sizeof(frequency_buffer) - 1);
          frequency_buffer[sizeof(frequency_buffer) - 1] = '\0';  // Ensure null termination
          Serial.print("Frequency set to: \n");
-         CC1101_FREQ = atof(lv_textarea_get_text(ta));
+         
+         cc1101.CC1101_FREQ = atof(lv_textarea_get_text(ta));
          lv_textarea_add_text(text_area, "Frequency set to: \n");
          Serial.println(frequency_buffer);
          lv_textarea_add_text(text_area, frequency_buffer);
@@ -271,18 +272,7 @@ void EVENTS::saveRFSettingEvent(lv_event_t *e) {
     screenMgr.createReplayScreen();
 }
 
-void EVENTS::cancelRFSettingEvent(lv_event_t *e) {
-    screenMgr.createReplayScreen();
-}
 
-
-void EVENTS::btn_event_RFSettings_show(lv_event_t* e) {
-    screenMgr.createRFSettingsScreen();
-}
-
-void EVENTS::createRFSettingsScreen(lv_event_t* e) {
-    screenMgr.createRFSettingsScreen();
-}
 
 void EVENTS::ta_preset_event_cb(lv_event_t * e) {
      char selected_text[32];
@@ -459,11 +449,7 @@ void EVENTS::file_btn_event_cb_sub(lv_event_t* e) {
 }
 
 void EVENTS::btn_event_brute_run(lv_event_t* e) {
-    char string[32];
-     //CC1101.setCC1101Preset(AM650);
-   //  CC1101.loadPreset();
-  //   CC1101.setFrequency(CC1101_MHZ);
-   
+    char string[32]; 
     CC1101.setFrequency(433.92);
     Serial.println("czech bells1");
     Serial.println("czech bells2");
@@ -474,7 +460,6 @@ void EVENTS::btn_event_brute_run(lv_event_t* e) {
     
     lv_textarea_set_text(text_area__BruteForce, "Brute forcing");
     delay(1000);
-  //  CC1101.enableTransmit();
     if(strcmp(string, "Czech Bells") == 0) {
         Serial.println("czech bells");
     }

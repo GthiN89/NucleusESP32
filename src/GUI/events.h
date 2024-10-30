@@ -28,8 +28,6 @@ static void useSelectedFile(const char* filepath);
 static void btn_event_teslaCharger_run(lv_event_t* e);
 static void btn_event_Replay_run(lv_event_t* e);
 static void btn_event_mainMenu_run(lv_event_t* e);
-static void btn_event_RFSettings_show(lv_event_t* e);
-static void createRFSettingsScreen(lv_event_t* e); 
 static void btn_event_RAW_REC_run(lv_event_t* e);
 static void ta_preset_event_cb(lv_event_t * e);
 static void btn_event_BTTools(lv_event_t * e);
