@@ -2,7 +2,7 @@
 #define C1101_H
 
 #include "../../globals.h"
-#define SAMPLE_SIZE 128
+#define SAMPLE_SIZE 512
 
    //---------------------------------------------------------------------------//
   //-----------------------------Presets-Variables-----------------------------//
@@ -25,7 +25,7 @@ public:
     float CC1101_RX_BW = 650.00;;
     float CC1101_DEVIATION = 47.60;
     int CC1101_PKT_FORMAT = 0;
-    int CC1101_SYNC = 0;
+    int CC1101_SYNC = 2;
     float CC1101_FREQ = 433.92;
     
     void setCC1101Preset(CC1101_PRESET preset);
