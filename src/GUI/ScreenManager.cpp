@@ -179,15 +179,6 @@ void ScreenManager::createReplayScreen() {
 
     lv_obj_add_event_cb(C1101preset_dropdown_, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, C1101preset_dropdown_);
 
-    // buttonSettings_ = lv_btn_create(secondLabel_container_);
-    // lv_obj_set_size(buttonSettings_, 90, 30);
-    // // Create label inside the button, making the button parent of the label
-    // lv_obj_t * labelButton = lv_label_create(buttonSettings_); 
-    // lv_label_set_text(labelButton, "Settings");  // Set label text as the placeholder
-    // lv_obj_center(labelButton);  // Center the label inside the butto
-    // lv_obj_clear_flag(buttonSettings_, LV_OBJ_FLAG_SCROLLABLE); // Double ensure
-    // lv_obj_add_event_cb(buttonSettings_, EVENTS::createRFSettingsScreen, LV_EVENT_CLICKED, NULL);
-
     // Create main text area
     text_area_replay = lv_textarea_create(ReplayScreen_);
     lv_obj_set_size(text_area_replay, 240, 140);
@@ -480,51 +471,6 @@ void ScreenManager::createRFMenu()
     lv_obj_center(label_c1101Others_menu);
     lv_obj_add_event_cb(btn_c1101Others_menu, EVENTS::btn_event_mainMenu_run, LV_EVENT_CLICKED, NULL);
 
-}
-
-void ScreenManager::createRFSettingsScreen()
-{
-    ContainerHelper containerHelper;
-
-
-
-    const char *SYNC_STRINGS[] = {
-        "No sync",
-        "16 bit",
-        "16/16 bit",
-        "30/32 bit",
-        "no sync - carrier-sense +",
-        "15/16 - carrier-sense +",
-        "16/16 - carrier-sense +",
-        "30/32 - carrier-sense +"};
-
-    const char *PTK_STRINGS[] = {
-        "Normal",
-        "Sync Serial",
-        "Send random data",
-        "Async Serial"};
-
-    lv_obj_t *RFSettingsScreen = lv_obj_create(NULL);
-
-    lv_scr_load(RFSettingsScreen);
-    lv_obj_set_flex_flow(RFSettingsScreen, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(RFSettingsScreen, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-
-    // Create top label container
-    containerHelper.createContainer(&C1101SYNC_container_, RFSettingsScreen, LV_FLEX_FLOW_ROW, 35, 240);
-    containerHelper.createContainer(&C1101PTK_container_, RFSettingsScreen, LV_FLEX_FLOW_ROW, 35, 240);
-    containerHelper.createContainer(&button_container_settings, RFSettingsScreen, LV_FLEX_FLOW_ROW, 35, 240);
-
-    containerHelper.fillTopContainer(C1101SYNC_container_, "Sync:", DROPDOWN, &C1101SYNC_dropdown_, NULL, NULL, 12, NULL, EVENTS::ta_filename_event_cb, SYNC_STRINGS, 8);
-    containerHelper.fillTopContainer(C1101PTK_container_, "PTK:", DROPDOWN, &C1101PTK_dropdown_, NULL, NULL, 12, NULL, EVENTS::ta_filename_event_cb, PTK_STRINGS, 4);
-    lv_obj_set_size(C1101SYNC_dropdown_, 165, 30);
-    lv_obj_set_size(C1101PTK_dropdown_, 165, 30);
-
-    lv_obj_t *SaveSetting = ButtonHelper::createButton(button_container_settings, "Save");
-    lv_obj_t *CancelSettings = ButtonHelper::createButton(button_container_settings, "Cancel");
-
-    lv_obj_add_event_cb(SaveSetting, EVENTS::saveRFSettingEvent, LV_EVENT_CLICKED, NULL); // Assign event callback for Play if needed
-    lv_obj_add_event_cb(CancelSettings, EVENTS::cancelRFSettingEvent, LV_EVENT_CLICKED, NULL); // Assign event callback for Exit if needed
 }
 
 void ScreenManager::createSubPlayerScreen() {

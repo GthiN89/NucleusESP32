@@ -139,40 +139,7 @@ void loop() {+
     delay(5); // Minimal delay to allow other tasks to run
 
     Serial.println(digitalRead(CC1101_CCGDO0A));
-    // if(C1101CurrentState == STATE_CAPTURE) {
-    //     int pinState1 = digitalRead(CC1101_CCGDO0A);
-    //         Serial.print("CC1101 GDO Pin (CC1101_CCGDO2A) state: ");
-    //         Serial.println(pinState1 == HIGH ? "HIGH" : "LOW");
-    //         delay(10);
-    //         CC1101.captureLoop();
-    //         C1101CurrentState = STATE_IDLE;
-
-
-
-
-    // }
-
-    // if(C1101CurrentState == STATE_PULSE_SCAN) {
-    //     if (CC1101.CheckReceived())
-    //         {
-    //           CC1101.getPulseLenghtLoop();
-    //           CC1101.disableReceiver();
-    //           delay(10);
-    //           C1101CurrentState = STATE_IDLE;
-    //         }
-    //         delay(1);
- 
-    // }
-
-     // initializing library with custom pins selected
-
-          // Preamble quality estimator threshold. The preamble quality estimator increases an internal counter by one each time a bit is received that is different from the previous bit, and decreases the counter by 8 each time a bit is received that is the same as the last bit. A threshold of 4∙PQT for this counter is used to gate sync word detection. When PQT=0 a sync word is always accepted.
-
-
-
-
-
-
+   
     if(C1101CurrentState == STATE_ANALYZER) {
             if (CC1101.CheckReceived())
             {
@@ -235,19 +202,10 @@ void loop() {+
         Serial.print(String(samplesClean[i]).c_str());
             Serial.print(", ");
         }
-
-
-//    Serial.println(); // Print a newline at the end
-    CC1101_FREQ = tempFreq;
-//    CC1101.sendSamples(sample,tempSampleCount);
-   // CC1101.enableTransmit();
-   // CC1101.sendSamples(tempSample, tempSampleCount);
-   CC1101.loadPreset();
+    CC1101.setFrequency(tempFreq);
+    CC1101.loadPreset();
     CC1101.sendSamples(samplesClean, tempSampleCount);
 
-
-
-    //lv_label_set_text(ui_lblPresetsStatus, String("Sending Flipper Complete ! \n\nSample: " + String(tempSampleCount) + String(" | Freq: ") + String(tempFreq) + String(" mHz")).c_str());
     C1101CurrentState = STATE_IDLE;
 
   }

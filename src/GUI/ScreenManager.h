@@ -17,15 +17,11 @@ public:
     void createReplayScreen();
     void createmainMenu();
     void createRFMenu();
-    void createRFSettingsScreen(); 
     void createSubPlayerScreen();
     void createFileBrowser(lv_obj_t* parent);
     void createBTMenu();
     void createSourAppleScreen();
     void createBruteForceScreen();
-
-    static void btn_event_RFSettings_show(lv_event_t* e);
-
 
     lv_obj_t* getFreqInput();  
     lv_obj_t* getTextArea();  
