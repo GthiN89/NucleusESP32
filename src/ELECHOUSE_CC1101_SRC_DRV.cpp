@@ -108,8 +108,8 @@ void ELECHOUSE_CC1101::SpiStart(void)
 void ELECHOUSE_CC1101::SpiEnd(void)
 {
   // disable SPI
-  //(*ccSPI).endTransaction();
-  //(*ccSPI).end();
+  (*ccSPI).endTransaction();
+  (*ccSPI).end();
 }
 /****************************************************************
 *FUNCTION NAME: GDO_Set()

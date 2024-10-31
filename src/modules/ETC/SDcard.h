@@ -8,7 +8,7 @@
 #include "driver/spi_common.h"   // Include for common SPI host definitions
 
 // SPI Host configuration
-#define SDCARD_SPI_HOST SPI1_HOST  // Using HSPI for SD card communication
+#define SDCARD_SPI_HOST VSPI  // Using HSPI for SD card communication
 
 // Define SD card pins
 #define SDCARD_CS 5    // Chip Select pin for the SD card

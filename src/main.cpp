@@ -102,7 +102,7 @@ void setup() {
     auto disp = lv_disp_get_default();
     register_touch(disp);
 
-  //  SDInit();
+    SDInit();
     
     
 
