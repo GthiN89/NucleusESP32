@@ -18,8 +18,6 @@
 #include "../ETC/SDcard.h"
 #include "SPI.h"
 
-//#define CC1101_SPI_HOST VSPI_HOST  // Using HSPI for SD card communication
-
 
 
 using namespace std;
@@ -105,7 +103,7 @@ bool CC1101_CLASS::init()
         ELECHOUSE_cc1101.setGDO0(CCGDO0A);
         ELECHOUSE_cc1101.setSidle();
         CC1101_isiddle = true;
-        CC1101_is_initialized = false;
+        CC1101_is_initialized = true;
         return true;
     }
     else
@@ -185,8 +183,10 @@ void CC1101_CLASS::disableReceiver()
 {
     detachInterrupt((uint8_t)receiverGPIO);
     receiverEnabled = false;
+    CC1101_is_initialized = false;
     ELECHOUSE_cc1101.setSidle();
     ELECHOUSE_cc1101.goSleep();
+    ELECHOUSE_cc1101.SpiEnd();
     digitalWrite(CC1101_CS, HIGH);  
 }
 
@@ -403,10 +403,7 @@ void CC1101_CLASS::signalanalyse(){
 
 
     FlipperSubFile subFile;
-    SD.end();  
     CC1101_CLASS::disableReceiver();
-    digitalWrite(CC1101_CS, HIGH);
-    digitalWrite(SDCARD_CS, LOW);
     if (SDInit()) {
     if (!SD.exists("/recordedRF/" )) {
         SD.mkdir("/recordedRF/" );
@@ -449,11 +446,6 @@ void CC1101_CLASS::sendRaw() {
     disconnectSD();
     digitalWrite(SDCARD_CS, HIGH);
     CC1101_CLASS::initrRaw();
-    ELECHOUSE_cc1101.setCCMode(0); 
-    ELECHOUSE_cc1101.setPktFormat(3);
-    ELECHOUSE_cc1101.SetTx();
-
-    pinMode(CC1101_CCGDO0A, OUTPUT);
     Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
 
     Serial.print("Transmitting\n");
@@ -477,15 +469,21 @@ void CC1101_CLASS::sendRaw() {
 
 void CC1101_CLASS::initrRaw() {
   Serial.print("Init CC1101 raw");
-   // initializing library with custom pins selected
 
-    // Main part to tune CC1101 with proper frequency, modulation and encoding    
+    if(!CC1101_is_initialized) {
+        CC1101_CLASS::init();
+        CC1101_is_initialized = true;
+    }
+
     ELECHOUSE_cc1101.Init();                // must be set to initialize the cc1101!
     ELECHOUSE_cc1101.setGDO0(CC1101_CCGDO0A);         // set lib internal gdo pin (gdo0). Gdo2 not use for this example.
     ELECHOUSE_cc1101.setCCMode(0);          // set config for internal transmission mode. value 0 is for RAW recording/replaying
     ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
-    ELECHOUSE_cc1101.setDeviation(0);   // Set the Frequency deviation in kHz. Value from 1.58 to 380.85. Default is 47.60 kHz.
-  
+    ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);   // Set the Frequency deviation in kHz. Value from 1.58 to 380.85. Default is 47.60 kHz.
+    ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
+    ELECHOUSE_cc1101.setPktFormat(3);
+    ELECHOUSE_cc1101.SetTx();
+    pinMode(CC1101_CCGDO0A, OUTPUT);  
 }
    
 String CC1101_CLASS::generateFilename(float frequency, int modulation, float bandwidth)
@@ -519,9 +517,6 @@ void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
     disconnectSD();
     digitalWrite(SDCARD_CS, HIGH);
     CC1101_CLASS::initrRaw();
-    ELECHOUSE_cc1101.setCCMode(0); 
-    ELECHOUSE_cc1101.setPktFormat(3);
-    ELECHOUSE_cc1101.SetTx();
 
     pinMode(CC1101_CCGDO0A, OUTPUT);
     Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
@@ -592,18 +587,10 @@ void CC1101_CLASS::sendBrute(int type) {
     #include "../RFBrute/came12bit.h"
     #include "../RFBrute/czech_bell_6bit.h"
     Serial.println("Brute1");  
-    ELECHOUSE_cc1101.setSidle();
-    digitalWrite(CC1101_CS, HIGH);
-    delayMicroseconds(150);
-    SPI.endTransaction();
-    digitalWrite(SDCARD_CS, HIGH);  
-    delayMicroseconds(100);
-    digitalWrite(CC1101_CS, LOW);
-    delayMicroseconds(150);
+
     CC1101_CLASS::initrRaw();
     CC1101_CLASS::setCC1101Preset(AM650);
-    CC1101_CLASS::loadPreset();
-    CC1101_CLASS::enableTransmit();       
+    CC1101_CLASS::loadPreset();   
    
     // types:
     // 1 - czech bell (6-bit combinations)

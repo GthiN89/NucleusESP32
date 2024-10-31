@@ -115,7 +115,7 @@ class ELECHOUSE_CC1101
 {
 private:
   void SpiStart(void);
-  void SpiEnd(void);
+  
   void GDO_Set (void);
   void GDO0_Set (void);
   void Reset (void);
@@ -187,6 +187,7 @@ public:
   void setAppendStatus(bool v);
   void setAdrChk(byte v);
   bool CheckRxFifo(int t);
+  void SpiEnd(void);
 };
 
 extern ELECHOUSE_CC1101 ELECHOUSE_cc1101;

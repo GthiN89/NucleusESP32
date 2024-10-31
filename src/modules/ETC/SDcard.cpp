@@ -11,10 +11,9 @@ bool SDInit() {
     // Begin SPI with specific pins
         // Ensure CC1101 is disabled
     
-    digitalWrite(SDCARD_CS, LOW);
+  
     SPI.begin(SDCARD_SCK, SDCARD_MISO, SDCARD_MOSI, SDCARD_CS);
-    digitalWrite(CC1101_CS, HIGH); 
- 
+
     
     // Begin SD card initialization
     if (!SD.begin(SDCARD_CS)) {
@@ -30,7 +29,6 @@ bool SDInit() {
 
 String disconnectSD() {
     SPI.endTransaction();
-    digitalWrite(SDCARD_CS, HIGH);  
     return "SD card disconnected.\n";
 }
 
