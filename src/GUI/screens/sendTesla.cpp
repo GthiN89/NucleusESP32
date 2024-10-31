@@ -97,9 +97,9 @@ void sendBits(int* buff, int length, int gdo0) {
 }
 
 bool sendTeslaSignal(lv_obj_t* teslaCont, float freq) {
-    ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
-    ELECHOUSE_cc1101.Init();
-    Serial.println("init");
+  //  ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
+ //  ELECHOUSE_cc1101.Init();
+//    Serial.println("init");
 
     // Ensure teslaCont is valid
     if (teslaCont == nullptr) {

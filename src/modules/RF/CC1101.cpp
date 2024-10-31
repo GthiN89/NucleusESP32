@@ -16,6 +16,11 @@
 #include <string> 
 #include "../../../../NucleusESP32/src/GUI/events.h"
 #include "../ETC/SDcard.h"
+#include "SPI.h"
+
+//#define CC1101_SPI_HOST VSPI_HOST  // Using HSPI for SD card communication
+
+
 
 using namespace std;
 int receiverGPIO;
@@ -47,6 +52,8 @@ String fullPath;
 
 RCSwitch mySwitch;
 
+//SPIClass CC1101SPI;
+
 void IRAM_ATTR InterruptHandler()
 {    
 
@@ -75,17 +82,40 @@ void IRAM_ATTR InterruptHandler()
 
     if (CC1101_MODULATION == 0)
     {
-        if (samplecount == 1 && digitalRead(CC1101_CCGDO0A) != HIGH)
+        if (samplecount == 1 && digitalRead(receiverGPIO) != HIGH)
         {
             samplecount = 0;
         }
     }
 
     lastTime = time;
-
 }
 
+bool CC1101_CLASS::init()
+{
+//    digitalWrite(SDCARD_CS, HIGH);
 
+  //  digitalWrite(CC1101_CS, LOW);
+
+    ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
+    ELECHOUSE_cc1101.Init();
+
+    if (ELECHOUSE_cc1101.getCC1101())
+    {
+        ELECHOUSE_cc1101.setGDO0(CCGDO0A);
+        ELECHOUSE_cc1101.setSidle();
+        CC1101_isiddle = true;
+        CC1101_is_initialized = false;
+        return true;
+    }
+    else
+    {
+        ELECHOUSE_cc1101.setSidle();
+        CC1101_isiddle = true;
+        return false;
+    }
+    
+}
 
 void CC1101_CLASS::setFrequency(float freq)
 {
@@ -103,13 +133,17 @@ void CC1101_CLASS::setPTK(int ptk)
     CC1101_PKT_FORMAT = ptk;
 }
 
-
 void CC1101_CLASS::enableReceiver()
 {
+    if (!CC1101_is_initialized) {
+        CC1101_CLASS::init();
+    }
+    CC1101_CLASS::loadPreset();
+
     memset(sample, 0, sizeof(SAMPLE_SIZE));
     samplecount = 0;
 
-    ELECHOUSE_cc1101.Init();
+   // ELECHOUSE_cc1101.Init();
 
     if (CC1101_MODULATION == 2)
     {
@@ -121,18 +155,18 @@ void CC1101_CLASS::enableReceiver()
         ELECHOUSE_cc1101.setDcFilterOff(1);
     }
 
-    // ELECHOUSE_cc1101.setDcFilterOff(1);
+     ELECHOUSE_cc1101.setDcFilterOff(1);
     ELECHOUSE_cc1101.setSyncMode(CC1101_SYNC);  // Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.
     ELECHOUSE_cc1101.setPktFormat(CC1101_PKT_FORMAT); // Format of RX and TX data. 0 = Normal mode, use FIFOs for RX and TX.
                                                       // 1 = Synchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
                                                       // 2 = Random TX mode; sends random data using PN9 generator. Used for test. Works as normal mode, setting 0 (00), in RX.
                                                       // 3 = Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
                                                       // ELECHOUSE_cc1101.setSyncMode(3);       
-    //ELECHOUSE_cc1101.setModulation(CC1101_MODULATION); // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
+    ELECHOUSE_cc1101.setModulation(CC1101_MODULATION); // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);               // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
-    //ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
+    ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
     ELECHOUSE_cc1101.setDRate(CC1101_DRATE); // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
-    //ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
+    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
     
     pinMode(CC1101_CCGDO0A, INPUT);
     receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO0A);    
@@ -147,52 +181,6 @@ void CC1101_CLASS::setCC1101Preset(CC1101_PRESET preset) {
     C1101preset = preset;
 }
 
-bool CC1101_CLASS::init()
-{
-    ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
-    ELECHOUSE_cc1101.Init();
-
-    if (ELECHOUSE_cc1101.getCC1101())
-    {
-        ELECHOUSE_cc1101.setSidle();
-        CC1101_isiddle = true;
-        return true;
-    }
-    else
-    {
-        ELECHOUSE_cc1101.setSidle();
-        CC1101_isiddle = true;
-        return false;
-    }
-    ELECHOUSE_cc1101.setGDO0(CCGDO0A);
-}
-
-// void CC1101_CLASS::showResultRecPlay()
-// {
-//     ScreenManager& screenMgr = ScreenManager::getInstance();
-
-//     lv_obj_t * text_area = screenMgr.getTextArea();
-    
-
-//     for (int i = 1; i < samplecount; i++)
-//     {
-//         rawString += sample[i];
-//         rawString += ",";
-//     }
-
-//      lv_textarea_add_text(text_area, "Raw: ");
-//      lv_textarea_add_text(text_area, String(rawString).c_str());
-//      lv_textarea_add_text(text_area, String("Capture Complete | Sample: " + String(samplecount)).c_str());
-//      Serial.print("\n RAW: \n");   
-//      Serial.print(String(rawString).c_str());
-//      Serial.print("\n RAW: \n");   
-//      Serial.print(String("Capture Complete | Sample: " + String(samplecount)).c_str());
-
-//     rawString = "";
-    
-// }
-
-
 void CC1101_CLASS::disableReceiver()
 {
     detachInterrupt((uint8_t)receiverGPIO);
@@ -202,100 +190,97 @@ void CC1101_CLASS::disableReceiver()
     digitalWrite(CC1101_CS, HIGH);  
 }
 
-
 void CC1101_CLASS::loadPreset() {
     switch (C1101preset) {
-        case AM650:
-            CC1101_MODULATION = 2;
-            CC1101_DRATE = 3.79372;
-            CC1101_RX_BW = 650.00;
-            CC1101_DEVIATION = 1.58;
-            CC1101_SYNC = 2;
-            break;
-        case AM270:
-            CC1101_MODULATION = 2;
-            CC1101_DRATE = 3.79372;
-            CC1101_RX_BW = 270.833333;
-            CC1101_DEVIATION = 1.58;
-            CC1101_SYNC = 2;
-            break;
-        case FM238:
-            CC1101_MODULATION = 0;
-            CC1101_DRATE = 4.79794;
-            CC1101_RX_BW = 270.833333;
-            CC1101_DEVIATION = 2.380371;
-            CC1101_SYNC = 2;
-            break;
-        case FM476:
-            CC1101_MODULATION = 0;
-            CC1101_DRATE = 4.79794;
-            CC1101_RX_BW = 270.833333;
-            CC1101_DEVIATION = 47.60742;
-            CC1101_SYNC = 2;
+    case AM650:
+        CC1101_MODULATION = 2;
+        CC1101_DRATE = 3.79372;
+        CC1101_RX_BW = 650.00;
+        CC1101_DEVIATION = 1.58;
+        break;
+    case AM270:
+        CC1101_MODULATION = 2;
+        CC1101_DRATE = 3.79372;
+        CC1101_RX_BW = 270.833333;
+        CC1101_DEVIATION = 1.58;
+        break;
+    case FM238:
+        CC1101_MODULATION = 0;
+        CC1101_DRATE = 4.79794;
+        CC1101_RX_BW = 270.833333;
+        CC1101_DEVIATION = 2.380371;
+        break;
+    case FM476:
+        CC1101_MODULATION = 0;
+        CC1101_DRATE = 4.79794;
+        CC1101_RX_BW = 270.833333;
+        CC1101_DEVIATION = 47.60742;
+        break;
             break;
         case FM95:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 4.798;
             CC1101_RX_BW = 270;
             CC1101_DEVIATION = 9.521;
-            CC1101_SYNC = 6;
+   //         CC1101_SYNC = 6;
             break;
         case FM15k:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 3.794;
             CC1101_RX_BW = 135;
             CC1101_DEVIATION = 15.869;
-            CC1101_SYNC = 7;
+    //        CC1101_SYNC = 7;
             break;
         case PAGER:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 0.625;
             CC1101_RX_BW = 270;
             CC1101_DEVIATION = 5.157;
-            CC1101_SYNC = 6;
+//            CC1101_SYNC = 6;
             break;
         case HND1:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 15.357;
             CC1101_RX_BW = 270;
             CC1101_DEVIATION = 15.869;
-            CC1101_SYNC = 6;
+ //           CC1101_SYNC = 6;
             break;
         case HND2:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 15.357;
             CC1101_RX_BW = 67;
             CC1101_DEVIATION = 15.869;
-            CC1101_SYNC = 7;
+ //           CC1101_SYNC = 7;
             break;
         default:
             CC1101_MODULATION = 2;
             CC1101_DRATE = 3.79372;
             CC1101_RX_BW = 650.00;
             CC1101_DEVIATION = 1.58;
-            CC1101_SYNC = 2;
+  //          CC1101_SYNC = 2;
             break;
     }
 
-    ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);
-    ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
-    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);
-    ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
+    // ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);
+    // ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
+    // ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);
+    // ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
     Serial.print("preset loaded");
 }
 
 bool CC1101_CLASS::CheckReceived()
 {
-
-  // delay(1);
-  if (samplecount >= minsample && micros()-lastTime >100000){
-    return true;
-  }else{
-    return false;
-  }
+    delay(1);
+    if (samplecount >= minsample && micros() - lastTime > 100000)
+    {
+        receiverEnabled = false;
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
-
-
 
 void CC1101_CLASS::signalanalyse(){
  #define signalstorage 10
@@ -419,7 +404,10 @@ void CC1101_CLASS::signalanalyse(){
 
     FlipperSubFile subFile;
     SD.end();  
- if (SDInit()) {
+    CC1101_CLASS::disableReceiver();
+    digitalWrite(CC1101_CS, HIGH);
+    digitalWrite(SDCARD_CS, LOW);
+    if (SDInit()) {
     if (!SD.exists("/recordedRF/" )) {
         SD.mkdir("/recordedRF/" );
     }  
@@ -449,10 +437,12 @@ void CC1101_CLASS::signalanalyse(){
 
         }
         SD.end();
+        digitalWrite(CC1101_CS, LOW);
+        digitalWrite(SDCARD_CS, HIGH);
+        CC1101_CLASS::enableReceiver();     
 
     }
 }
-
 
 void CC1101_CLASS::sendRaw() {
     detachInterrupt(CC1101_CCGDO0A);
@@ -488,7 +478,6 @@ void CC1101_CLASS::sendRaw() {
 void CC1101_CLASS::initrRaw() {
   Serial.print("Init CC1101 raw");
    // initializing library with custom pins selected
-     ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
 
     // Main part to tune CC1101 with proper frequency, modulation and encoding    
     ELECHOUSE_cc1101.Init();                // must be set to initialize the cc1101!
@@ -525,10 +514,6 @@ String CC1101_CLASS::generateRandomString(int length)
     return String(ss.str().c_str());
 }
 
-
-// ---------------------------------------------------------------------
-// void SubGhz::sendSamples(int samples[], int samplesLength)
-// ---------------------------------------------------------------------
 void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
 {
     disconnectSD();
@@ -563,7 +548,6 @@ void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
     disableTransmit();
     SDInit();
 }
-
 
 void CC1101_CLASS::enableTransmit()
 {
@@ -616,14 +600,11 @@ void CC1101_CLASS::sendBrute(int type) {
     delayMicroseconds(100);
     digitalWrite(CC1101_CS, LOW);
     delayMicroseconds(150);
-    CC1101_CLASS::init();
     CC1101_CLASS::initrRaw();
     CC1101_CLASS::setCC1101Preset(AM650);
     CC1101_CLASS::loadPreset();
-    CC1101_CLASS::enableTransmit();           
-
-
-
+    CC1101_CLASS::enableTransmit();       
+   
     // types:
     // 1 - czech bell (6-bit combinations)
     // 2 - came 12-bit combinations
@@ -658,7 +639,6 @@ void CC1101_CLASS::sendBrute(int type) {
                 delayMicroseconds(1500);
                 Serial.println(binary_combinations_czech_bell[i]);
             i++;
-            Serial.println(i);  
             }
             break;
         case 2:

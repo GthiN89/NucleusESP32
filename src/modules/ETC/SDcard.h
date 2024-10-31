@@ -2,13 +2,13 @@
 #define SDCARD_H
 
 #include <FS.h>
-#include <SD.h>
+#include <SDfat.h>
 #include "SPI.h"
 #include "driver/sdspi_host.h"   // Include for SD card SPI host definitions
 #include "driver/spi_common.h"   // Include for common SPI host definitions
 
 // SPI Host configuration
-#define SDCARD_SPI_HOST HSPI_HOST  // Using HSPI for SD card communication
+#define SDCARD_SPI_HOST SPI1_HOST  // Using HSPI for SD card communication
 
 // Define SD card pins
 #define SDCARD_CS 5    // Chip Select pin for the SD card
@@ -25,6 +25,7 @@ extern SPIClass sd;
 extern float tempFreq;
 extern int tempSample[];
 extern int tempSampleCount;
+
 
 // Function prototypes
 bool SDInit();        // Function to initialize the SD card

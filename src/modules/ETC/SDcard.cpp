@@ -9,10 +9,12 @@ SPIClass sd(SDCARD_SPI_HOST);
 
 bool SDInit() {
     // Begin SPI with specific pins
-    SPI.begin(SDCARD_SCK, SDCARD_MISO, SDCARD_MOSI, SDCARD_CS);
+        // Ensure CC1101 is disabled
     
-    // Ensure CC1101 is disabled
-    digitalWrite(CC1101_CS, HIGH);  
+    digitalWrite(SDCARD_CS, LOW);
+    SPI.begin(SDCARD_SCK, SDCARD_MISO, SDCARD_MOSI, SDCARD_CS);
+    digitalWrite(CC1101_CS, HIGH); 
+ 
     
     // Begin SD card initialization
     if (!SD.begin(SDCARD_CS)) {
@@ -25,22 +27,6 @@ bool SDInit() {
         return true;
     }
 }
-
-bool  deleteFile(const char *path) {
-    if (SD.exists(path)) {
-        if (SD.remove(path)) {
-            Serial.println("File deleted successfully");
-            return true;
-        } else {
-            Serial.println("File deletion failed");
-            return false;
-        }
-    } else {
-        Serial.println("File doesn't exist");
-        return false;
-    }
-}
-
 
 String disconnectSD() {
     SPI.endTransaction();
@@ -144,3 +130,17 @@ bool read_sd_card_flipper_file(String filename)
   return true;
 }
 
+bool  deleteFile(const char *path) {
+    if (SD.exists(path)) {
+        if (SD.remove(path)) {
+            Serial.println("File deleted successfully");
+            return true;
+        } else {
+            Serial.println("File deletion failed");
+            return false;
+        }
+    } else {
+        Serial.println("File doesn't exist");
+        return false;
+    }
+}
