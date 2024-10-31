@@ -337,11 +337,10 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 
     lv_textarea_set_text(text_area, "Waiting for signal.\n");
 
-     CC1101.init();
      CC1101.setCC1101Preset(convert_str_to_enum(selected_text));
-     CC1101.loadPreset();
+   //  CC1101.loadPreset();
      CC1101.enableReceiver();
-     CC1101.setFrequency(CC1101_MHZ);
+   //  CC1101.setFrequency(CC1101_MHZ);
      delay(20);
     
     C1101CurrentState = STATE_ANALYZER;

@@ -7,7 +7,6 @@
 #include "globals.h"
 #include "GUI/ScreenManager.h"
 #include "modules/RF/CC1101.h"
-#include "modules/ETC/SDcard.h"
 #include "XPT2046_Bitbang.h"
 
 #include "GUI/events.h"
@@ -17,8 +16,7 @@
 #include "SPIFFS.h"
 #include "modules/BLE/SourApple.h"
 #include "modules/BLE/BLESpam.h"
-
-#define FORMAT_LITTLEFS_IF_FAILED true
+#include "modules/ETC/SDcard.h"
 
 
 // Pin definitions for touchscreen and SD card
@@ -28,8 +26,12 @@
 #define CS_PIN   33
 #define SD_CS 5 // SD card CS pin
 
+
+
 // Touchscreen object
 XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
+CC1101_CLASS CC1101;
+
 
 // Touch handling variables
 static lv_indev_drv_t touchDriver;
@@ -48,11 +50,7 @@ void register_touch(lv_disp_t *disp);
 void my_touchpad_read(lv_indev_drv_t * indev_driver, lv_indev_data_t * data);
 static lv_obj_t *touch_marker = nullptr;
 
-// Event handler declaration
-void radioHandlerOnChange();
 
-// Function prototypes for RF handling
-void ProtAnalyzerloop();
 
 
 
@@ -62,83 +60,68 @@ const uint32_t subghz_frequency_list[] = {
     868350000, 868000000, 915000000, 925000000  //  779-928 MHz
 };
 
-CC1101_CLASS CC1101;
+
+
+void lvglTask(void *pvParameter) {
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    screenMgr.createmainMenu();
+    
+
+    while (true) {
+        lv_task_handler(); 
+        vTaskDelay(pdMS_TO_TICKS(5));
+    }
+
+    vTaskDelete(NULL);
+}
 
 
 void setup() {
-    // Inicializace sériové komunikace
-        //esp_debug_initialize();  // Initialize the GDB stub
     Serial.begin(115200);
     Serial.setDebugOutput(true);
     Serial.println(F("Starting setup..."));
 
-    // Inicializace LVGL a displeje
-    smartdisplay_init(); // Initialize the display and LVGL
+    smartdisplay_init(); 
     Serial.println(F("LVGL initialized."));
-
-     if (!SPIFFS.begin(true, "/littlefs")) {
-         Serial.println("SPIFFS Mount Failed");
-         return;
-     }
-  File root = SPIFFS.open("/");
- 
-  File file = root.openNextFile();
- 
-  while(file){
- 
-      Serial.print("FILE: ");
-      Serial.println(file.name());
- 
-      file = root.openNextFile();
-  }
-
-
-  
 
     // Inicializace touch
     init_touch([]() { Serial.println(F("Single touch detected!")); }, []() { Serial.println(F("Double touch detected!")); });
 
-  //  Register touch input device with LVGL
+
+    xTaskCreatePinnedToCore(
+        lvglTask,     
+        "Does run LVGL on core 1",   
+        42U * 1024U,        //memory
+        NULL,          // Task parameter
+        1,             // Task priority (1 is low)
+        NULL,          // Task handle
+        1              // Core 1
+    );
+
+
     auto disp = lv_disp_get_default();
     register_touch(disp);
 
-//       Serial.print("Initializing CC1101...");
-//   if (CC1101.init())
-//   {
-//     Serial.print("CC1101 initialized.");
-//     CC1101_init = true;
-//   }
+  //  SDInit();
+    
+    
 
-ScreenManager& screenMgr = ScreenManager::getInstance();
-    screenMgr.createmainMenu();
+   Serial.print("Initializing CC1101...");
 
-      Serial.print("Initializing CC1101...");
-
-  if (CC1101.init())
-  {
-    Serial.print("CC1101 initialized.");
-    CC1101_is_initialized = true;
-  }
-  else
-  {
-    Serial.print("CC1101 not initialized.");
-  }
-    // Inicializace RF Modules
-   
-  
-//     // Připojení Interrupt Handler
-//     attachInterrupt(digitalPinToInterrupt(CCGDO0A), radioHandlerOnChange, CHANGE);
-//     CC1101_interup_attached = true;
-    // Main part to tune CC1101 with proper frequency, modulation and encoding    
+//  if (CC1101.init())
+//  {
+//    Serial.print("CC1101 initialized.");
+//    CC1101_is_initialized = true;
+//  }
+//  else
+//  {
+//    Serial.print("CC1101 not initialized.");
+//  }
 
 }
 
-void loop() {+
-
-    lv_task_handler(); // Handle LVGL tasks
+void loop() {
     delay(5); // Minimal delay to allow other tasks to run
-
-    Serial.println(digitalRead(CC1101_CCGDO0A));
    
     if(C1101CurrentState == STATE_ANALYZER) {
             if (CC1101.CheckReceived())
@@ -149,11 +132,9 @@ void loop() {+
               C1101CurrentState = STATE_IDLE;
             }
             delay(1);
-
-    }
+        }
 
     if(C1101CurrentState == STATE_BRUTE) {
-
         CC1101.enableTransmit();
         CC1101.sendBrute(1);
         CC1101.disableTransmit();
@@ -162,7 +143,6 @@ void loop() {+
 
 
     if(C1101CurrentState == STATE_PLAYBACK) {
-
         CC1101.enableTransmit();
         CC1101.sendRaw();
         CC1101.disableTransmit();

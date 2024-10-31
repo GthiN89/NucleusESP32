@@ -10,7 +10,7 @@
 #include "modules/ETC/SDcard.h"
 #include "modules/dataProcessing/SubGHzParser.h"
 #include "modules/dataProcessing/dataProcessing.h"
-
+#include "SD.h"
 
 
 #define MAX_PATH_LENGTH 256

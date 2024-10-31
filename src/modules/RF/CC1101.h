@@ -28,9 +28,10 @@ public:
     int CC1101_SYNC = 2;
     float CC1101_FREQ = 433.92;
     
+    bool init();
     void setCC1101Preset(CC1101_PRESET preset);
     void loadPreset();
-    bool init();
+
     void disableReceiver();
     void setFrequency(float freq);
     void enableReceiver();
@@ -48,10 +49,11 @@ public:
     void sendSamples(int samples[], int samplesLength);
     void sendBrute(int type);
 private:
+    SPIClass  CC1101SPI;;
     int smoothcount;
     unsigned long samplesmooth[SAMPLE_SIZE];
     String rawString = "";
-    int minsample = 30;
+    int minsample = 15;
     
 };
 
