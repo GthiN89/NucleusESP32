@@ -4,6 +4,8 @@
 #include "../../globals.h"
 #define SAMPLE_SIZE 512
 
+
+
    //---------------------------------------------------------------------------//
   //-----------------------------Presets-Variables-----------------------------//
  //---------------------------------------------------------------------------//
@@ -29,9 +31,10 @@ public:
     float CC1101_FREQ = 433.92;
     
     bool init();
+    RCSwitch getRCSwitch();
     void setCC1101Preset(CC1101_PRESET preset);
     void loadPreset();
-
+    void enableRCSwitch();
     void disableReceiver();
     void setFrequency(float freq);
     void enableReceiver();

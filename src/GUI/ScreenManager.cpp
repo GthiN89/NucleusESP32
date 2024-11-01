@@ -48,12 +48,10 @@ ScreenManager::ScreenManager()
       topLabel_container_(nullptr),
       browserButton_container_(nullptr),
       browserButton2_container_(nullptr),
-      RCSwitchMethodScreen_(nullptr),
       button_container1_(nullptr),
       button_container2_(nullptr),
       C1101preset_container_(nullptr),
       C1101PTK_container_(nullptr),
-      C1101PTK_dropdown_(nullptr),
       C1101SYNC_container_(nullptr),
       topLabel_RCSwitchMethod_container_(nullptr),
       secondLabel_container_(nullptr),
@@ -61,7 +59,7 @@ ScreenManager::ScreenManager()
       button_container_RCSwitchMethod2_(nullptr),
       button_container_RCSwitchMethod1_(nullptr),
       brute_dropdown_(nullptr)
-      
+  
 {
 }
 
@@ -111,10 +109,6 @@ lv_obj_t *ScreenManager::getSyncDropdown()
     return C1101SYNC_dropdown_;
 }
 
-lv_obj_t *ScreenManager::getPTKDropdown()
-{
-    return C1101PTK_dropdown_;
-}
 
 lv_obj_t *ScreenManager::getTextAreaBrute(){
     return text_area__BruteForce;
@@ -148,6 +142,8 @@ void ScreenManager::createReplayScreen() {
     lv_obj_add_event_cb(freqInput_, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, kb_freq_);
 
 
+
+
     containerHelper.createContainer(&secondLabel_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
     lv_obj_set_style_border_width(secondLabel_container_, 0, LV_PART_MAIN);
 
@@ -164,6 +160,15 @@ void ScreenManager::createReplayScreen() {
                                 );
 
     lv_obj_add_event_cb(C1101preset_dropdown_, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, C1101preset_dropdown_);
+
+    C1101type_dropdown_ = lv_dropdown_create(secondLabel_container_);
+    lv_dropdown_set_options(C1101type_dropdown_, "Raw\n"
+                                "Analyze\n"
+
+                                );
+
+    lv_obj_add_event_cb(C1101type_dropdown_, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, C1101type_dropdown_);
+
 
     // Create main text area
     text_area_replay = lv_textarea_create(ReplayScreen_);
@@ -527,6 +532,8 @@ void ScreenManager::createFileBrowser(lv_obj_t* parent) {
 }
 
 
+
+
 void ScreenManager::updateFileList(const char* directory) {
     Serial.print("Updating file list for directory: ");
     Serial.println(directory);
@@ -624,7 +631,6 @@ void ScreenManager::useSelectedFile(const char* filepath) {
     SubGHzParser parser;
     parser.loadFile(filepath);
     SubGHzData data = parser.parseContent();
-    parser.printParsedData(data);
 
     SDInit();
     lv_label_set_text(selected_label, "Transmitting");

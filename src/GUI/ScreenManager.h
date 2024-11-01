@@ -2,12 +2,15 @@
 #define SCREEN_MANAGER_H
 
 #include "lvgl.h"
+#include <functional>
 //#include "settingsButton.h" 
 
 
 class ScreenManager {
 public:
+
     lv_obj_t* C1101preset_dropdown_;
+    lv_obj_t* C1101type_dropdown_;
     lv_obj_t*  brute_dropdown_;
     static ScreenManager& getInstance();
 
@@ -32,8 +35,6 @@ public:
     lv_obj_t* getKeyboardFreq();
     lv_obj_t* getPresetDropdown();
     lv_obj_t* getSyncDropdown();
-    lv_obj_t* getPTKDropdown();
-    lv_obj_t* getPulseLenghtInput();
     lv_obj_t* getBruteDropdown();
 
     void updateFileList(const char* directory);
@@ -74,7 +75,6 @@ private:
 
     lv_obj_t* checkbox_container_;
     lv_obj_t* C1101PTK_container_;
-    lv_obj_t* C1101PTK_dropdown_;
     lv_obj_t* C1101SYNC_container_;
     lv_obj_t* C1101SYNC_dropdown_;
     lv_obj_t *buttonSettings_;
@@ -83,7 +83,6 @@ private:
     lv_obj_t * pulseGet_;
     lv_obj_t* SubPlayerScreen_;
     lv_obj_t* topLabel_RCSwitchMethod_container_;
-    lv_obj_t* RCSwitchMethodScreen_;
     lv_obj_t* button_container_RCSwitchMethod1_;
     lv_obj_t* button_container_RCSwitchMethod2_; 
     lv_obj_t* button_container_BruteForce1_;
