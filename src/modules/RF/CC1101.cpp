@@ -581,50 +581,71 @@ void CC1101_CLASS::saveSignal() {
 }
 
 void CC1101_CLASS::sendBrute(int type) {
-
+    bruteIsRunning = true;
  //initializing library with custom pins selected
-
-    #include "../RFBrute/came12bit.h"
-    #include "../RFBrute/czech_bell_6bit.h"
-    Serial.println("Brute1");  
-
+     #include "../RFBrute/came12bit.h"
+    #include "../RFBrute/czech_bell_8bit.h"
     CC1101_CLASS::initrRaw();
-    CC1101_CLASS::setCC1101Preset(AM650);
     CC1101_CLASS::loadPreset();   
-   
     // types:
     // 1 - czech bell (6-bit combinations)
     // 2 - came 12-bit combinations
-    int count6 = 64;  
+    int count8 = 256;  
     int count12 = 4096;  
-    int i = 0;  
+    int i = 0;
+    int sc = 0;
+    uint16_t sr = 0;  
     switch (type) {
         case 1:
             i = 0; 
-            while (i < count6)  
+            while (i < count8)  
             {
                 int j = 0;
-                while (i < 6) {
-                    if((int)binary_combinations_czech_bell[i][j] == 1) {
-                        unsigned long highTime = 820;
-                        unsigned long lowTime = 420;
+                while (j < 8) {
+                        //preamp
                         digitalWrite(CC1101_CCGDO0A, HIGH);
-                        delayMicroseconds(highTime);
+                        delayMicroseconds(400);
                         digitalWrite(CC1101_CCGDO0A, LOW);
-                        delayMicroseconds(lowTime);
+                        delayMicroseconds(430);
+                if (((binary_combinations_czech_bell[i] >> j) & 1) == 1) {
+                        digitalWrite(CC1101_CCGDO0A, HIGH);
+                        delayMicroseconds(840);
+                        digitalWrite(CC1101_CCGDO0A, LOW);
+                        delayMicroseconds(420);
                 } else {
-                        unsigned long highTime = 1;
-                        unsigned long lowTime = 820 + 420;
                         digitalWrite(CC1101_CCGDO0A, HIGH);
-                        delayMicroseconds(highTime);
+                        delayMicroseconds(420);
                         digitalWrite(CC1101_CCGDO0A, LOW);
-                        delayMicroseconds(lowTime);
+                        delayMicroseconds(840);
                 }
-                j++;                    
+                //ending
+                        digitalWrite(CC1101_CCGDO0A, HIGH);
+                        delayMicroseconds(420);
+                        digitalWrite(CC1101_CCGDO0A, LOW);
+                        delayMicroseconds(840);
+                        digitalWrite(CC1101_CCGDO0A, HIGH);
+                        delayMicroseconds(420);
+                        digitalWrite(CC1101_CCGDO0A, LOW);
+                        delayMicroseconds(840);
+                        digitalWrite(CC1101_CCGDO0A, HIGH);
+                        delayMicroseconds(840);
+                        digitalWrite(CC1101_CCGDO0A, LOW);
+                        delayMicroseconds(420);
+                        digitalWrite(CC1101_CCGDO0A, HIGH);
+                        delayMicroseconds(840);
+                        digitalWrite(CC1101_CCGDO0A, LOW);
+                        delayMicroseconds(420);
+                j++;                 
                 }
+
                 digitalWrite(CC1101_CCGDO0A, LOW);
-                delayMicroseconds(1500);
-                Serial.println(binary_combinations_czech_bell[i]);
+                delayMicroseconds(10000);   
+                sc++;
+                sr++;
+                if(sc > 9) {
+                    sc = 0;
+                    bruteCounter = sr;
+                }
             i++;
             }
             break;
@@ -632,7 +653,7 @@ void CC1101_CLASS::sendBrute(int type) {
             while (i < count12)  
             {
                // ELECHOUSE_cc1101.SendData((char*)binary_combinations_came_12bit[i], 12);
-               // i++;  
+                i++;  
             }
             break;
         default:
@@ -640,5 +661,6 @@ void CC1101_CLASS::sendBrute(int type) {
     }
 
     delay(20);
-    digitalWrite(CC1101_CCGDO0A, LOW); 
+    digitalWrite(CC1101_CCGDO0A, LOW);
+    bruteIsRunning = false;
 }

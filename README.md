@@ -14,6 +14,7 @@ have:</br>
 -C1101 raw replay - now work more similar to flipper</br>
 -*.sub files player-raw files does work, tested for AM270 and AM650</br>
 -Tesla charger open - this works great</br>
+-Brutal force attack on 8-bit RF codes provided by M1E IC from MOSDESIGN SEMICONDUCTOR CORP. <a src="https://www.cika.com/soporte/Information/Semiconductores/CIencoder-decoder/M1E-MOSDESIGN.pdf">M1E Datasheet </a> 
 </br>
 planned:
 -BL spam</br>

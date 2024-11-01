@@ -61,10 +61,12 @@ const uint32_t subghz_frequency_list[] = {
 };
 
 
-
 void lvglTask(void *pvParameter) {
     ScreenManager& screenMgr = ScreenManager::getInstance();
     screenMgr.createmainMenu();
+
+    
+
     
 
     while (true) {
@@ -74,6 +76,7 @@ void lvglTask(void *pvParameter) {
 
     vTaskDelete(NULL);
 }
+
 
 
 void setup() {
@@ -135,7 +138,6 @@ void loop() {
         }
 
     if(C1101CurrentState == STATE_BRUTE) {
-        CC1101.enableTransmit();
         CC1101.sendBrute(1);
         CC1101.disableTransmit();
       C1101CurrentState = STATE_IDLE;
@@ -277,16 +279,6 @@ void init_touch(TouchCallback singleTouchCallback, TouchCallback doubleTouchCall
     touchscreen.setCalibration(109, 150, 1936, 1912);  // xMin, xMax, yMin, yMax
     if (!touchscreen.loadCalibration()) {
         calibrate();
-    }
-
-    // Create a small circle that will represent the touch point
-    lv_obj_t * scr = lv_scr_act(); // Get the current screen
-    if (touch_marker == nullptr) {  // Make sure touch_marker is not already created
-        touch_marker = lv_obj_create(scr);
-        lv_obj_set_size(touch_marker, 10, 10); // Set the size of the circle
-        lv_obj_set_style_radius(touch_marker, LV_RADIUS_CIRCLE, 0); // Make it a circle
-        lv_obj_set_style_bg_color(touch_marker, lv_color_hex(0xFF0000), 0); // Set color to red
-        lv_obj_add_flag(touch_marker, LV_OBJ_FLAG_HIDDEN); // Hide it initially
     }
 
     _singleTouchCallback = singleTouchCallback;

@@ -33,6 +33,9 @@ bool CC1101_init  = false;
 bool CC1101_RCSwitch_init  = false;
 bool CC1101_RCSwitch_listen = false;
 bool CC1101_RCSwitch_play    = false;
+extern bool bruteIsRunning = false;
+
+extern uint16_t bruteCounter = 0;
 
 
 

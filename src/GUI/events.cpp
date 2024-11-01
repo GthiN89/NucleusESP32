@@ -449,20 +449,13 @@ void EVENTS::file_btn_event_cb_sub(lv_event_t* e) {
 
 void EVENTS::btn_event_brute_run(lv_event_t* e) {
     char string[32]; 
-    CC1101.setFrequency(433.92);
-    Serial.println("czech bells1");
-    Serial.println("czech bells2");
+    CC1101.setCC1101Preset(AM650);
     lv_obj_t * text_area__BruteForce = screenMgr.getTextAreaBrute();
-    Serial.println("czech bells3");
-    lv_dropdown_get_selected_str(screenMgr.brute_dropdown_, string, sizeof(string));
-    Serial.println("czech bells5");
-    
+    lv_dropdown_get_selected_str(screenMgr.brute_dropdown_, string, sizeof(string));    
     lv_textarea_set_text(text_area__BruteForce, "Brute forcing");
     delay(1000);
     if(strcmp(string, "Czech Bells") == 0) {
         Serial.println("czech bells");
     }
     C1101CurrentState = STATE_BRUTE;
-
-    lv_textarea_set_text(text_area__BruteForce, "Brute forcing done");
 }
