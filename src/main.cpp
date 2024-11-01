@@ -65,10 +65,6 @@ void lvglTask(void *pvParameter) {
     ScreenManager& screenMgr = ScreenManager::getInstance();
     screenMgr.createmainMenu();
 
-    
-
-    
-
     while (true) {
         lv_task_handler(); 
         vTaskDelay(pdMS_TO_TICKS(5));
@@ -109,7 +105,7 @@ void setup() {
     
     
 
-   Serial.print("Initializing CC1101...");
+ //  Serial.print("Initializing CC1101...");
 
 //  if (CC1101.init())
 //  {
@@ -139,6 +135,9 @@ void loop() {
 
     if(C1101CurrentState == STATE_BRUTE) {
         CC1101.sendBrute(1);
+            ScreenManager& screenMgr = ScreenManager::getInstance();
+            lv_obj_t* ta = screenMgr.getTextAreaBrute();
+            lv_textarea_set_text(ta, ("Brute forcing\n attempt number: " + String(bruteCounter)).c_str());            
         CC1101.disableTransmit();
       C1101CurrentState = STATE_IDLE;
     };
@@ -275,10 +274,19 @@ void calibrate() {
 void init_touch(TouchCallback singleTouchCallback, TouchCallback doubleTouchCallback) {
     Serial.println(F("Initializing touch."));
     touchscreen.begin();
-
     touchscreen.setCalibration(109, 150, 1936, 1912);  // xMin, xMax, yMin, yMax
     if (!touchscreen.loadCalibration()) {
         calibrate();
+    }
+
+    // Create a small circle that will represent the touch point
+    lv_obj_t * scr = lv_scr_act(); // Get the current screen
+    if (touch_marker == nullptr) {  // Make sure touch_marker is not already created
+        touch_marker = lv_obj_create(scr);
+        lv_obj_set_size(touch_marker, 10, 10); // Set the size of the circle
+        lv_obj_set_style_radius(touch_marker, LV_RADIUS_CIRCLE, 0); // Make it a circle
+        lv_obj_set_style_bg_color(touch_marker, lv_color_hex(0xFF0000), 0); // Set color to red
+        lv_obj_add_flag(touch_marker, LV_OBJ_FLAG_HIDDEN); // Hide it initially
     }
 
     _singleTouchCallback = singleTouchCallback;
