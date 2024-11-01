@@ -594,60 +594,69 @@ void CC1101_CLASS::sendBrute(int type) {
     int count12 = 4096;  
     int i = 0;
     int sc = 0;
-    uint16_t sr = 0;  
+    uint16_t sr = 0;
+    
     switch (type) {
         case 1:
-            i = 0; 
+ 
             while (i < count8)  
             {
+            int times[26];
+            times[1] = 420;
+            int index = 2;
                 int j = 0;
-                while (j < 8) {
-                        //preamp
-                        digitalWrite(CC1101_CCGDO0A, HIGH);
-                        delayMicroseconds(400);
-                        digitalWrite(CC1101_CCGDO0A, LOW);
-                        delayMicroseconds(430);
+                while (j < 6) {
                 if (((binary_combinations_czech_bell[i] >> j) & 1) == 1) {
-                        digitalWrite(CC1101_CCGDO0A, HIGH);
-                        delayMicroseconds(840);
-                        digitalWrite(CC1101_CCGDO0A, LOW);
-                        delayMicroseconds(420);
+                    times[index] = 420;
+                    index++; 
+                    times[index] = 840;
+                    index++;
                 } else {
-                        digitalWrite(CC1101_CCGDO0A, HIGH);
-                        delayMicroseconds(420);
-                        digitalWrite(CC1101_CCGDO0A, LOW);
-                        delayMicroseconds(840);
+                    times[index] = 840;
+                    index++; 
+                    times[index++] = 420;
                 }
-                //ending
-                        digitalWrite(CC1101_CCGDO0A, HIGH);
-                        delayMicroseconds(420);
-                        digitalWrite(CC1101_CCGDO0A, LOW);
-                        delayMicroseconds(840);
-                        digitalWrite(CC1101_CCGDO0A, HIGH);
-                        delayMicroseconds(420);
-                        digitalWrite(CC1101_CCGDO0A, LOW);
-                        delayMicroseconds(840);
-                        digitalWrite(CC1101_CCGDO0A, HIGH);
-                        delayMicroseconds(840);
-                        digitalWrite(CC1101_CCGDO0A, LOW);
-                        delayMicroseconds(420);
-                        digitalWrite(CC1101_CCGDO0A, HIGH);
-                        delayMicroseconds(840);
-                        digitalWrite(CC1101_CCGDO0A, LOW);
-                        delayMicroseconds(420);
                 j++;                 
                 }
-
-                digitalWrite(CC1101_CCGDO0A, LOW);
-                delayMicroseconds(10000);   
+                    times[index] = 840;
+                    index++; 
+                    times[index++] = 420;
+                    times[index] = 840;
+                    index++; 
+                    times[index++] = 420;
+                    times[index] = 420;
+                    index++; 
+                    times[index] = 840;
+                    index++;
+                    times[index] = 420;
+                    index++; 
+                    times[index] = 840;
+                    index++;
                 sc++;
                 sr++;
                 if(sc > 9) {
                     sc = 0;
                     bruteCounter = sr;
                 }
-            i++;
-            }
+
+                for (int i = 1; i < index - 1; i += 2)
+                {
+                    digitalWrite(CC1101_CCGDO0A, HIGH);
+                    delayMicroseconds(times[i]);
+                    digitalWrite(CC1101_CCGDO0A, LOW);
+                    delayMicroseconds(times[i+1]);
+                }
+                delayMicroseconds(15000);  
+                                for (int i = 1; i < index - 1; i += 2)
+                {
+                    digitalWrite(CC1101_CCGDO0A, HIGH);
+                    delayMicroseconds(times[i]);
+                    digitalWrite(CC1101_CCGDO0A, LOW);
+                    delayMicroseconds(times[i+1]);
+                }
+                delayMicroseconds(15000);                 
+                i++;
+                 }
             break;
         case 2:
             while (i < count12)  
