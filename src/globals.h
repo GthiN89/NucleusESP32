@@ -84,6 +84,7 @@ extern bool CC1101_init;
 extern bool CC1101_RCSwitch_init; 
 extern bool CC1101_RCSwitch_listen;
 extern bool CC1101_RCSwitch_play;
+extern bool bruteIsRunning;
 
 // Function declarations
 typedef void (*TouchCallback)();
@@ -96,6 +97,6 @@ extern char* selected_file;
 extern lv_obj_t* selected_label;
 extern lv_obj_t* selected_btn;
 
-
+extern uint16_t bruteCounter;
 
 #endif // GLOBALS_H
