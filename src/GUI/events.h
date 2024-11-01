@@ -39,6 +39,7 @@ static void btn_event_BTSpam_Start(lv_event_t * e);
 static void btn_event_BTSpam_Stop(lv_event_t * e);
 static void btn_event_BruteForce_run(lv_event_t* e);
 static void btn_event_brute_run(lv_event_t* e);
+static void ta_rf_type_event_cb(lv_event_t * e);
 
 static void load_btn_event_cb_sub(lv_event_t* e);
 static void back_btn_event_cb_sub(lv_event_t* e);

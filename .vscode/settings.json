@@ -58,5 +58,6 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp"
     },
-    "idf.portWin": "COM10"
+    "idf.portWin": "COM10",
+    "C_Cpp.errorSquiggles": "disabled"
 }

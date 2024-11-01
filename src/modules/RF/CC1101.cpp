@@ -50,6 +50,10 @@ String fullPath;
 
 RCSwitch mySwitch;
 
+RCSwitch CC1101_CLASS::getRCSwitch() {
+ return mySwitch;
+}
+
 //SPIClass CC1101SPI;
 
 void IRAM_ATTR InterruptHandler()
@@ -590,7 +594,7 @@ void CC1101_CLASS::sendBrute(int type) {
     // types:
     // 1 - czech bell (6-bit combinations)
     // 2 - came 12-bit combinations
-    int count8 = 256;  
+    int count6 = 64;  
     int count12 = 4096;  
     int i = 0;
     int sc = 0;
@@ -599,11 +603,11 @@ void CC1101_CLASS::sendBrute(int type) {
     switch (type) {
         case 1:
  
-            while (i < count8)  
+            while (i < count6)  
             {
             int times[26];
             times[1] = 420;
-            int index = 2;
+            int index = 1;
                 int j = 0;
                 while (j < 6) {
                 if (((binary_combinations_czech_bell[i] >> j) & 1) == 1) {
@@ -615,6 +619,7 @@ void CC1101_CLASS::sendBrute(int type) {
                     times[index] = 840;
                     index++; 
                     times[index++] = 420;
+                    index++; 
                 }
                 j++;                 
                 }
@@ -638,6 +643,14 @@ void CC1101_CLASS::sendBrute(int type) {
                     sc = 0;
                     bruteCounter = sr;
                 }
+                Serial.print(" \n");
+                for (int i = 1; i < index - 1; i += 1)
+                {
+                    Serial.print(times[i]);
+                    Serial.print(", ");
+
+                }
+                Serial.print(" \n");
 
                 for (int i = 1; i < index - 1; i += 2)
                 {
@@ -647,7 +660,7 @@ void CC1101_CLASS::sendBrute(int type) {
                     delayMicroseconds(times[i+1]);
                 }
                 delayMicroseconds(15000);  
-                                for (int i = 1; i < index - 1; i += 2)
+                for (int i = 1; i < index - 1; i += 2)
                 {
                     digitalWrite(CC1101_CCGDO0A, HIGH);
                     delayMicroseconds(times[i]);
@@ -672,4 +685,43 @@ void CC1101_CLASS::sendBrute(int type) {
     delay(20);
     digitalWrite(CC1101_CCGDO0A, LOW);
     bruteIsRunning = false;
+}
+
+void CC1101_CLASS::enableRCSwitch()
+{
+    if (!CC1101_is_initialized) {
+        CC1101_CLASS::init();
+    }
+    CC1101_CLASS::loadPreset();
+
+   // ELECHOUSE_cc1101.Init();
+
+    if (CC1101_MODULATION == 2)
+    {
+        ELECHOUSE_cc1101.setDcFilterOff(0);
+    }
+
+    if (CC1101_MODULATION == 0)
+    {
+        ELECHOUSE_cc1101.setDcFilterOff(1);
+    }
+
+     ELECHOUSE_cc1101.setDcFilterOff(1);
+    ELECHOUSE_cc1101.setSyncMode(CC1101_SYNC);  // Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.
+    ELECHOUSE_cc1101.setPktFormat(CC1101_PKT_FORMAT); // Format of RX and TX data. 0 = Normal mode, use FIFOs for RX and TX.
+                                                      // 1 = Synchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
+                                                      // 2 = Random TX mode; sends random data using PN9 generator. Used for test. Works as normal mode, setting 0 (00), in RX.
+                                                      // 3 = Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
+                                                      // ELECHOUSE_cc1101.setSyncMode(3);       
+    ELECHOUSE_cc1101.setModulation(CC1101_MODULATION); // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
+    ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);               // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
+    ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
+    ELECHOUSE_cc1101.setDRate(CC1101_DRATE); // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
+    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
+    
+    pinMode(CC1101_CCGDO0A, INPUT);
+//    receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO0A);    
+
+    mySwitch.enableReceive(CC1101_CCGDO0A); // Receiver on
+
 }

@@ -259,18 +259,7 @@ CC1101_PRESET EVENTS::stringToCC1101Preset(String presetStr) {
     Serial.println("Invalid preset string: " + presetStr);  
     return AM650; 
 }
-void EVENTS::saveRFSettingEvent(lv_event_t *e) {
-    lv_obj_t *dropdownSync = screenMgr.getSyncDropdown();
-    lv_obj_t *dropdownPTK = screenMgr.getPTKDropdown();
 
-    int syncIndex = lv_dropdown_get_selected(dropdownSync);
-    int ptkIndex = lv_dropdown_get_selected(dropdownPTK);
-
-    CC1101.setSync(syncIndex);
-    CC1101.setPTK(ptkIndex);
-
-    screenMgr.createReplayScreen();
-}
 
 
 
@@ -292,8 +281,23 @@ void EVENTS::ta_preset_event_cb(lv_event_t * e) {
     C1101preset = preset;
     CC1101.loadPreset();
 
-}
+} 
 
+
+void EVENTS::ta_rf_type_event_cb(lv_event_t * e) {
+     char selected_text[32];
+     lv_event_code_t code = lv_event_get_code(e);
+     lv_obj_t* text_area = screenMgr.getTextArea();
+
+    lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text, sizeof(selected_text));  // Copy selected text to the buffer
+
+    if (code == LV_EVENT_VALUE_CHANGED) {
+        C1101preset = stringToCC1101Preset(selected_text);
+        lv_textarea_add_text(text_area, "Type set to: ");
+        lv_textarea_add_text(text_area,selected_text);
+        lv_textarea_add_text(text_area, "\n");
+    }  
+}
 
 // void EVENTS::listenRFEvent(lv_event_t * e) {
 
@@ -325,6 +329,7 @@ void EVENTS::ta_preset_event_cb(lv_event_t * e) {
 void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 {
     char selected_text[32];
+    char selected_text_type[32];
     char frequency_buffer[10];
     lv_obj_t * text_area = screenMgr.getTextArea();
     lv_obj_t * ta = screenMgr.getFreqInput();
@@ -332,6 +337,7 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     frequency_buffer[sizeof(frequency_buffer) - 1] = '\0'; 
     CC1101_MHZ = atof(frequency_buffer);
     lv_dropdown_get_selected_str(screenMgr.C1101preset_dropdown_, selected_text, sizeof(selected_text));  // Copy selected text to the buffer
+    lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text_type, sizeof(selected_text_type));  // Copy selected text to the buffer
 
 
 
@@ -339,7 +345,13 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 
      CC1101.setCC1101Preset(convert_str_to_enum(selected_text));
    //  CC1101.loadPreset();
+     if(strcmp(selected_text_type, "Raw") == 0){
      CC1101.enableReceiver();
+     } else {
+        
+        CC1101.enableRCSwitch();
+        lv_textarea_add_text(text_area, "Decoder active.\n");
+     }
    //  CC1101.setFrequency(CC1101_MHZ);
      delay(20);
     

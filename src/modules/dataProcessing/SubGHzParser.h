@@ -17,23 +17,25 @@ using CustomPresetElement = uint8_t;
 
 struct SubGHzData {
     Frequency frequency;
-    PresetString preset;
+    String preset;
     std::vector<CustomPresetElement> custom_preset_data;
-    ProtocolString protocol;
-    ProtocolString bit;
-    ProtocolString bit_raw;
-    ProtocolString te;
+    String protocol;
+    String bit;
+    String bit_raw;
+    String te;
+    std::vector<std::vector<RawDataElement>> raw_data_list;
     std::vector<RawDataElement> raw_data;
     std::vector<RawDataElement> key_data;
 };
+
 
 class SubGHzParser {
 public:
     SubGHzParser();
     bool loadFile(const char* filename); //spfs
     SubGHzData parseContent();
-    void printParsedData(const SubGHzData& data);
     const String& getFileContent() const { return file_content; }
+    void sendRawData(const std::vector<RawDataElement>& rawData);
 
 private:
     String file_content;

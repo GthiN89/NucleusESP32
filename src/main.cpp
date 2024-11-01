@@ -6,7 +6,6 @@
 #include <lvgl.h>
 #include "globals.h"
 #include "GUI/ScreenManager.h"
-#include "modules/RF/CC1101.h"
 #include "XPT2046_Bitbang.h"
 
 #include "GUI/events.h"
@@ -30,7 +29,7 @@
 
 // Touchscreen object
 XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
-CC1101_CLASS CC1101;
+
 
 
 // Touch handling variables
@@ -131,7 +130,21 @@ void loop() {
               C1101CurrentState = STATE_IDLE;
             }
             delay(1);
-        }
+    }
+
+     if(C1101CurrentState == STATE_RCSWITCH) 
+{
+    RCSwitch mySwitch = CC1101.getRCSwitch();
+    if (mySwitch.available())
+    {
+        ScreenManager& screenMgr = ScreenManager::getInstance();
+        lv_obj_t* ta = screenMgr.getTextArea();      
+        lv_textarea_set_text(ta, (String("New Signal Received. \nvalue: ") + String(mySwitch.getReceivedValue()) + String(" (") + String(mySwitch.getReceivedBitlength()) + String("bit)\n Protocol: ") + String(mySwitch.getReceivedProtocol())).c_str());
+        C1101CurrentState = STATE_IDLE;
+    }
+
+}
+
 
     if(C1101CurrentState == STATE_BRUTE) {
         CC1101.sendBrute(1);
@@ -150,46 +163,7 @@ void loop() {
       C1101CurrentState = STATE_IDLE;
     };
 
-  if (C1101CurrentState == STATE_SEND_FLIPPER)
-  {
-    if (tempSampleCount % 2 == 0) {
-    } else {
-    tempSampleCount++;
-    }
-    Serial.print(disconnectSD());
-    int samplesClean[tempSampleCount];
-    Serial.print(String("Send RAW Data, sample count: " + String(tempSampleCount) + String(" | Frequency: ") + String(tempFreq)).c_str());
 
-    for (int i = 0; i < tempSampleCount; i++) {
-    samplesClean[i] = 1;
-    }
-
-        for (int i = 0; i < tempSampleCount; i++) {        
-        if (tempSample[i]>0)
-        {
-            Serial.print(String(tempSample[i]).c_str());
-            samplesClean[i] = tempSample[i];
-            Serial.print(", ");
-        } else {            
-            if(tempSample[i] * -1 > 0) {
-            Serial.print(String(tempSample[i] * -1).c_str());
-            samplesClean[i] = tempSample[i] * -1;
-            }
-            Serial.print(", ");
-        }
-    }
-
-        for (int i = 0; i < tempSampleCount; i++) {        
-        Serial.print(String(samplesClean[i]).c_str());
-            Serial.print(", ");
-        }
-    CC1101.setFrequency(tempFreq);
-    CC1101.loadPreset();
-    CC1101.sendSamples(samplesClean, tempSampleCount);
-
-    C1101CurrentState = STATE_IDLE;
-
-  }
 
     if(BTCurrentState == STATE_SOUR_APPLE) {
         sourApple sa;
