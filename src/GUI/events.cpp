@@ -348,7 +348,7 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
      if(strcmp(selected_text_type, "Raw") == 0){
      CC1101.enableReceiver();
      } else {
-        
+
         CC1101.enableRCSwitch();
         lv_textarea_add_text(text_area, "Decoder active.\n");
      }
@@ -407,11 +407,14 @@ void  EVENTS::load_btn_event_cb_sub(lv_event_t* e) {
 }
 
 void  EVENTS::delete_btn_event_cb_sub(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if(code == LV_EVENT_LONG_PRESSED) {
     const char *path = (const char *)lv_event_get_user_data(e); 
     if(deleteFile(path)){
             lv_label_set_text(selected_label, "File has been deleted");
     }
     screenMgr.updateFileList(current_dir);
+    }
 }
 
 void EVENTS::file_btn_event_cb_sub(lv_event_t* e) {

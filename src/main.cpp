@@ -60,17 +60,15 @@ const uint32_t subghz_frequency_list[] = {
 };
 
 
-void lvglTask(void *pvParameter) {
-    ScreenManager& screenMgr = ScreenManager::getInstance();
-    screenMgr.createmainMenu();
+// void lvglTask(void *pvParameter) {
 
-    while (true) {
-        lv_task_handler(); 
-        vTaskDelay(pdMS_TO_TICKS(5));
-    }
 
-    vTaskDelete(NULL);
-}
+//     while (true) {
+//         vTaskDelay(pdMS_TO_TICKS(5));
+//     }
+
+//     vTaskDelete(NULL);
+// }
 
 
 
@@ -85,16 +83,17 @@ void setup() {
     // Inicializace touch
     init_touch([]() { Serial.println(F("Single touch detected!")); }, []() { Serial.println(F("Double touch detected!")); });
 
-
-    xTaskCreatePinnedToCore(
-        lvglTask,     
-        "Does run LVGL on core 1",   
-        42U * 1024U,        //memory
-        NULL,          // Task parameter
-        1,             // Task priority (1 is low)
-        NULL,          // Task handle
-        1              // Core 1
-    );
+    ScreenManager& screenMgr = ScreenManager::getInstance();
+    screenMgr.createmainMenu();
+    // xTaskCreatePinnedToCore(
+    //     lvglTask,     
+    //     "Does run LVGL on core 1",   
+    //     42U * 1024U,        //memory
+    //     NULL,          // Task parameter
+    //     1,             // Task priority (1 is low)
+    //     NULL,          // Task handle
+    //     1              // Core 1
+    // );
 
 
     auto disp = lv_disp_get_default();
@@ -175,6 +174,7 @@ void loop() {
         spam.aj_adv(SpamDevice);
     }
 
+        lv_task_handler(); 
 
 }
 
