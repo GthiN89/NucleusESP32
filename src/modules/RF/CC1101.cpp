@@ -527,7 +527,12 @@ void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
 
     Serial.print("Transmitting\n");
     Serial.print(samplesLength);
+
     Serial.print("\n----------------\n");
+        digitalWrite(CC1101_CCGDO0A, HIGH);
+        delayMicroseconds(110);
+        digitalWrite(CC1101_CCGDO0A, LOW);
+        delayMicroseconds(150);
     for (int i = 1; i < samplesLength - 1; i += 2)
     {
         unsigned long highTime = max((unsigned long)(samples[i]), 0UL);

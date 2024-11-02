@@ -70,7 +70,6 @@ SubGHzData SubGHzParser::parseContent() {
     return data;
 }
 
-// Helper function to parse a line of RAW data into integers
 std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
     std::vector<RawDataElement> result;
     int start = 0;
