@@ -16,7 +16,7 @@ public:
 
     ScreenManager(const ScreenManager&) = delete;
     ScreenManager& operator=(const ScreenManager&) = delete;
-
+    void createDisplay();
     void createReplayScreen();
     void createmainMenu();
     void createRFMenu();

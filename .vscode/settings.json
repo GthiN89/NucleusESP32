@@ -56,7 +56,9 @@
         "streambuf": "cpp",
         "thread": "cpp",
         "cinttypes": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "ui.h": "c",
+        "ui_helpers.h": "c"
     },
     "idf.portWin": "COM10",
     "C_Cpp.errorSquiggles": "disabled"
