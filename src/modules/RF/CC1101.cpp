@@ -14,8 +14,8 @@
 #include "RCSwitch.h"
 #include "modules/ETC/SDcard.h"
 #include <string> 
-#include "../../../../NucleusESP32/src/GUI/events.h"
-#include "../ETC/SDcard.h"
+#include "GUI/events.h"
+#include "modules/ETC/SDcard.h"
 #include "SPI.h"
 
 
