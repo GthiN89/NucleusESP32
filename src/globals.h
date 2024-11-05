@@ -19,6 +19,16 @@
 #define CC1101_CCGDO0A 17      // GDO0
 #define CC1101_CCGDO2A 16      // GDO2
 
+#define CMD_READ_Y  0x90 // Command for XPT2046 to read Y position
+#define CMD_READ_X  0xD0 // Command for XPT2046 to read X position
+
+// Pin definitions for touchscreen and SD card
+#define MOSI_PIN 32
+#define MISO_PIN 39
+#define CLK_PIN  25
+#define CS_PIN   33
+#define SD_CS 5 // SD card CS pin
+
 extern bool teslaSucessFlag;
 
    //---------------------------------------------------------------------------//
