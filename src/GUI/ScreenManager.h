@@ -4,7 +4,8 @@
 #include "lvgl.h"
 #include <functional>
 //#include "settingsButton.h" 
-
+#include "XPT2046_Bitbang.h"
+#include "lv_fs_if.h"
 
 class ScreenManager {
 public:
@@ -16,7 +17,6 @@ public:
 
     ScreenManager(const ScreenManager&) = delete;
     ScreenManager& operator=(const ScreenManager&) = delete;
-    void createDisplay();
     void createReplayScreen();
     void createmainMenu();
     void createRFMenu();
@@ -25,6 +25,14 @@ public:
     void createBTMenu();
     void createSourAppleScreen();
     void createBruteForceScreen();
+    void createFileExplorerScreen();
+
+
+    void updateFileList(const char* directory);
+    void useSelectedFile(const char* filepath);   
+
+    lv_obj_t* getFileExplorer();
+
 
     lv_obj_t* getFreqInput();  
     lv_obj_t* getTextArea();  
@@ -37,12 +45,11 @@ public:
     lv_obj_t* getSyncDropdown();
     lv_obj_t* getBruteDropdown();
 
-    void updateFileList(const char* directory);
-    void useSelectedFile(const char* filepath); 
     void createBTSPamScreen();
     lv_obj_t*  getTextAreaBTSpam();
 
-
+    static char selected_file_path[];
+    static char selected_file_name[];
 
 
 
@@ -92,10 +99,9 @@ private:
     lv_obj_t* secondLabel_container_;
     lv_obj_t* secondLabel_BruteForce_container_;
 
-    int getFilteredFileList(const char* directory);
+    lv_obj_t* file_explorer_;
 
-    
-    
+    int getFilteredFileList(const char* directory); 
 };
 
 #endif 

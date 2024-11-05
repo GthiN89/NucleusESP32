@@ -1,5 +1,3 @@
-// File: src/events/events.cpp
-
 #include "GUI/ScreenManager.h"
 #include "modules/ETC/SDcard.h"
 #include <RCSwitch.h>
@@ -14,6 +12,8 @@
 #include "modules/BLE/SourApple.h"
 #include "modules/BLE/BLESpam.h"
 #include "events.h"
+#include "lv_fs_if.h"
+#include <cstdio>   // For snprintf
 using namespace std;
 
 #define MAX_PATH_LENGTH 256
@@ -33,7 +33,7 @@ char EVENTS::selected_str[32];
 void EVENTS::btn_event_playZero_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-        screenMgr.createSubPlayerScreen();
+        screenMgr.createFileExplorerScreen();
     }
 }
 
@@ -383,7 +383,7 @@ void  EVENTS::back_btn_event_cb_sub(lv_event_t* e) {
 
     }
 
-            Serial.print("Updated current_dir (after going back): ");
+        Serial.print("Updated current_dir (after going back): ");
         Serial.println(current_dir);
         screenMgr.updateFileList(current_dir);
 }
@@ -474,3 +474,124 @@ void EVENTS::btn_event_brute_run(lv_event_t* e) {
     }
     C1101CurrentState = STATE_BRUTE;
 }
+
+void EVENTS::confirm_delete_event_handler(lv_event_t * e)
+{
+lv_obj_t * msgbox = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+    lv_obj_t * yes_btn = static_cast<lv_obj_t *>(lv_obj_get_user_data(msgbox));
+    lv_obj_t * clicked_btn = static_cast<lv_obj_t *>(lv_event_get_target(e));
+
+    if (clicked_btn == yes_btn) {
+        // The "Yes" button was clicked
+        if(deleteFile(selected_file_path)) {
+            LV_LOG_USER("File deleted successfully.");
+
+            // Refresh the file explorer to reflect the deletion
+            lv_obj_t * file_explorer = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+            const char * cur_path = lv_file_explorer_get_current_path(file_explorer);
+            lv_file_explorer_open_dir(file_explorer, cur_path);
+        } else {
+            LV_LOG_USER("Failed to delete file.");
+        }
+    }
+    // Close the message box regardless of the button clicked
+    lv_obj_del(msgbox);
+}
+
+
+
+void EVENTS::btn_event_handler(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * btn = static_cast<lv_obj_t *>(lv_event_get_target(e));
+    lv_obj_t * file_explorer = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+
+    if(code == LV_EVENT_VALUE_CHANGED) {
+        if(lv_obj_has_state(btn, LV_STATE_CHECKED))
+            lv_obj_add_flag(file_explorer, LV_OBJ_FLAG_HIDDEN);
+        else
+            lv_obj_clear_flag(file_explorer, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+
+void EVENTS::dd_event_handler(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * dd = static_cast<lv_obj_t *>(lv_event_get_target(e));
+    lv_obj_t * file_explorer = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+
+    if(code == LV_EVENT_VALUE_CHANGED) {
+        char buf[32];
+        lv_dropdown_get_selected_str(dd, buf, sizeof(buf));
+        if(strcmp(buf, "NONE") == 0) {
+            lv_file_explorer_set_sort(file_explorer, LV_EXPLORER_SORT_NONE);
+        } else if(strcmp(buf, "KIND") == 0) {
+            lv_file_explorer_set_sort(file_explorer, LV_EXPLORER_SORT_KIND);
+        }
+    }
+}
+
+
+
+bool EVENTS::deleteFile(const char *path)
+{
+    LV_LOG_USER("Attempting to delete file: %s", path);
+
+    // Use lv_fs_remove to delete the file through the filesystem driver
+  //  lv_fs_res_t res = fs_remove(nullptr, path);
+
+    // if(res == LV_FS_RES_OK) {
+    //     LV_LOG_USER("File deleted successfully.");
+    //     return true;
+    // } else {
+    //     LV_LOG_USER("Failed to delete file. Error code: %d", res);
+    //     return false;
+    // }
+}
+
+void EVENTS::file_explorer_event_handler(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * obj = static_cast<lv_obj_t *>(lv_event_get_target(e));
+
+    if(code == LV_EVENT_VALUE_CHANGED) {
+        // Retrieve selected file path and name
+        const char * cur_path = lv_file_explorer_get_current_path(obj);
+        const char * sel_fn = lv_file_explorer_get_selected_file_name(obj);
+
+        // Construct the full file path
+        snprintf(selected_file_path, sizeof(selected_file_path), "%s/%s", cur_path, sel_fn);
+
+        LV_LOG_USER("Selected file: %s", selected_file_path);
+
+        // Create the message box
+        lv_obj_t * mbox = lv_msgbox_create(lv_scr_act());
+        lv_obj_set_size(mbox, 200, 100);
+        lv_obj_align(mbox, LV_ALIGN_CENTER, 0, 0);
+
+        // Add label with confirmation message
+        lv_obj_t * label = lv_label_create(mbox);
+        lv_label_set_text_fmt(label, "Do you want to delete '%s'?", sel_fn);
+        lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 10);
+
+        // Create "Yes" and "No" buttons
+        lv_obj_t * yes_btn = lv_btn_create(mbox);
+        lv_obj_set_size(yes_btn, 60, 30);
+        lv_obj_align(yes_btn, LV_ALIGN_BOTTOM_LEFT, 20, -10);
+        lv_obj_t * yes_label = lv_label_create(yes_btn);
+        lv_label_set_text(yes_label, "Yes");
+
+        lv_obj_t * no_btn = lv_btn_create(mbox);
+        lv_obj_set_size(no_btn, 60, 30);
+        lv_obj_align(no_btn, LV_ALIGN_BOTTOM_RIGHT, -20, -10);
+        lv_obj_t * no_label = lv_label_create(no_btn);
+        lv_label_set_text(no_label, "No");
+
+        // Store "Yes" and "No" buttons as user data in the message box
+        lv_obj_set_user_data(mbox, yes_btn);  // Store yes_btn pointer in message box
+        lv_obj_add_event_cb(yes_btn, EVENTS::confirm_delete_event_handler, LV_EVENT_CLICKED, mbox);
+        lv_obj_add_event_cb(no_btn, EVENTS::confirm_delete_event_handler, LV_EVENT_CLICKED, mbox);
+    }
+}
+

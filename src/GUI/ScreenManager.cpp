@@ -11,7 +11,8 @@
 #include "modules/dataProcessing/SubGHzParser.h"
 #include "modules/dataProcessing/dataProcessing.h"
 #include "SD.h"
-
+#include "XPT2046_Bitbang.h"
+#include "lv_fs_if.h"
 
 #define MAX_PATH_LENGTH 256
 
@@ -19,23 +20,23 @@ EVENTS events;
 
 
 
-char** file_list;  // Array of strings for file names
+char** file_list; 
 int file_count = 0;
 lv_obj_t* list;
 
 const char* pathBUffer;
 
-lv_obj_t* previous_screen = NULL;  // To store the previous screen
+lv_obj_t* previous_screen = NULL; 
 
+static char selected_file_path[LV_FS_MAX_PATH_LENGTH];
+static char selected_file_name[LV_FS_MAX_FN_LENGTH];
 
-// Singleton instance management
 ScreenManager &ScreenManager::getInstance()
 {
     static ScreenManager instance;
     return instance;
 }
 
-// Constructor
 ScreenManager::ScreenManager()
     : ReplayScreen_(nullptr),
       SourAppleScreen_(nullptr), 
@@ -63,10 +64,10 @@ ScreenManager::ScreenManager()
 {
 }
 
-// Destructor
+
 ScreenManager::~ScreenManager()
 {
-    // Cleanup if necessary
+
 }
 
 lv_obj_t *ScreenManager::getFreqInput()
@@ -119,11 +120,15 @@ lv_obj_t *ScreenManager::getBruteDropdown(){
 }
 
 void ScreenManager::createReplayScreen() {
-    ContainerHelper containerHelper;
+    ContainerHelper containerHelper;    
 
     ReplayScreen_ = lv_obj_create(NULL);
 
     lv_scr_load(ReplayScreen_);
+
+    lv_obj_delete(previous_screen);
+    
+    previous_screen = ReplayScreen_;
     lv_obj_set_flex_flow(ReplayScreen_, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(ReplayScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
@@ -140,8 +145,6 @@ void ScreenManager::createReplayScreen() {
     containerHelper.fillTopContainer(topLabel_container_, "Mhz:  ", TEXT_AREA, &freqInput_, "433.92", "433.92", 10, NULL, NULL);
     lv_obj_set_size(freqInput_, 70, 30);                   
     lv_obj_add_event_cb(freqInput_, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, kb_freq_);
-
-
 
 
     containerHelper.createContainer(&secondLabel_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
@@ -198,15 +201,15 @@ void ScreenManager::createReplayScreen() {
 
     lv_obj_add_event_cb(playButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, NULL); 
     lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
-
 }
 
 void ScreenManager::createBruteForceScreen() {
     ContainerHelper containerHelper;
 
     BruteForceScreen_ = lv_obj_create(NULL);
-
     lv_scr_load(BruteForceScreen_);
+    lv_obj_delete(previous_screen);
+    previous_screen = BruteForceScreen_;
     lv_obj_set_flex_flow(BruteForceScreen_, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(BruteForceScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
@@ -242,19 +245,15 @@ void ScreenManager::createBruteForceScreen() {
     lv_obj_set_scrollbar_mode(text_area__BruteForce, LV_SCROLLBAR_MODE_OFF); 
     lv_textarea_set_cursor_click_pos(text_area__BruteForce, false);
 
-
     containerHelper.createContainer(&button_container_BruteForce1_, BruteForceScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-
 
     lv_obj_t *listenButton = ButtonHelper::createButton(button_container_BruteForce1_, "Start");
     lv_obj_add_event_cb(listenButton, EVENTS::btn_event_brute_run, LV_EVENT_CLICKED, NULL); 
 
     lv_obj_t *saveButton = ButtonHelper::createButton(button_container_BruteForce1_, "Pause");
-    lv_obj_add_event_cb(saveButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL); 
-
+    lv_obj_add_event_cb(saveButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL);
 
     containerHelper.createContainer(&button_container_BruteForce2_, BruteForceScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-
 
     lv_obj_t *playButton = ButtonHelper::createButton(button_container_BruteForce2_, "Save");
     lv_obj_t *exitButton = ButtonHelper::createButton(button_container_BruteForce2_, "Exit");
@@ -262,7 +261,6 @@ void ScreenManager::createBruteForceScreen() {
 
     lv_obj_add_event_cb(playButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, NULL); 
     lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
-
 }
 
 void ScreenManager::createSourAppleScreen() {
@@ -271,6 +269,8 @@ void ScreenManager::createSourAppleScreen() {
     SourAppleScreen_ = lv_obj_create(NULL);
 
     lv_scr_load(SourAppleScreen_);
+    lv_obj_delete(previous_screen);
+    previous_screen = SourAppleScreen_;
     lv_obj_set_flex_flow(SourAppleScreen_, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(SourAppleScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
@@ -301,8 +301,9 @@ void ScreenManager::createBTSPamScreen() {
     ContainerHelper containerHelper;
 
     BTSpamScreen_ = lv_obj_create(NULL);
-
     lv_scr_load(BTSpamScreen_);
+    lv_obj_delete(previous_screen);
+    previous_screen = BTSpamScreen_;
     lv_obj_set_flex_flow(BTSpamScreen_, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(BTSpamScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
@@ -352,25 +353,25 @@ void ScreenManager::createBTSPamScreen() {
 
 void ScreenManager::createmainMenu()
 {
-    lv_obj_t *mainMenu = lv_obj_create(NULL);                                            // Create a new screen
-    lv_scr_load(mainMenu);                                                               // Load the new screen, make it active
-    lv_obj_t *btn_subGhz_main = lv_btn_create(mainMenu);                                 /*Add a button the current screen*/
-    lv_obj_set_pos(btn_subGhz_main, 25, 10);                                             /*Set its position*/
-    lv_obj_set_size(btn_subGhz_main, 150, 50);                                           /*Set its size*/
-    lv_obj_add_event_cb(btn_subGhz_main, EVENTS::btn_event_subGhzTools, LV_EVENT_CLICKED, NULL); /*Assign a callback to the button*/
+    lv_obj_t *mainMenu = lv_obj_create(NULL);                                        
+    lv_scr_load(mainMenu);    
+    previous_screen = mainMenu;                                                        
+    lv_obj_t *btn_subGhz_main = lv_btn_create(mainMenu);                                
+    lv_obj_set_pos(btn_subGhz_main, 25, 10);                                             
+    lv_obj_set_size(btn_subGhz_main, 150, 50);                                           
+    lv_obj_add_event_cb(btn_subGhz_main, EVENTS::btn_event_subGhzTools, LV_EVENT_CLICKED, NULL); 
 
-    lv_obj_t *label_subGhz_main = lv_label_create(btn_subGhz_main); /*Add a label to the button*/
-    lv_label_set_text(label_subGhz_main, "RF SubGhz Tools");        /*Set the labels text*/
+    lv_obj_t *label_subGhz_main = lv_label_create(btn_subGhz_main);
+    lv_label_set_text(label_subGhz_main, "RF SubGhz Tools");       
     lv_obj_center(label_subGhz_main);
 
+    lv_obj_t *btn_BT_main = lv_btn_create(mainMenu);                                
+    lv_obj_set_pos(btn_BT_main, 25, 70);                                            
+    lv_obj_set_size(btn_BT_main, 150, 50);                                          
+    lv_obj_add_event_cb(btn_BT_main, EVENTS::btn_event_BTTools, LV_EVENT_CLICKED, NULL); 
 
-    lv_obj_t *btn_BT_main = lv_btn_create(mainMenu);                                 /*Add a button the current screen*/
-    lv_obj_set_pos(btn_BT_main, 25, 70);                                             /*Set its position*/
-    lv_obj_set_size(btn_BT_main, 150, 50);                                           /*Set its size*/
-    lv_obj_add_event_cb(btn_BT_main, EVENTS::btn_event_BTTools, LV_EVENT_CLICKED, NULL); /*Assign a callback to the button*/
-
-    lv_obj_t *label_BT_main = lv_label_create(btn_BT_main); /*Add a label to the button*/
-    lv_label_set_text(label_BT_main, "BlueTooth");        /*Set the labels text*/
+    lv_obj_t *label_BT_main = lv_label_create(btn_BT_main);
+    lv_label_set_text(label_BT_main, "BlueTooth");       
     lv_obj_center(label_BT_main);
 
 
@@ -379,7 +380,9 @@ void ScreenManager::createmainMenu()
 void ScreenManager::createBTMenu()
 {
     lv_obj_t *BTMenu = lv_obj_create(NULL);                                            // Create a new screen
-    lv_scr_load(BTMenu);                                                               // Load the new screen, make it active
+    lv_scr_load(BTMenu);    
+    lv_obj_delete(previous_screen);
+    previous_screen = BTMenu;                                                           // Load the new screen, make it active
     lv_obj_t *btn_BT_main = lv_btn_create(BTMenu);                                 /*Add a button the current screen*/
     lv_obj_set_pos(btn_BT_main, 25, 10);                                             /*Set its position*/
     lv_obj_set_size(btn_BT_main, 150, 50);                                           /*Set its size*/
@@ -401,7 +404,7 @@ void ScreenManager::createBTMenu()
 
 
 
-       lv_obj_t *btn_c1101Others_menu = lv_btn_create(lv_scr_act());
+    lv_obj_t *btn_c1101Others_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_c1101Others_menu, 25, 250);
     lv_obj_set_size(btn_c1101Others_menu, 200, 50);
 
@@ -414,9 +417,10 @@ void ScreenManager::createBTMenu()
 
 void ScreenManager::createRFMenu()
 {
-    lv_obj_t *rfMenu = lv_obj_create(NULL); // Create a new screen
-    lv_scr_load(rfMenu);                    // Load the new screen, make it active
-
+    lv_obj_t *rfMenu = lv_obj_create(NULL);
+    lv_scr_load(rfMenu);                   
+    lv_obj_delete(previous_screen);
+    previous_screen = rfMenu;
     lv_obj_t *btn_playZero_menu = lv_btn_create(rfMenu);
     lv_obj_set_pos(btn_playZero_menu, 25, 10);
     lv_obj_set_size(btn_playZero_menu, 200, 50);
@@ -464,193 +468,29 @@ void ScreenManager::createRFMenu()
 
 }
 
-void ScreenManager::createSubPlayerScreen() {
-Serial.println("Initializing playZeroScreen...");
-    
-    SDInit();
-    
-    // Initialize dynamic memory
-    current_dir = new char[MAX_PATH_LENGTH];
-    strcpy(current_dir, "/");
-    Serial.print("Initialized current_dir: ");
-    Serial.println(current_dir);
-    
-    selected_file = new char[MAX_PATH_LENGTH];
-    Serial.println("Initialized selected_file.");
+void ScreenManager::createFileExplorerScreen()
+{
+    // Create a new screen and load it
+    lv_obj_t *fileExplorerScreen = lv_obj_create(NULL);
+    lv_scr_load(fileExplorerScreen);
 
-    file_list = nullptr;  // Initially, no files are allocated
-    Serial.println("file_list set to nullptr.");
-    
-    // Store the current screen before switching
-    previous_screen = lv_scr_act();
+    // Create the file explorer on the new screen
+    lv_obj_t *file_explorer = lv_file_explorer_create(fileExplorerScreen);
 
-    // Create a new screen
-    lv_obj_t* new_screen = lv_obj_create(NULL);  // Create a new screen
-    lv_scr_load(new_screen);  // Load the new screen to clear the previous screen
+    // Open the root directory (drive letter 'S')
+    lv_file_explorer_open_dir(file_explorer, "S:/");
 
-   // createFileBrowser(new_screen);  // Create the file browser on the new screen
-    Serial.println("Created file browser on new screen.");
-    
-    ScreenManager::createFileBrowser(new_screen);
+    // Optional: Sorting dropdown menu
+    lv_obj_t *fe_header_obj = lv_file_explorer_get_header(file_explorer);
+
+    static const char *opts = "NONE\nKIND";
+    lv_obj_t *dd = lv_dropdown_create(fe_header_obj);
+    lv_obj_set_style_radius(dd, 4, 0);
+    lv_obj_set_style_pad_all(dd, 0, 0);
+    lv_obj_set_size(dd, LV_PCT(30), LV_SIZE_CONTENT);
+    lv_dropdown_set_options_static(dd, opts);
+    lv_obj_align(dd, LV_ALIGN_RIGHT_MID, 0, 0);
+
+    // Attach event handler for dropdown selection to control sorting
+  //  lv_obj_add_event_cb(dd, dd_event_handler, LV_EVENT_VALUE_CHANGED, file_explorer);
 }
-
-void ScreenManager::createFileBrowser(lv_obj_t* parent) {
-    ContainerHelper containerHelper;
-    
-       Serial.println("Setting up file browser...");
-
-    lv_obj_set_flex_flow(parent, LV_FLEX_FLOW_COLUMN);
-    ScreenManager::updateFileList(current_dir);  // Update the list with files and folders
-
-    // Label to show selected file
-    selected_label = lv_label_create(parent);
-    lv_label_set_text(selected_label, "No file selected");
-    lv_obj_set_flex_flow(parent, LV_FLEX_FLOW_COLUMN); // Arrange children in a row
-    lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER); // Align buttons in the container
-
-
-
-    containerHelper.createContainer(&browserButton_container_, parent, LV_FLEX_FLOW_ROW, 35, 240);
-
-    lv_obj_t* load_btn = ButtonHelper::createButton(browserButton_container_, "Load File");
-    lv_obj_add_event_cb(load_btn, EVENTS::load_btn_event_cb_sub, LV_EVENT_CLICKED, NULL);
-
-
-    lv_obj_t* back_btn = ButtonHelper::createButton(browserButton_container_, "Back");
-    lv_obj_add_event_cb(back_btn, EVENTS::back_btn_event_cb_sub, LV_EVENT_CLICKED, NULL);
-
-    containerHelper.createContainer(&browserButton2_container_, parent, LV_FLEX_FLOW_ROW, 35, 240);
-
-
-    lv_obj_t* delete_btn = ButtonHelper::createButton(browserButton2_container_, "Delete File");
-    lv_obj_add_event_cb(delete_btn, EVENTS::delete_btn_event_cb_sub, LV_EVENT_CLICKED, selected_file);
-
-
-    lv_obj_t* rename_btn = ButtonHelper::createButton(browserButton2_container_, "Rename File");
-    lv_obj_add_event_cb(rename_btn, EVENTS::back_btn_event_cb_sub, LV_EVENT_CLICKED, NULL);
-    Serial.println("File browser setup complete.");
-}
-
-
-
-
-void ScreenManager::updateFileList(const char* directory) {
-    Serial.print("Updating file list for directory: ");
-    Serial.println(directory);
-
-    if (list == NULL) {
-        list = lv_list_create(lv_scr_act());  // Create list on the current active screen
-        lv_obj_set_size(list, 240, 200);
-        Serial.println("Created new list object.");
-    } else {
-        lv_obj_clean(list);  // Clear the existing buttons
-        Serial.println("Cleared existing list.");
-    }
-
-    // Get the list of files and folders
-    file_count = ScreenManager::getFilteredFileList(directory);
-    Serial.print("File count: ");
-    Serial.println(file_count);
-
-    // Populate the list with file names
-    if (file_count > 0) {
-        for (int i = 0; i < file_count; i++) {
-            lv_obj_t* btn = lv_list_add_btn(list, 
-                            file_list[i][strlen(file_list[i]) - 1] == '/' ? LV_SYMBOL_DIRECTORY : LV_SYMBOL_FILE, 
-                            file_list[i]);
-            lv_obj_set_user_data(btn, (void*)i);  // Store the file index in user data
-            lv_obj_add_event_cb(btn, EVENTS::file_btn_event_cb_sub, LV_EVENT_CLICKED, file_list[i]);
-            Serial.print("Added button for file: ");
-            Serial.println(file_list[i]);
-        }
-    } else {
-        Serial.println("No files or folders found.");
-    }
-}
-
-
-int ScreenManager::getFilteredFileList(const char* directory) {
-    Serial.print("Opening directory: ");
-    Serial.println(directory);
-
-    File dir = SD.open(directory);
-    if (!dir) {
-        Serial.print("Failed to open directory: ");
-        Serial.println(directory);
-        return 0;
-    }
-
-    int count = 0;
-    while (true) {
-        File entry = dir.openNextFile();
-        if (!entry) {
-            break; 
-        }
-        count++;
-        entry.close();
-    }
-    Serial.print("Number of entries found: ");
-    Serial.println(count);
-
-    // Allocate memory for file_list after counting files
-    file_list = new char*[count];
-
-    dir.rewindDirectory();  // Reset directory reading to the start
-
-    count = 0;
-    while (true) {
-        File entry = dir.openNextFile();
-        if (!entry) {
-            break;
-        }
-
-        int name_length = strlen(entry.name()) + (entry.isDirectory() ? 2 : 1); // Account for "/" if directory
-        file_list[count] = new char[name_length];
-        if (entry.isDirectory()) {
-            snprintf(file_list[count], name_length, "%s/", entry.name());
-        } else {
-            snprintf(file_list[count], name_length, "%s", entry.name());
-        }
-        Serial.print("Added entry to file_list[");
-        Serial.print(count);
-        Serial.print("]: ");
-        Serial.println(file_list[count]);
-
-        count++;
-        entry.close();
-    }
-
-    dir.close();
-    Serial.println("Directory closed.");
-    return count;
-}
-
-
-
-void ScreenManager::useSelectedFile(const char* filepath) {
-    SubGHzParser parser;
-    parser.loadFile(filepath);
-    SubGHzData data = parser.parseContent();
-
-    SDInit();
-    lv_label_set_text(selected_label, "Transmitting");
-    String fullPath = String(filepath);
-    Serial.print("Using file at path: ");
-    Serial.println(fullPath);
-
-    if (SD.exists(fullPath.c_str())) {
-        read_sd_card_flipper_file(fullPath.c_str());
-        C1101CurrentState = STATE_SEND_FLIPPER;
-        delay(1000);
-    } else {
-        Serial.println("File does not exist.");
-        lv_label_set_text(selected_label, "File not found");
-        return;  // Exit if file does not exist
-    }
-
-        // Signal transmitted, so let's refresh the screen
-    lv_label_set_text(selected_label, "Signal transmitted");
-}
-
-
-
