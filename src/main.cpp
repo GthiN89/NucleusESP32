@@ -10,6 +10,8 @@
 #include "globals.h"
 #include <nvs.h>
 #include <nvs_flash.h>
+#include "lv_fs_if.h"
+#include "modules/dataProcessing/SubGHzParser.h"
 
 
 
@@ -19,6 +21,7 @@
  // Touch handling variables
  static lv_indev_t *indev = nullptr;
  TouchCallback _singleTouchCallback;
+ SubGHzParser SubghzParser;
 
  // Function prototypes
 void register_touch(lv_disp_t *disp);
@@ -122,6 +125,12 @@ void loop()
          BLESpam spam;
          spam.aj_adv(SpamDevice);
      }
+    //  if(C1101CurrentState == STATE_SEND_FLIPPER) {        
+    //     SubGHzParser parser;
+    //     parser.loadFile(EVENTS::fullPath);
+    //     SubGHzData data = parser.parseContent();
+
+    //  }
 }
 
 bool touched() {

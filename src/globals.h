@@ -104,10 +104,17 @@ CC1101_PRESET convert_str_to_enum(const char * selected_str);
 const char* presetToString(CC1101_PRESET preset);
 
 extern char* current_dir;
-extern char* selected_file;
-extern lv_obj_t* selected_label;
+//extern char* selected_file;
+//extern lv_obj_t* selected_label;
 extern lv_obj_t* selected_btn;
 
 extern uint16_t bruteCounter;
+
+
+//file browser globals
+
+extern char* current_dir;
+extern char* selected_file;
+
 
 #endif // GLOBALS_H

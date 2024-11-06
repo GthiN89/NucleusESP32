@@ -12,21 +12,31 @@
 
 extern int SpamDevice;
 
+
+
 class EVENTS {
 
 public:
 
 static lv_obj_t* list;
 static lv_obj_t* container;
-static char frequency_buffer[10];
-static char selected_str[32]; 
-static char selected_file_path[LV_FS_MAX_PATH_LENGTH];
+static char* selected_file;
 
+//subGhz
+static char frequency_buffer[10];
+static char selected_str[32];
+//file explorer
+static String cur_path;
+static String sel_fn;
+
+static lv_obj_t* selected_item;
+
+static char* fullPath;
+static lv_obj_t *label_sub;
 
 // Deklarace event handlerů
 static void btn_event_subGhzTools(lv_event_t * e);
 static void btn_event_playZero_run(lv_event_t* e);
-static void useSelectedFile(const char* filepath);
 static void btn_event_teslaCharger_run(lv_event_t* e);
 static void btn_event_Replay_run(lv_event_t* e);
 static void btn_event_mainMenu_run(lv_event_t* e);
@@ -43,12 +53,7 @@ static void btn_event_BruteForce_run(lv_event_t* e);
 static void btn_event_brute_run(lv_event_t* e);
 static void ta_rf_type_event_cb(lv_event_t * e);
 
-static void load_btn_event_cb_sub(lv_event_t* e);
-static void back_btn_event_cb_sub(lv_event_t* e);
-static void file_btn_event_cb_sub(lv_event_t* e);
 
-
-// Přidání nových event handlerů
 static void ta_freq_event_cb(lv_event_t * e);
 static void ta_filename_event_cb(lv_event_t * e);
 static void kb_event_cb(lv_event_t * e);
@@ -57,19 +62,22 @@ static void saveSignal(lv_event_t * e);
 static void replayEvent(lv_event_t * e);
 static void exitReplayEvent(lv_event_t * e);
 static void sendCapturedEvent(lv_event_t * e);
-static void save_RF_to_sd_event(lv_event_t * e); 
-static void delete_btn_event_cb_sub(lv_event_t* e);
+static void save_RF_to_sd_event(lv_event_t * e);
+
+//file Explorer
 static void confirm_delete_event_handler(lv_event_t * e);
-void btn_event_handler(lv_event_t *e);
-void dd_event_handler(lv_event_t *e);
 static bool deleteFile(const char *path);
+static void file_explorer_event_delete_cb(lv_event_t * e);
+static void file_explorer_event_handler(lv_event_t * e);
+static void confirm__explorer_play_sub_cb(lv_event_t * e);
+static void close_explorer_play_sub_cb(lv_event_t * e);
+static void file_explorer_play_sub();
 
-void file_explorer_event_handler(lv_event_t * e);
 
 
 
-static void ProtAnalyzerloop();
 static bool recievedSubGhz;
+
 
 static CC1101_PRESET stringToCC1101Preset(String presetStr);
 

@@ -4,15 +4,12 @@
 #include "ButtonHelper.h"
 #include "globals.h"
 #include "events.h"
-//#include "settingsButton.h"
 #include "FS.h"
-#//include "fileBrowserHelper.h"
 #include "modules/ETC/SDcard.h"
 #include "modules/dataProcessing/SubGHzParser.h"
 #include "modules/dataProcessing/dataProcessing.h"
 #include "SD.h"
 #include "XPT2046_Bitbang.h"
-#include "lv_fs_if.h"
 
 #define MAX_PATH_LENGTH 256
 
@@ -28,8 +25,6 @@ const char* pathBUffer;
 
 lv_obj_t* previous_screen = NULL; 
 
-static char selected_file_path[LV_FS_MAX_PATH_LENGTH];
-static char selected_file_name[LV_FS_MAX_FN_LENGTH];
 
 ScreenManager &ScreenManager::getInstance()
 {
@@ -40,7 +35,8 @@ ScreenManager &ScreenManager::getInstance()
 ScreenManager::ScreenManager()
     : ReplayScreen_(nullptr),
       SourAppleScreen_(nullptr), 
-      BTSpamScreen_(nullptr),   
+      BTSpamScreen_(nullptr),
+      fileExplorerScreen(nullptr),   
       text_area_(nullptr),
       freqInput_(nullptr),
       kb_freq_(nullptr),
@@ -470,27 +466,45 @@ void ScreenManager::createRFMenu()
 
 void ScreenManager::createFileExplorerScreen()
 {
-    // Create a new screen and load it
-    lv_obj_t *fileExplorerScreen = lv_obj_create(NULL);
+    ContainerHelper containerHelper;
+    fileExplorerScreen = lv_obj_create(NULL);
     lv_scr_load(fileExplorerScreen);
 
-    // Create the file explorer on the new screen
     lv_obj_t *file_explorer = lv_file_explorer_create(fileExplorerScreen);
-
+     lv_obj_t *header = lv_file_explorer_get_header(file_explorer);
     // Open the root directory (drive letter 'S')
     lv_file_explorer_open_dir(file_explorer, "S:/");
+    
+    
+    lv_obj_t *footer;
+    containerHelper.createContainer(&footer, fileExplorerScreen, LV_FLEX_FLOW_ROW, 35, 240);
+    lv_obj_t *explorerDelelete_btn = lv_btn_create(footer);
+    lv_obj_t *explorerRename_btn = lv_btn_create(footer);
+    lv_obj_t *explorerMove_btn = lv_btn_create(footer);
 
-    // Optional: Sorting dropdown menu
-    lv_obj_t *fe_header_obj = lv_file_explorer_get_header(file_explorer);
+    lv_obj_set_size(explorerDelelete_btn, 70, 30);
+    lv_obj_set_size(explorerRename_btn, 70, 30);
+    lv_obj_set_size(explorerMove_btn, 70, 30);
 
-    static const char *opts = "NONE\nKIND";
-    lv_obj_t *dd = lv_dropdown_create(fe_header_obj);
-    lv_obj_set_style_radius(dd, 4, 0);
-    lv_obj_set_style_pad_all(dd, 0, 0);
-    lv_obj_set_size(dd, LV_PCT(30), LV_SIZE_CONTENT);
-    lv_dropdown_set_options_static(dd, opts);
-    lv_obj_align(dd, LV_ALIGN_RIGHT_MID, 0, 0);
+    lv_obj_set_align(explorerDelelete_btn, LV_ALIGN_BOTTOM_LEFT);
+    lv_obj_set_align(explorerRename_btn, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_align(explorerMove_btn, LV_ALIGN_BOTTOM_RIGHT);
 
-    // Attach event handler for dropdown selection to control sorting
-  //  lv_obj_add_event_cb(dd, dd_event_handler, LV_EVENT_VALUE_CHANGED, file_explorer);
+    lv_obj_t * explorerDelelete_lbl = lv_label_create(explorerDelelete_btn);
+    lv_obj_t * explorerRename_lbl = lv_label_create(explorerRename_btn);
+    lv_obj_t * explorerMove_lbl = lv_label_create(explorerMove_btn);
+
+    lv_obj_set_align(explorerDelelete_lbl, LV_ALIGN_CENTER);
+    lv_obj_set_align(explorerRename_lbl, LV_ALIGN_CENTER);
+    lv_obj_set_align(explorerMove_lbl, LV_ALIGN_CENTER);
+
+    lv_label_set_text(explorerDelelete_lbl, "DEL");
+    lv_label_set_text(explorerRename_lbl, "RNM");
+    lv_label_set_text(explorerMove_lbl, "MOV");
+
+    lv_obj_add_event_cb(explorerDelelete_btn, EVENTS::file_explorer_event_delete_cb, LV_EVENT_CLICKED, NULL);
+  //  lv_obj_add_event_cb(explorerRename_btn, file_explorer_event_rename_cb, LV_EVENT_CLICKED);
+  //  lv_obj_add_event_cb(explorerMove_btn, file_explorer_event_move_cb, LV_EVENT_CLICKED);
+
+    lv_obj_add_event_cb(file_explorer, EVENTS::file_explorer_event_handler,  LV_EVENT_VALUE_CHANGED, NULL);
 }
