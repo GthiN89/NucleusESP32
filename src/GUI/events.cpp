@@ -39,11 +39,55 @@ char* EVENTS::fullPath;
 lv_obj_t* EVENTS::label_sub;
 static char buffer[256];
 
+bool isWarmupStarted;
+
 void EVENTS::btn_event_playZero_run(lv_event_t* e) {
-    lv_event_code_t code = lv_event_get_code(e);
+    lv_event_code_t code = lv_event_get_code(e);    
     if (code == LV_EVENT_CLICKED) {
         screenMgr.createFileExplorerScreen();
+
+        isWarmupStarted = true;
     }
+}
+
+void EVENTS::warmup() {
+    // Serial.println(millis());
+
+    // if (millis() - previousMillis >= 500) {
+    //     previousMillis = millis();
+    //     isWarmupStarted = false;
+
+    //     SDInit();
+    //     if (SD.exists("/warmpup1.sub")) {
+    //         read_sd_card_flipper_file("/warmpup1.sub");
+    //         detachInterrupt(CC1101_CCGDO0A);
+    //         CC1101.initrRaw();
+    //         ELECHOUSE_cc1101.setCCMode(0); 
+    //         ELECHOUSE_cc1101.setPktFormat(3);
+    //         ELECHOUSE_cc1101.SetTx();
+    //         pinMode(CC1101_CCGDO0A, OUTPUT);
+    //         SubGHzParser parser;
+    //         parser.loadFile("/warmpup1.sub");
+    //         SubGHzData data = parser.parseContent();
+    //     } else {
+    //         Serial.println("File does not exist.");
+    //     }
+    //      SDInit();
+    //     if (SD.exists("/warmpup1.sub")) {
+    //         read_sd_card_flipper_file("/warmpup1.sub");
+    //         detachInterrupt(CC1101_CCGDO0A);
+    //         CC1101.initrRaw();
+    //         ELECHOUSE_cc1101.setCCMode(0); 
+    //         ELECHOUSE_cc1101.setPktFormat(3);
+    //         ELECHOUSE_cc1101.SetTx();
+    //         pinMode(CC1101_CCGDO0A, OUTPUT);
+    //         SubGHzParser parser;
+    //         parser.loadFile("/warmpup1.sub");
+    //         SubGHzData data = parser.parseContent();
+    //     } else {
+    //         Serial.println("File does not exist.");
+    //     }
+    // }
 }
 
 
@@ -527,6 +571,11 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
             lv_label_set_text(close_btn_lbl, "Close");
             lv_obj_add_event_cb(close_btn, EVENTS::close_explorer_play_sub_cb, LV_EVENT_CLICKED, msgbox);
 
+
+        //warm up of CC1101
+  
+
+
     Serial.println("Load button clicked.");
     if (strlen(EVENTS::fullPath) > 0) {
     detachInterrupt(CC1101_CCGDO0A);
@@ -547,9 +596,9 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
     Serial.println(fullPath);
 
     if (SD.exists(fullPath)) {
+        
         read_sd_card_flipper_file(fullPath);
-        C1101CurrentState = STATE_SEND_FLIPPER;
-        delay(1000);
+        delay(100);
     } else {
         Serial.println("File does not exist.");
         return;  // Exit if file does not exist
@@ -564,6 +613,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
     }
     
 }
+
 
 void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
     lv_obj_t * msgbox = static_cast<lv_obj_t *>(lv_event_get_user_data(e));

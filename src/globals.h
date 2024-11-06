@@ -8,16 +8,16 @@
   //-----------------------------SETINGS---------------------------------------//
  //---------------------------------------------------------------------------//
 // Pin configuration for CC1101
-#define CC1101_CS   21  // Chip Select
+#define CC1101_CS   16  // Chip Select
 #define CC1101_MOSI 4   // Master Out Slave In
 #define CC1101_MISO 35  // Master In Slave Out
 #define CC1101_SCLK 22  // Serial Clock
 
 #define CCGDO0A 17      // GDO0
-#define CCGDO2A 16      // GDO2
+//#define CCGDO2A 16      // GDO2
 
 #define CC1101_CCGDO0A 17      // GDO0
-#define CC1101_CCGDO2A 16      // GDO2
+//#define CC1101_CCGDO2A 16      // GDO2
 
 #define CMD_READ_Y  0x90 // Command for XPT2046 to read Y position
 #define CMD_READ_X  0xD0 // Command for XPT2046 to read X position
