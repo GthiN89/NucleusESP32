@@ -42,17 +42,8 @@
       "'-D DISPLAY_SWAP_XY=false'",
       "'-D DISPLAY_MIRROR_X=true'",
       "'-D DISPLAY_MIRROR_Y=false'",
+      "'-D BOARD_HAS_RGB_LED=FALSE'"
 
-      "'-D BOARD_HAS_TF'",
-      "'-D TF_CS=5'",
-      "'-D TF_SPI_MOSI=23'",
-      "'-D TF_SPI_SCLK=18'",
-      "'-D TF_SPI_MISO=19'",
-
-      "'-D BOARD_HAS_CDS'",
-      "'-D CDS=34'",
-      "'-D BOARD_HAS_SPEAK'",
-      "'-D SPEAK=26'"
     ],
     "f_cpu": "240000000L",
     "f_flash": "40000000L",

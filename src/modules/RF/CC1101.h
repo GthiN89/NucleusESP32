@@ -19,6 +19,7 @@
  extern bool CC1101_interup_attached;
  extern int sample[];
  extern int samplecount;
+ extern bool startLow;
 
 
 class CC1101_CLASS {
@@ -50,6 +51,7 @@ public:
     void initrRaw();
     void sendRaw();
     void sendSamples(int samples[], int samplesLength);
+    void sendFromFile();
     void sendBrute(int type);
 private:
     SPIClass  CC1101SPI;;

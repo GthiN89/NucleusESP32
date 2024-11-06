@@ -22,7 +22,7 @@ Now, I’m planning to reintegrate RCswitch and the `.sub` (Flipper) file player
 - **Updated to new LVGL**: This was not so easy.  
 - **Touch drivers**: I remembered why I use bitbang drivers while moving to new LVGL - drivers included, should compile from source.  
 - **New file browser**: Unlike previous one, this one is usable, even with bare hand.  
-- **SubGhz files transmission**: When system starts transmitting, it freez and unfreeze after transmiting, but most raw timing files will transmit.
+- **SubGhz files transmission**: When system starts transmitting, it freez and unfreeze after transmiting, but most raw timing files will transmit. You need to copy wamup sub files to root of your SD card in order to make it work. (good old hardwired SPi trouble, i will find better solution).
 - **CYD Smart display library Compatibility**: Compiler have problem with display->sw_rotate, you can just coment it out, or use developer branch of library (not tested, bud should be fixed)
 
 ### Priority List

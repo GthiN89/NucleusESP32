@@ -108,7 +108,12 @@ lv_fs_res_t fs_tell(lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p)
 void * fs_dir_open(lv_fs_drv_t * drv, const char * path)
 {
     String fullPath = "/" + String(path);
-    File * dir = new File(SD.open(fullPath.c_str()));
+    // if (fullPath.startsWith("/sd///")) {
+    // fullPath.replace("/sd///", "/sd/");
+    // } else if (fullPath.startsWith("/sd//")) {
+    // fullPath.replace("/sd//", "/sd/");
+    // }
+    File * dir = new File(SD.open(String(path).c_str()));
     if (dir && dir->isDirectory()) {
         return static_cast<void *>(dir);
     }

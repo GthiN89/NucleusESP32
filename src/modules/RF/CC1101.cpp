@@ -516,11 +516,63 @@ String CC1101_CLASS::generateRandomString(int length)
     return String(ss.str().c_str());
 }
 
+    void CC1101_CLASS::sendFromFile() {
+    int samplesWarmup[] = {600, 600, 200, 600, 600, 200, 200, 600, 600, 200, 600, 600, 200, 200, 600, 25000};
+    int samplesWarmupLenght = 16;
+    
+
+    Serial.println("Warming up the radio");
+    detachInterrupt(CC1101_CCGDO0A);
+    CC1101.initrRaw();
+    ELECHOUSE_cc1101.setCCMode(0); 
+    ELECHOUSE_cc1101.setPktFormat(3);
+    ELECHOUSE_cc1101.SetTx();
+    pinMode(CC1101_CCGDO0A, OUTPUT);
+
+    detachInterrupt(CC1101_CCGDO0A);
+    CC1101.initrRaw();
+    ELECHOUSE_cc1101.setCCMode(0); 
+    ELECHOUSE_cc1101.setPktFormat(3);
+    ELECHOUSE_cc1101.SetTx();
+    pinMode(CC1101_CCGDO0A, OUTPUT);
+    CC1101.setCC1101Preset(C1101preset);
+    CC1101.setFrequency(CC1101_MHZ);
+    CC1101.loadPreset(); 
+
+    CC1101.sendSamples(samplesWarmup, samplesWarmupLenght);
+
+    delay(5);
+
+    Serial.println("Warming up the radio");
+    detachInterrupt(CC1101_CCGDO0A);
+    CC1101.initrRaw();
+    ELECHOUSE_cc1101.setCCMode(0); 
+    ELECHOUSE_cc1101.setPktFormat(3);
+    ELECHOUSE_cc1101.SetTx();
+    pinMode(CC1101_CCGDO0A, OUTPUT);
+
+    detachInterrupt(CC1101_CCGDO0A);
+    CC1101.initrRaw();
+    ELECHOUSE_cc1101.setCCMode(0); 
+    ELECHOUSE_cc1101.setPktFormat(3);
+    ELECHOUSE_cc1101.SetTx();
+    pinMode(CC1101_CCGDO0A, OUTPUT);
+    CC1101.setCC1101Preset(C1101preset);
+    CC1101.setFrequency(CC1101_MHZ);
+    CC1101.loadPreset(); 
+
+    CC1101.sendSamples(samplesWarmup, samplesWarmupLenght);
+
+
+}
+
 void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
 {
+
     disconnectSD();
     digitalWrite(SDCARD_CS, HIGH);
     CC1101_CLASS::initrRaw();
+    
 
     pinMode(CC1101_CCGDO0A, OUTPUT);
     Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));

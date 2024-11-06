@@ -16,6 +16,7 @@
 
 
 
+
  XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
 
  // Touch handling variables
@@ -44,6 +45,10 @@ void init_touch(TouchCallback singleTouchCallback) {
 void setup() {
     Serial.begin(115200);
     Serial.setDebugOutput(true);
+    gpio_set_pull_mode(GPIO_NUM_17, GPIO_PULLDOWN_ONLY);
+    CC1101.init();
+
+
   
     init_touch([]() { Serial.println(F("Single touch detected!")); });
     smartdisplay_init();
@@ -68,10 +73,14 @@ void setup() {
     Serial.println(F("An error has occurred while mounting SPIFFS"));
     return;
   }
+
+  
 }
 
  ulong next_millis;
  auto lv_last_tick = millis();
+
+auto previousMillis = millis();
 
 void loop()
 {
@@ -131,6 +140,47 @@ void loop()
     //     SubGHzData data = parser.parseContent();
 
     //  }
+    if(isWarmupStarted){    
+        auto const tedkom = millis();
+         
+        
+        Serial.println(tedkom - previousMillis);
+    if (millis() - previousMillis >= 500) {
+        isWarmupStarted = false;
+
+        SDInit();
+        if (SD.exists("/warmpup1.sub")) {
+            read_sd_card_flipper_file("/warmpup1.sub");
+            detachInterrupt(CC1101_CCGDO0A);
+            CC1101.initrRaw();
+            ELECHOUSE_cc1101.setCCMode(0); 
+            ELECHOUSE_cc1101.setPktFormat(3);
+            ELECHOUSE_cc1101.SetTx();
+            pinMode(CC1101_CCGDO0A, OUTPUT);
+            SubGHzParser parser;
+            parser.loadFile("/warmpup1.sub");
+            SubGHzData data = parser.parseContent();
+        } else {
+            Serial.println("File does not exist.");
+        }
+         SDInit();
+        if (SD.exists("/warmpup1.sub")) {
+            read_sd_card_flipper_file("/warmpup1.sub");
+            detachInterrupt(CC1101_CCGDO0A);
+            CC1101.initrRaw();
+            ELECHOUSE_cc1101.setCCMode(0); 
+            ELECHOUSE_cc1101.setPktFormat(3);
+            ELECHOUSE_cc1101.SetTx();
+            pinMode(CC1101_CCGDO0A, OUTPUT);
+            SubGHzParser parser;
+            parser.loadFile("/warmpup1.sub");
+            SubGHzData data = parser.parseContent();
+        } else {
+            Serial.println("File does not exist.");
+        }
+    }
+    }
+    
 }
 
 bool touched() {

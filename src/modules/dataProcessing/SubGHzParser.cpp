@@ -88,7 +88,9 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
 
 
   void SubGHzParser::sendRawData(const std::vector<RawDataElement>& rawData) {
+    CC1101.sendFromFile();
 
+    int controlInt = 0;
     int tempSampleCount = rawData.size();
     if (tempSampleCount % 2 == 0) {
     } else {
@@ -99,28 +101,38 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
     for (int i = 0; i < tempSampleCount; i++) {
     samplesClean[i] = 1;
     }
-
-        for (int i = 0; i < tempSampleCount; i++) {        
-        if (rawData[i]>0)
-        {
-            Serial.print(String(rawData[i]).c_str());
-            samplesClean[i] = rawData[i];
-            Serial.print(", ");
-        } else {            
-            if(rawData[i] * -1 > 0) {
-            Serial.print(String(tempSample[i] * -1).c_str());
-            samplesClean[i] = rawData[i] * -1;
-            }
-            Serial.print(", ");
+        int s = 0;
+        if(rawData[s] < 0){
+            samplesClean[s] = 100;
+            tempSampleCount++;
+            s++;
         }
-    }
 
-        for (int i = 0; i < tempSampleCount; i++) {        
+        while(s < tempSampleCount) {       
+        if (rawData[s]>0)
+        {            
+            samplesClean[s] = rawData[s];
+        } else {            
+            if(rawData[s] * -1 > 0) {            
+            samplesClean[s] = rawData[s] * -1;
+            }
+        }
+        s++;
+    }
+    
+    
+
+    for (int i = 0; i < tempSampleCount; i++) {        
         Serial.print(String(samplesClean[i]).c_str());
             Serial.print(", ");
         }
+    Serial.print(tempFreq);
     CC1101.setFrequency(tempFreq);
+    CC1101.setCC1101Preset(C1101preset);
     CC1101.loadPreset();
+    Serial.println(presetToString(C1101preset));   
+
+   
     CC1101.sendSamples(samplesClean, tempSampleCount);
 
     C1101CurrentState = STATE_IDLE;
