@@ -22,7 +22,7 @@ Now, I’m planning to reintegrate RCswitch and the `.sub` (Flipper) file player
 - **Updated to new LVGL**: This was not so easy.  
 - **Touch drivers**: I remembered why I use bitbang drivers while moving to new LVGL - drivers included, should compile from source.  
 - **New file browser**: Unlike previous one, this one is usable, even with bare hand.  
-- **SubGhz files transmission**: When system starts transmitting, it doesn’t show it ended but most raw timing files will transmit.
+- **SubGhz files transmission**: When system starts transmitting, it freez and unfreeze after transmiting, but most raw timing files will transmit.
 
 ### Priority List
 - Saving of subGhz files  
