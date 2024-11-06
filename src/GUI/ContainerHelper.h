@@ -1,4 +1,4 @@
-// File: src/GUI/ContainerHelper.h
+
 
 #ifndef CONTAINER_HELPER_H
 #define CONTAINER_HELPER_H

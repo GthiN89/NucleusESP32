@@ -11,11 +11,25 @@
     <p>Now, I’m planning to reintegrate RCswitch and the <code>.sub</code> (Flipper) file player from the old GUI, as they haven’t been added to the new interface yet.</p>
     <p><strong>Last Stable Version</strong>: Compiled into bin files. Occasionally, things may break in new versions, so for consistent testing, use this stable version.</p>
 
+    <h3>Last commit status</h3>
+    <ul>
+        <li><strong>Updated to new LVGL</strong>: This was not so easy</li>
+        <li><strong>Touch drivers</strong>: I remembered why i use bitbang drivers while moving to new LVGL - drivers included, should compile from source</li>
+        <li><strong>New filebrowser</strong>: Unlike previous one, this one is usable, even with bare hand.</li>
+        <li><strong>SubGhz files transmission</strong>: When system start transmiting, it dont show it ended but most raw timings files will transmit</li>
+    </ul>
+
+    <h3>Priority list</h3>
+    <ul>
+        <li>Saving os subGhz files</li>
+        <li>Parsing of custom protocol data from subGhz files, and writing them to CC1101 registers to make those work</li>
+    </ul>
+
     <h3>Current Functionalities</h3>
     <ul>
-        <li><strong>CC1101 RAW Replay</strong>: Now operates similarly to the Flipper.</li>
+        <li><strong>CC1101 RAW Replay</strong>: Now operates similarly to the Flipper. - saving not work, willl repair have hight prioritz</li>
         <li><strong><code>.sub</code> Files Player</strong>: Supports RAW files, tested with AM270 and AM650.</li>
-        <li><strong>Tesla Charger Opener</strong>: Works smoothly.</li>
+        <li><strong>Tesla Charger Opener</strong>:- now deactivated, will come back, not important</li>
         <li><strong>Large <code>.sub</code> File Support</strong>: Handles virtually unlimited file sizes, tested with a 3MB "Came_top_brute.sub" file.</li>
         <li><strong>Brute Force Attack on 8-bit RF Codes</strong>: Experimental feature for the M1E IC by MOSDESIGN SEMICONDUCTOR CORP. <a href="https://www.cika.com/soporte/Information/Semiconductores/CIencoder-decoder/M1E-MOSDESIGN.pdf">M1E Datasheet</a></li>
     </ul>
