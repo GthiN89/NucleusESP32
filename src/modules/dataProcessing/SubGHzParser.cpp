@@ -12,6 +12,8 @@ SubGHzParser::SubGHzParser() {}
 CC1101_CLASS CC1101;
 EVENTS events1;
 
+int codesSend = 0;
+
 SubGHzData SubGHzParser::parseContent() {
     SubGHzData data;
     String line;
@@ -88,6 +90,10 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
 
 
   void SubGHzParser::sendRawData(const std::vector<RawDataElement>& rawData) {
+    if(stopTransmit) {
+        return;
+    }
+
     int tempSampleCount = rawData.size();
     if (tempSampleCount % 2 == 0) {
     } else {
@@ -123,6 +129,7 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
         Serial.print(String(samplesClean[i]).c_str());
             Serial.print(", ");
         }
+    codesSend++;
     Serial.print(tempFreq);
     CC1101.setFrequency(tempFreq);
     CC1101.setCC1101Preset(C1101preset);

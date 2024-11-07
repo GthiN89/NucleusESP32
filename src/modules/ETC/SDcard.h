@@ -25,7 +25,7 @@ extern SPIClass sd;
 extern float tempFreq;
 extern int tempSample[];
 extern int tempSampleCount;
-
+extern bool FlipperFileFlag;
 
 // Function prototypes
 bool SDInit();        // Function to initialize the SD card

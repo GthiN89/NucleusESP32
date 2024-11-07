@@ -11,6 +11,7 @@ using Frequency = uint32_t;  // Typically in Hz, unlikely to exceed 4.29 GHz
 using PresetString = String; // Arduino String for preset
 using ProtocolString = String; // Arduino String for protocol
 using RawDataElement = int16_t; // For raw data, allowing negative values
+extern int codesSend;
 
 // Custom preset data is typically small values, often representing register settings
 using CustomPresetElement = uint8_t;

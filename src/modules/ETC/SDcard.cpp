@@ -6,6 +6,7 @@
 #include <string>
 
 SPIClass sd(SDCARD_SPI_HOST);
+bool FlipperFileFlag;
 
 bool SDInit() {
     // Begin SPI with specific pins
@@ -109,8 +110,9 @@ bool read_sd_card_flipper_file(String filename)
 
             if (!strcmp(key, "RAW_Data"))
             {
+                FlipperFileFlag = true;
                 char *pulse = strtok(value, values_sep);
-
+                int i;
                 while (pulse != NULL && tempSampleCount < MAX_LENGHT_RAW_ARRAY)
                 {
                     tempSample[tempSampleCount] = atoi(pulse);
@@ -124,7 +126,7 @@ bool read_sd_card_flipper_file(String filename)
     file.close();
 
     free(buf);
-
+    
   return true;
 }
 
