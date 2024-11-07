@@ -77,7 +77,7 @@
       "'-D TF_SPI_MOSI=23'",
       "'-D TF_SPI_SCLK=18'",
       "'-D TF_SPI_MISO=19'",
-       ,
+      
       "'-D BOARD_HAS_CDS'",
       "'-D CDS=34'",
       "'-D BOARD_HAS_SPEAK'",

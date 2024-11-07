@@ -27,10 +27,10 @@ String normalizePath(const String& path) {
     while (normalized.indexOf("//") != -1) {
         normalized.replace("//", "/");
     }
-    // Remove trailing slashes, if any, except for root "/"
-    // if (normalized.length() > 1 && normalized.endsWith("/")) {
-    //     normalized.remove(normalized.length() - 1);
-    // }
+   // Remove trailing slashes, if any, except for root "/"
+    if (normalized.length() > 1 && normalized.endsWith("/")) {
+        normalized.remove(normalized.length() - 1);
+    }
      return normalized;
 }
 
