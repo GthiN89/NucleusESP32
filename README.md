@@ -14,7 +14,7 @@ Please go easy on it; it's still evolving!
 
 With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol for replay through a simple bit-bang method, upgrading it to more precise timing later (previously, I sampled every 430 microseconds).
 
-Now, I’m planning to reintegrate RCswitch and the `.sub` (Flipper) file player from the old GUI, as they haven’t been added to the new interface yet.
+Now, I’m planning to reintegrate RCswitch, as it haven’t been added to the new interface yet.
 
 **Last Stable Version**: Compiled into bin files. Occasionally, things may break in new versions, so for consistent testing, use this stable version.
 
