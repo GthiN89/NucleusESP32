@@ -88,9 +88,6 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
 
 
   void SubGHzParser::sendRawData(const std::vector<RawDataElement>& rawData) {
-    CC1101.sendFromFile();
-
-    int controlInt = 0;
     int tempSampleCount = rawData.size();
     if (tempSampleCount % 2 == 0) {
     } else {
