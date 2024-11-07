@@ -15,18 +15,29 @@ lv_fs_res_t fs_read(lv_fs_drv_t * drv, void * file_p, void * buf, uint32_t btr, 
 lv_fs_res_t fs_write(lv_fs_drv_t * drv, void * file_p, const void * buf, uint32_t btw, uint32_t * bw);
 lv_fs_res_t fs_seek(lv_fs_drv_t * drv, void * file_p, uint32_t pos, lv_fs_whence_t whence);
 lv_fs_res_t fs_tell(lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p);
-lv_fs_res_t fs_remove(lv_fs_drv_t * drv, const char * path);
-lv_fs_res_t fs_size(lv_fs_drv_t * drv, void * file_p, uint32_t * size_p);
 void * fs_dir_open(lv_fs_drv_t * drv, const char * path);
 lv_fs_res_t fs_dir_read(lv_fs_drv_t * drv, void * rddir_p, char * fn, uint32_t fn_len);
 lv_fs_res_t fs_dir_close(lv_fs_drv_t * drv, void * dir_p);
 
 
-// Open a file on the SD card
-void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode)
-{
+// Helper function to normalize path
+String normalizePath(const String& path) {
+    String normalized = path;
+    // Replace multiple slashes with a single slash
+    while (normalized.indexOf("//") != -1) {
+        normalized.replace("//", "/");
+    }
+    // Remove trailing slashes, if any, except for root "/"
+    // if (normalized.length() > 1 && normalized.endsWith("/")) {
+    //     normalized.remove(normalized.length() - 1);
+    // }
+     return normalized;
+}
+
+// Modify your fs_open and fs_dir_open functions to use normalized paths
+void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode) {
+    String fullPath = normalizePath("/" + String(path));
     const char* flags = (mode == LV_FS_MODE_WR) ? FILE_WRITE : FILE_READ;
-    String fullPath = "/" + String(path);
 
     File * file = new File(SD.open(fullPath.c_str(), flags));
     if (!file || !*file) {
@@ -34,6 +45,17 @@ void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode)
         return NULL;
     }
     return static_cast<void *>(file);
+}
+
+void * fs_dir_open(lv_fs_drv_t * drv, const char * path) {
+    String fullPath = normalizePath("/" + String(path));
+
+    File * dir = new File(SD.open(fullPath.c_str()));
+    if (dir && dir->isDirectory()) {
+        return static_cast<void *>(dir);
+    }
+    delete dir;
+    return NULL;
 }
 
 // Close an open file
@@ -104,26 +126,11 @@ lv_fs_res_t fs_tell(lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p)
     return LV_FS_RES_FS_ERR;
 }
 
-// Open a directory on the SD card
-void * fs_dir_open(lv_fs_drv_t * drv, const char * path)
-{
-    String fullPath = "/" + String(path);
-    // if (fullPath.startsWith("/sd///")) {
-    // fullPath.replace("/sd///", "/sd/");
-    // } else if (fullPath.startsWith("/sd//")) {
-    // fullPath.replace("/sd//", "/sd/");
-    // }
-    File * dir = new File(SD.open(String(path).c_str()));
-    if (dir && dir->isDirectory()) {
-        return static_cast<void *>(dir);
-    }
-    delete dir;
-    return NULL;
-}
 
 // Read the next file in the directory
 lv_fs_res_t fs_dir_read(lv_fs_drv_t * drv, void * rddir_p, char * fn, uint32_t fn_len)
 {
+    
     File * dir = static_cast<File *>(rddir_p);
     if (!dir) {
         return LV_FS_RES_FS_ERR;
