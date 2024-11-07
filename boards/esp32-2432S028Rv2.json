@@ -42,7 +42,7 @@
       "'-D DISPLAY_SWAP_XY=false'",
       "'-D DISPLAY_MIRROR_X=true'",
       "'-D DISPLAY_MIRROR_Y=false'",
-      "'-D BOARD_HAS_RGB_LED=FALSE'"
+       
 
     ],
     "f_cpu": "240000000L",
