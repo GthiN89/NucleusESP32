@@ -20,6 +20,8 @@ using namespace std;
 #define MAX_PATH_LENGTH 256
 
 int SpamDevice = 1;
+bool updatetransmitLabel = false;
+bool stopTransmit = false;
 
 char* selected_file;
 
@@ -36,7 +38,7 @@ lv_obj_t* EVENTS::selected_item;
 String EVENTS::cur_path = "nothing";
 String EVENTS::sel_fn = "nothing";
 char* EVENTS::fullPath;
-lv_obj_t* EVENTS::label_sub;
+lv_obj_t* label_sub;
 static char buffer[256];
 
 bool isWarmupStarted;
@@ -560,7 +562,9 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
     
             Serial.print("Transmiting?");
             Serial.println(EVENTS::fullPath);
-            lv_label_set_text(label_sub, "Transmitting\n");
+            String text = "Transmitting\n Codes send: " + String(codesSend);
+            lv_label_set_text(label_sub, text.c_str());
+            updatetransmitLabel = true;
             lv_obj_clean(button_container);
             lv_obj_set_size(button_container, LV_PCT(100), LV_SIZE_CONTENT);
             lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW);
@@ -583,7 +587,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
           xTaskCreatePinnedToCore(
             EVENTS::CC1101TransmitTask, // Function to run 
             "Sub transmit",       // Name of the task
-            1000,           // Stack size (in bytes)
+            10000,           // Stack size (in bytes)
             taskFullPath,            // Task input parameter
             5,               // Priority
             NULL,            // Task handle
@@ -596,6 +600,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
         // Signal transmitted, so let's refresh the screen
                    
         } else {
+            updatetransmitLabel = false;
         lv_obj_del(msgbox);
     }
     
@@ -603,6 +608,9 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
 
 
 void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
+    updatetransmitLabel = false;
+    stopTransmit = true;
+    codesSend = 0;
     lv_obj_t * msgbox = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
     lv_obj_del(msgbox);
    // CC1101.disableTransmit();

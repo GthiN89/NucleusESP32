@@ -180,6 +180,18 @@ void loop()
         }
     }
     }
+    if(updatetransmitLabel){
+        String text;
+        if(!FlipperFileFlag){
+            text = "Transmitting\n Count: " + String(codesSend);
+        } else {
+            text = "Transmision complete";
+            FlipperFileFlag = false;
+        }
+        
+        lv_label_set_text(label_sub, text.c_str());
+    }
+
     
 }
 

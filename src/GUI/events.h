@@ -7,13 +7,15 @@
 //#include <RCSwitch.h>
 #include "globals.h"
 #include "main.h"
+extern bool updatetransmitLabel;
+extern bool stopTransmit;
 
 #define EVENTS_MAX_PATH_LENGTH 64
 
 extern int SpamDevice;
-
+extern lv_obj_t* label_sub;
 extern bool isWarmupStarted;
-
+extern bool stopTransmiting;
 class EVENTS {
 
 public:
@@ -32,7 +34,6 @@ static String sel_fn;
 static lv_obj_t* selected_item;
 
 static char* fullPath;
-static lv_obj_t *label_sub;
 
 // Deklarace event handlerů
 static void btn_event_subGhzTools(lv_event_t * e);
@@ -76,8 +77,8 @@ static void confirm__explorer_play_sub_cb(lv_event_t * e);
 static void close_explorer_play_sub_cb(lv_event_t * e);
 static void file_explorer_play_sub();
 static void CC1101TransmitTask(void* pvParameters);
-
-
+static void initLabelUpdater();
+static void labelUpdateTask(void* parameter);
 
 
 static bool recievedSubGhz;

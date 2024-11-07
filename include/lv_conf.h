@@ -17,6 +17,10 @@
 #ifndef LV_CONF_H
 #define LV_CONF_H
 
+#define LV_INDEV_DEF_DRAG_LIMIT 20
+#define LV_INDEV_DEF_DRAG_THROW 10
+#define LV_USE_ANIMATION 0
+
 /*If you need to include anything here, do it inside the `__ASSEMBLY__` guard */
 #if  0 && defined(__ASSEMBLY__)
 #include "my_include.h"
@@ -73,6 +77,7 @@
 
 /*Default display refresh, input device read and animation step period.*/
 #define LV_DEF_REFR_PERIOD  30      /*[ms]*/
+#define LV_DISP_DEF_REFR_PERIOD 30 
 
 /*Default Dot Per Inch. Used to initialize default sizes such as widgets sized, style paddings.
  *(Not so important, you can adjust it to modify default sizes and spaces)*/
@@ -861,7 +866,7 @@
 #define LV_USE_SNAPSHOT 0
 
 /*1: Enable system monitor component*/
-#define LV_USE_SYSMON   1
+#define LV_USE_SYSMON   0
 #if LV_USE_SYSMON
     /*Get the idle percentage. E.g. uint32_t my_get_idle(void);*/
     #define LV_SYSMON_GET_IDLE lv_timer_get_idle
