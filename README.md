@@ -22,27 +22,31 @@ Now, I’m planning to reintegrate RCswitch and the `.sub` (Flipper) file player
 - **Updated to new LVGL**: This was not so easy.  
 - **Touch drivers**: I remembered why I use bitbang drivers while moving to new LVGL - drivers included, should compile from source.  
 - **New file browser**: Unlike previous one, this one is usable, even with bare hand.  
-- **SubGhz files transmission**: When system starts transmitting, it freez and unfreeze after transmiting, but most raw timing files will transmit. You need to copy wamup sub files to root of your SD card in order to make it work. (good old hardwired SPi trouble, i will find better solution).
-- **CYD Smart display library Compatibility**: Compiler have problem with display->sw_rotate, you can just coment it out, or use developer branch of library (not tested, bud should be fixed)
+- **SubGhz files transmission**: When system starts transmitting, if sub sile contain more codes, like brute force files, sending is done, when counter stops increase. You need to copy warmup sub files to root of your SD card in order to make it work. (good old hardwired SPi trouble, i will find better solution).
+- **CYD Smart display library Compatibility**: Compiler may have problem with display->sw_rotate, and LED_RGB you can just coment it out / delete it, dont worry about it, iw would cause only problems anyway...
 
 ### Priority List
 - Saving of subGhz files  
 - Parsing of custom protocol data from subGhz files and writing them to CC1101 registers to make those work
 
 ### Current Functionalities
-- **CC1101 RAW Replay**: Now operates similarly to the Flipper. (Saving not working; will repair, high priority)  
+- **CC1101 RAW Replay**: Now operates similarly to the Flipper. (Saving not working after LVGL update; will repair, high priority)  
 - **`.sub` Files Player**: Supports RAW files, tested with AM270 and AM650.  
 - **Tesla Charger Opener**: Currently deactivated; will come back later, not a priority.  
 - **Large `.sub` File Support**: Handles virtually unlimited file sizes, tested with a 3MB "Came_top_brute.sub" file.  
 - **Brute Force Attack on 8-bit RF Codes**: Experimental feature for the M1E IC by MOSDESIGN SEMICONDUCTOR CORP. [M1E Datasheet](https://www.cika.com/soporte/Information/Semiconductores/CIencoder-decoder/M1E-MOSDESIGN.pdf)
+-**CYD micro USB "bad SPI" Rv2**: As ykou know, you never know wich CYD you get
 
 ### Planned Features
+-**CYD 2USB**: This will be pretty soon, since i ordered some to make Nucleus for friends, and they did send me those.
 - Bluetooth Spam  
 - Sour Apple  
 - Wi-Fi Deauther  
 - Bad USB  
 - 2.4GHz Support  
-- MouseJack Attack  
+- MouseJack Attack
+- Python interpreter
+- Version for ESP32 S3 8mb ram 16mb rom (JC3248W535EN);  
 
 ## Timing and Transmission Quality
 
