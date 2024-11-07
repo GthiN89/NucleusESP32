@@ -45,8 +45,8 @@ void init_touch(TouchCallback singleTouchCallback) {
 void setup() {
     Serial.begin(115200);
     Serial.setDebugOutput(true);
-    gpio_set_pull_mode(GPIO_NUM_17, GPIO_PULLDOWN_ONLY);
-    CC1101.init();
+  //  gpio_set_pull_mode(GPIO_NUM_17, GPIO_PULLDOWN_ONLY);
+   // CC1101.init();
 
 
   

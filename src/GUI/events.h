@@ -75,6 +75,7 @@ static void file_explorer_event_handler(lv_event_t * e);
 static void confirm__explorer_play_sub_cb(lv_event_t * e);
 static void close_explorer_play_sub_cb(lv_event_t * e);
 static void file_explorer_play_sub();
+static void CC1101TransmitTask(void* pvParameters);
 
 
 

@@ -578,33 +578,20 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
 
     Serial.println("Load button clicked.");
     if (strlen(EVENTS::fullPath) > 0) {
-    detachInterrupt(CC1101_CCGDO0A);
-    CC1101.initrRaw();
-    ELECHOUSE_cc1101.setCCMode(0); 
-    ELECHOUSE_cc1101.setPktFormat(3);
-    ELECHOUSE_cc1101.SetTx();
-    pinMode(CC1101_CCGDO0A, OUTPUT);
-        Serial.print("Loading file: ");
-        Serial.println(EVENTS::fullPath);
-            SubGHzParser parser;
-    parser.loadFile(fullPath);
-    SubGHzData data = parser.parseContent();
+        detachInterrupt(CC1101_CCGDO0A);
+        char* taskFullPath = strdup(EVENTS::fullPath);
+          xTaskCreatePinnedToCore(
+            EVENTS::CC1101TransmitTask, // Function to run 
+            "Sub transmit",       // Name of the task
+            1000,           // Stack size (in bytes)
+            taskFullPath,            // Task input parameter
+            5,               // Priority
+            NULL,            // Task handle
+            1                // Core
+        );
+    
 
-    SDInit();
-
-    Serial.print("Using file at path: ");
-    Serial.println(fullPath);
-
-    if (SD.exists(fullPath)) {
-        
-        read_sd_card_flipper_file(fullPath);
-        delay(100);
-    } else {
-        Serial.println("File does not exist.");
-        return;  // Exit if file does not exist
     }
-    }
-
 
         // Signal transmitted, so let's refresh the screen
                    
@@ -625,4 +612,39 @@ void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
 
 
 
+//transmit task on core 1
 
+void EVENTS::CC1101TransmitTask(void* pvParameters) {    
+    
+    char* fullPath = static_cast<char*>(pvParameters);
+
+    detachInterrupt(CC1101_CCGDO0A);
+    CC1101.initrRaw();
+    ELECHOUSE_cc1101.setCCMode(0); 
+    ELECHOUSE_cc1101.setPktFormat(3);
+    ELECHOUSE_cc1101.SetTx();
+    pinMode(CC1101_CCGDO0A, OUTPUT);
+    
+    Serial.print("Loading file: ");
+    Serial.println(fullPath);
+
+    SubGHzParser parser;
+    parser.loadFile(fullPath);
+    SubGHzData data = parser.parseContent();
+
+    SDInit();
+
+    Serial.print("Using file at path: ");
+    Serial.println(fullPath);
+
+    if (SD.exists(fullPath)) {
+        read_sd_card_flipper_file(fullPath);
+        delay(1);
+    } else {
+        Serial.println("File does not exist.");
+    }
+    
+    free(fullPath);
+
+    vTaskDelete(NULL);
+}
