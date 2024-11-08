@@ -37,6 +37,7 @@ public:
     SubGHzData parseContent();
     const String& getFileContent() const { return file_content; }
     void sendRawData(const std::vector<RawDataElement>& rawData);
+    void setRegisters();
 
 private:
     String file_content;

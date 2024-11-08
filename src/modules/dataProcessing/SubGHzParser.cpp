@@ -11,11 +11,13 @@
 SubGHzParser::SubGHzParser() {}
 CC1101_CLASS CC1101;
 EVENTS events1;
+    SubGHzData data;
+ELECHOUSE_CC1101 ELECCC1101;
 
 int codesSend = 0;
 
 SubGHzData SubGHzParser::parseContent() {
-    SubGHzData data;
+
     String line;
     int index = 0;
     
@@ -31,8 +33,9 @@ SubGHzData SubGHzParser::parseContent() {
         } else if (line.startsWith("Preset:")) {
             data.preset = line.substring(7);
             C1101preset =  events1.stringToCC1101Preset(data.preset);
+            SubGHzParser::setRegisters();
         } else if (line.startsWith("Custom_preset_data:")) {
-            data.custom_preset_data = parseCustomPresetData(line.substring(19));
+            data.custom_preset_data = parseCustomPresetData(line.substring(19));            
         } else if (line.startsWith("Protocol:")) {
             data.protocol = line.substring(9);
         } else if (line.startsWith("RAW_Data:")) {
@@ -143,18 +146,59 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
 
   }
 
+void SubGHzParser::setRegisters(){
+    uint8_t addr;
+    uint8_t value;
+    std::vector<uint8_t> regs; 
+    size_t index = 0;
+
+    if (data.preset == "FuriHalSubGhzPresetCustom") {
+        regs = data.custom_preset_data;  
+    } else {
+        const uint8_t* array = presetTobyteArray(convert_str_to_enum(data.preset.c_str()));
+    size_t presetArrayLength = 44;
+    regs.assign(array, array + presetArrayLength);
+    }
+
+    while (index < regs.size()) {
+        addr = regs[index++];
+        value = regs[index++];
+        ELECCC1101.SpiWriteReg(addr, value);
+
+        if (addr == 0x00 && value == 0x00) {
+            break;
+        }
+    }
+
+    if (index + 8 <= regs.size()) {
+        std::array<uint8_t, 8> paValue;
+        std::copy(regs.begin() + index, regs.begin() + index + paValue.size(), paValue.begin());
+        ELECCC1101.SpiWriteBurstReg(CC1101_PATABLE, paValue.data(), paValue.size());
+    }
+ 
+    }
+
+     
+
+
+
 
 std::vector<CustomPresetElement> SubGHzParser::parseCustomPresetData(const String& line) {
-    std::vector<CustomPresetElement> result;
+    std::vector<uint8_t> result;
     int start = 0;
+
     while (start < line.length()) {
         int end = line.indexOf(' ', start);
         if (end == -1) end = line.length();
+
         String hex_value = line.substring(start, end);
-        result.push_back(static_cast<CustomPresetElement>(strtol(hex_value.c_str(), NULL, 16)));
+        
+        result.push_back(static_cast<uint8_t>(strtol(hex_value.c_str(), NULL, 16)));
+        
         start = end + 1;
     }
-    return result;
+
+    return result; // returns as a vector of uint8_t, a byte array
 }
 
 bool SubGHzParser::loadFile(const char* filename) {

@@ -51,7 +51,6 @@ public:
     void initrRaw();
     void sendRaw();
     void sendSamples(int samples[], int samplesLength);
-    void sendFromFile();
     void sendBrute(int type);
 private:
     SPIClass  CC1101SPI;;
