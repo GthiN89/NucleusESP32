@@ -17,6 +17,8 @@
 
 
 
+
+
  XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
 
  // Touch handling variables
@@ -48,7 +50,7 @@ void setup() {
   //  gpio_set_pull_mode(GPIO_NUM_17, GPIO_PULLDOWN_ONLY);
    // CC1101.init();
 
-
+gpio_install_isr_service(0);
   
     init_touch([]() { Serial.println(F("Single touch detected!")); });
     smartdisplay_init();
@@ -130,51 +132,50 @@ void loop()
          sourApple sa;
          sa.loop();
      } 
-     if(BTCurrentState == STATE_BT_IDDLE) {
-         BLESpam spam;
-         spam.aj_adv(SpamDevice);
-     }
+    //  if(BTCurrentState == STATE_BT_IDDLE) {
+    //      BLESpam spam;
+    //      spam.aj_adv(SpamDevice);
+    //  }
     //  if(C1101CurrentState == STATE_SEND_FLIPPER) {        
     //     SubGHzParser parser;
     //     parser.loadFile(EVENTS::fullPath);
     //     SubGHzData data = parser.parseContent();
 
     //  }
-    if(isWarmupStarted){    
+    if(RFstate == WARM_UP){    
         auto const tedkom = millis();
-         
         
-        Serial.println(tedkom - previousMillis);
+        
     if (millis() - previousMillis >= 500) {
-        isWarmupStarted = false;
+        RFstate = GENERAL; 
 
         SDInit();
         if (SD.exists("/warmpup1.sub")) {
             read_sd_card_flipper_file("/warmpup1.sub");
-            detachInterrupt(CC1101_CCGDO0A);
-            CC1101.initrRaw();
-            ELECHOUSE_cc1101.setCCMode(0); 
-            ELECHOUSE_cc1101.setPktFormat(3);
-            ELECHOUSE_cc1101.SetTx();
-            pinMode(CC1101_CCGDO0A, OUTPUT);
-            SubGHzParser parser;
-            parser.loadFile("/warmpup1.sub");
-            SubGHzData data = parser.parseContent();
+            // detachInterrupt(CC1101_CCGDO0A);
+            // CC1101.initrRaw();
+            // ELECHOUSE_cc1101.setCCMode(0); 
+            // ELECHOUSE_cc1101.setPktFormat(3);
+            // ELECHOUSE_cc1101.SetTx();
+            // pinMode(CC1101_CCGDO0A, OUTPUT);
+            // SubGHzParser parser;
+            // parser.loadFile("/warmpup1.sub");
+            // SubGHzData data = parser.parseContent();
         } else {
             Serial.println("File does not exist.");
         }
          SDInit();
         if (SD.exists("/warmpup1.sub")) {
             read_sd_card_flipper_file("/warmpup1.sub");
-            detachInterrupt(CC1101_CCGDO0A);
-            CC1101.initrRaw();
-            ELECHOUSE_cc1101.setCCMode(0); 
-            ELECHOUSE_cc1101.setPktFormat(3);
-            ELECHOUSE_cc1101.SetTx();
-            pinMode(CC1101_CCGDO0A, OUTPUT);
-            SubGHzParser parser;
-            parser.loadFile("/warmpup1.sub");
-            SubGHzData data = parser.parseContent();
+            // detachInterrupt(CC1101_CCGDO0A);
+            // CC1101.initrRaw();
+            // ELECHOUSE_cc1101.setCCMode(0); 
+            // ELECHOUSE_cc1101.setPktFormat(3);
+            // ELECHOUSE_cc1101.SetTx();
+            // pinMode(CC1101_CCGDO0A, OUTPUT);
+            // SubGHzParser parser;
+            // parser.loadFile("/warmpup1.sub");
+            // SubGHzData data = parser.parseContent();
         } else {
             Serial.println("File does not exist.");
         }

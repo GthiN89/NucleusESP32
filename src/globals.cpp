@@ -7,6 +7,7 @@ char* current_dir;
 
 uint8_t C1101CurrentState = STATE_IDLE;
 uint8_t BTCurrentState = STATE_IDLE;
+uint8_t RFstate = GENERAL;
 
 
 
@@ -65,4 +66,16 @@ const char* presetToString(CC1101_PRESET preset) {
         case HND2:  return "HND2";
         default:    return "Unknown";
     }
+}
+
+const uint8_t* presetTobyteArray(CC1101_PRESET preset) {
+    switch (preset) {
+        case AM650: return AM650_regs;
+        case AM270: return AM270_regs;
+        case FM238: return FM238_regs;
+        case FM476: return FM476_regs;
+        case FM95:  return FM95_regs;
+        case FM15k: return FM15k_regs;
+        default:    return AM650_regs; 
+}
 }

@@ -47,8 +47,7 @@ void EVENTS::btn_event_playZero_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);    
     if (code == LV_EVENT_CLICKED) {
         screenMgr.createFileExplorerScreen();
-
-        isWarmupStarted = true;
+        RFstate = WARM_UP;   
     }
 }
 
@@ -95,7 +94,8 @@ void EVENTS::warmup() {
 
 void EVENTS::btn_event_Replay_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {          
+    if (code == LV_EVENT_CLICKED) {
+                 
           screenMgr.createReplayScreen();
     }
 }
@@ -257,19 +257,19 @@ void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
  }
 
    void EVENTS::btn_event_BTSpam_Start(lv_event_t * e){
-    //BLEDevice::init("");
-    lv_obj_t * ta = screenMgr.getTextAreaBTSpam();
-    lv_textarea_set_text(ta, "Running");
-    int *SpamDevice = (int *)lv_event_get_user_data(e); 
-    BLESpam spam;
-    spam.aj_adv(*SpamDevice);
+//     //BLEDevice::init("");
+//     lv_obj_t * ta = screenMgr.getTextAreaBTSpam();
+//     lv_textarea_set_text(ta, "Running");
+//     int *SpamDevice = (int *)lv_event_get_user_data(e); 
+//    // BLESpam spam;
+//     spam.aj_adv(*SpamDevice);
  }
 
   void EVENTS::btn_event_BTSpam_Stop(lv_event_t * e){
-    lv_obj_t * ta = screenMgr.getTextAreaBTSpam();
-    lv_textarea_set_text(ta, "Not running");
-    BLESpam spam;
-    BLEDevice::deinit();
+    // lv_obj_t * ta = screenMgr.getTextAreaBTSpam();
+    // lv_textarea_set_text(ta, "Not running");
+    // //BLESpam spam;
+    // BLEDevice::deinit();
  }
 
  
@@ -510,6 +510,7 @@ lv_obj_t *button_container;
 
 void EVENTS::file_explorer_play_sub()
 {
+    
 
 lv_obj_t *mbox = lv_msgbox_create(lv_scr_act());
 lv_obj_set_size(mbox, 220, 120);
@@ -554,6 +555,7 @@ lv_obj_add_event_cb(no_btn, EVENTS::confirm__explorer_play_sub_cb, LV_EVENT_CLIC
 
 void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
 {
+
     lv_obj_t * msgbox = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
     lv_obj_t * yes_btn = static_cast<lv_obj_t *>(lv_obj_get_user_data(msgbox));
     lv_obj_t * clicked_btn = static_cast<lv_obj_t *>(lv_event_get_target(e));
@@ -600,6 +602,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
         // Signal transmitted, so let's refresh the screen
                    
         } else {
+            RFstate = WARM_UP;
             updatetransmitLabel = false;
         lv_obj_del(msgbox);
     }
@@ -613,6 +616,7 @@ void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
     codesSend = 0;
     lv_obj_t * msgbox = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
     lv_obj_del(msgbox);
+    isWarmupStarted = true;
    // CC1101.disableTransmit();
    // digitalWrite(CC1101_CS, HIGH);
   //  C1101CurrentState = STATE_IDLE;
@@ -640,17 +644,19 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
     parser.loadFile(fullPath);
     SubGHzData data = parser.parseContent();
 
-    SDInit();
+   disconnectSD();
+
+    
 
     Serial.print("Using file at path: ");
     Serial.println(fullPath);
 
-    if (SD.exists(fullPath)) {
-        read_sd_card_flipper_file(fullPath);
-        delay(1);
-    } else {
-        Serial.println("File does not exist.");
-    }
+ //  if (SD.exists(fullPath)) {
+ //      read_sd_card_flipper_file(fullPath);
+ //      delay(1);
+ //  } else {
+ //      Serial.println("File does not exist.");
+ //  }
     
     free(fullPath);
 
