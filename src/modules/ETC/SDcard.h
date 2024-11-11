@@ -35,13 +35,14 @@ public:
     bool closeFile(File32* file);
     bool deleteFile(const char* filePath);
     bool fileExists(const char* filePath);
-    void writeFile(const char* filePath, const char* data, bool append);
     size_t readFile(File32* file, void* buf, size_t bytesToRead);
     bool read_sd_card_flipper_file(String filename);
+    bool writeFile(File32* file, const std::vector<byte>& data, unsigned long writeDelay);
 
     // Directory operations
     lv_fs_res_t readNextFileInDir(File32* dir, char* fn, size_t fn_len);
     File32* getByPath(const char * path); 
+    bool restartSD();
 
     //vars
 

@@ -8,7 +8,7 @@
 
 // SoftSPI configuration
 SoftSpiDriver<SDCARD_MISO_PIN, SDCARD_MOSI_PIN, SDCARD_SCK_PIN> softSpi;
-#define SD_CONFIG SdSpiConfig(SDCARD_CS_PIN, DEDICATED_SPI, SD_SCK_MHZ(0), &softSpi)
+#define SD_CONFIG SdSpiConfig(SDCARD_CS_PIN, DEDICATED_SPI, SPI_HALF_SPEED, &softSpi)
 
 SdFat32 SD;  
 
@@ -128,17 +128,17 @@ bool SDcard::fileExists(const char* filePath) {
     return false;
 }
 
-void SDcard::writeFile(const char* filePath, const char* data, bool append) {
-    oflag_t mode = append ? (O_RDWR | O_APPEND) : (O_RDWR | O_CREAT | O_TRUNC);
-    File32* file = createOrOpenFile(filePath, mode);
-    if (!file) {
-        Serial.println(F("Failed to open file for writing."));
-        return;
-    }
-    file->print(data);
-    Serial.println(F("Data written successfully."));
-    closeFile(file);
-}
+// void SDcard::writeFile(const char* filePath, const char* data, bool append) {
+//     oflag_t mode = append ? (O_RDWR | O_APPEND) : (O_RDWR | O_CREAT | O_TRUNC);
+//     File32* file = createOrOpenFile(filePath, mode);
+//     if (!file) {
+//         Serial.println(F("Failed to open file for writing."));
+//         return;
+//     }
+//     file->print(data);
+//     Serial.println(F("Data written successfully."));
+//     closeFile(file);
+// }
 
 size_t SDcard::readFile(File32* file, void* buf, size_t bytesToRead) {
     if (!file || !file->isOpen()) { 
@@ -242,3 +242,39 @@ lv_fs_res_t SDcard::readNextFileInDir(File32* dir, char* fn, size_t fn_len) {
     return LV_FS_RES_OK;
 }
 
+
+bool SDcard::writeFile(File32* file, const std::vector<byte>& data, unsigned long writeDelay) {
+    if (!file || !file->isOpen()) {
+        return false;
+    }
+
+    // Write the data in chunks if necessary, with optional delay for pacing
+    for (size_t i = 0; i < data.size(); i += 512) {  // 512 bytes is typical SD block size
+        size_t chunkSize = std::min(data.size() - i, static_cast<size_t>(512));
+        file->write(&data[i], chunkSize);
+
+        if (writeDelay > 0) {
+            delay(writeDelay);  // Delay between chunks, if specified
+        }
+    }
+    
+    file->flush();  // Ensure data is written to SD card
+    return true;
+}
+
+bool SDcard::restartSD() {
+    // Unmount SD card
+    SD.end();
+    softSpi.end();
+    delay(20);
+    softSpi.begin();
+    delay(20);  // Small delay to allow proper unmounting
+
+    // Attempt to remount the SD card
+    if (!initializeSD()) {
+        Serial.println(F("SD Card reinitialization failed."));
+        return false;
+    }
+    Serial.println(F("SD Card reinitialized successfully."));
+    return true;
+}

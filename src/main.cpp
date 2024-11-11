@@ -16,6 +16,8 @@
 
 SDcard& SD_CARD = SDcard::getInstance();
 
+SoftSpiDriver<SDCARD_MISO_PIN, SDCARD_MOSI_PIN, SDCARD_SCK_PIN> softSpiLCD;
+
 
 XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
 
@@ -47,7 +49,13 @@ void init_touch(TouchCallback singleTouchCallback) {
 void setup() {
   Serial.begin(115200);
   // Wait for USB Serial
+    gpio_set_pull_mode(GPIO_NUM_17, GPIO_PULLDOWN_ONLY);
+    gpio_install_isr_service(0);
 
+    CC1101.init();
+
+   
+  
 
   init_touch([]() { Serial.println(F("Single touch detected!")); });
     smartdisplay_init();
@@ -130,7 +138,7 @@ void loop() {
         auto const tedkom = millis();
         
         
-    if (millis() - previousMillis >= 500) {
+    if (millis() - previousMillis >= 100) {
         RFstate = GENERAL; 
 
       //  SDInit();
@@ -149,20 +157,20 @@ void loop() {
             Serial.println("File does not exist.");
         }
        //  SDInit();
-        if (SD_CARD.fileExists("/warmpup1.sub")) {
-            SD_CARD.read_sd_card_flipper_file("/warmpup1.sub");
-            detachInterrupt(CC1101_CCGDO0A);
-            CC1101.initrRaw();
-            ELECHOUSE_cc1101.setCCMode(0); 
-            ELECHOUSE_cc1101.setPktFormat(3);
-            ELECHOUSE_cc1101.SetTx();
-            pinMode(CC1101_CCGDO0A, OUTPUT);
-            SubGHzParser parser;
-            parser.loadFile("/warmpup1.sub");
-            SubGHzData data = parser.parseContent();
-        } else {
-            Serial.println("File does not exist.");
-        }
+        // if (SD_CARD.fileExists("/warmpup1.sub")) {
+        //     SD_CARD.read_sd_card_flipper_file("/warmpup1.sub");
+        //     detachInterrupt(CC1101_CCGDO0A);
+        //     CC1101.initrRaw();
+        //     ELECHOUSE_cc1101.setCCMode(0); 
+        //     ELECHOUSE_cc1101.setPktFormat(3);
+        //     ELECHOUSE_cc1101.SetTx();
+        //     pinMode(CC1101_CCGDO0A, OUTPUT);
+        //     SubGHzParser parser;
+        //     parser.loadFile("/warmpup1.sub");
+        //     SubGHzData data = parser.parseContent();
+        // } else {
+        //     Serial.println("File does not exist.");
+        // }
     }
     }
     if(updatetransmitLabel){

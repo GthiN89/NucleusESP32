@@ -55,6 +55,8 @@ public:
     void initrRaw();
     void sendRaw();
     void sendSamples(int samples[], int samplesLength);
+   static void signalanalyseTask(void* pvParameters);
+    void startSignalanalyseTask();
 private:
     SPIClass  CC1101SPI;;
     int smoothcount;
