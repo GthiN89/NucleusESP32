@@ -33,6 +33,7 @@ public:
     lv_obj_t* getPresetDropdown();
     lv_obj_t* getSyncDropdown();
     lv_obj_t* getDetectDropdown();
+    lv_obj_t* getSquareLineContainer();
 
     void createBTSPamScreen();
     lv_obj_t*  getTextAreaBTSpam();
@@ -81,6 +82,7 @@ private:
     lv_obj_t* topLabel_RCSwitchMethod_container_;
     lv_obj_t* button_container_RCSwitchMethod1_;
     lv_obj_t* button_container_RCSwitchMethod2_; 
+    lv_obj_t* quareLine_container;
     lv_obj_t* button_container_detectForce1_;
     lv_obj_t* button_container_detectForce2_;
     lv_obj_t* topLabel_detectForce_container_;

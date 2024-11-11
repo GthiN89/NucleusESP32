@@ -32,7 +32,7 @@ Currently, I’m planning to reintegrate RCswitch, as it hasn't been added to th
 - Basically, getting everything around RAW timing Sub-GHz functionality done and releasing version 0.1 of the firmware.
 
 ### Current Functionalities
-- **CC1101 RAW Replay**: Now operates similarly to the Flipper. Saves arround 3 files, then need restart, but on second card, saves nothing, so may be shit card.
+- **CC1101 RAW Replay**: Now operates similarly to the Flipper. Save files to sd card. Fully Flipper compatible.
 - **`.sub` Files Player**: Supports RAW files, tested with AM270 and AM650. Sending prettz much works now.  
 - **Tesla Charger Opener**: Currently deactivated; will return later, not a priority.  
 - **Large `.sub` File Support**: Handles virtually unlimited file sizes, tested with a 3MB "Came_top_brute.sub" file.   

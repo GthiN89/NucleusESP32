@@ -269,7 +269,6 @@ void CC1101_CLASS::loadPreset() {
 
 bool CC1101_CLASS::CheckReceived()
 {
-    delay(1);
     if (samplecount >= minsample && micros() - lastTime > 100000)
     {
         receiverEnabled = false;
@@ -286,7 +285,7 @@ void CC1101_CLASS::signalanalyseTask(void* pvParameters) {
     SD_RF.initializeSD();
     while (true) {
         cc1101->signalanalyse();
-        delay(100);  
+        delay(10);  
     }
 }
 
@@ -305,7 +304,7 @@ void CC1101_CLASS::startSignalanalyseTask() {
 
 
 void CC1101_CLASS::signalanalyse(){
- #define signalstorage 10
+ #define signalstorage 1
 
   int signalanz=0;
   int timingdelay[signalstorage];
@@ -404,6 +403,8 @@ void CC1101_CLASS::signalanalyse(){
 
       ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * textareaRC = screenMgr.getTextArea();
+    lv_obj_t * container = screenMgr.getSquareLineContainer();
+
 
     lv_textarea_set_text(textareaRC, "New RAW signal, Count: ");
     lv_textarea_add_text(textareaRC, String(smoothcount).c_str());
@@ -415,23 +416,139 @@ void CC1101_CLASS::signalanalyse(){
             rawString += samplesmooth[i];
         }
 
-    lv_textarea_add_text(textareaRC, "Capture Complete | Sample: ");
-    lv_textarea_add_text(textareaRC, rawString.c_str());
-Serial.print("start");
+    lv_textarea_add_text(textareaRC, "Capture Complete.");
+    // lv_textarea_add_text(textareaRC, rawString.c_str());
+    // lv_obj_set_y(textareaRC, 0);
 
-    delay(10);
+// Enable horizontal scrolling on the container
+lv_obj_set_scroll_dir(container, LV_DIR_HOR);
+lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
+
+lv_obj_t *chart = lv_chart_create(container);
+lv_obj_set_size(chart, 1000, 100);  // Increase width to make it scrollable
+lv_chart_set_type(chart, LV_CHART_TYPE_SCATTER);  // Use scatter type for precise control
+
+// Add a data series for the waveform
+lv_chart_series_t *ser1 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
+
+// Set the y-axis range so the waveform fits within the chart’s height
+lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, -10, 90);  // Adjust range to fit high and low values
+
+size_t num_elements = sizeof(samplesmooth) / sizeof(samplesmooth[0]);
+std::vector<unsigned long> filtered_values;
+
+// int delic = 100;
+// bool mensi = false;
+// my_label:
+// if(mensi) {
+//     delic = delic - 25;
+// }
+
+// for (size_t i = 0; i < num_elements; ++i) {
+//     if (samplesmooth[i] > 1000) {
+//         if (found_first) break;          
+//         found_first = true;
+//         i_sec = i;                       
+//         continue;                       
+//     }
+    
+//     if (found_first) {    
+//         if (samplesmooth[i] > 1000) break;           
+//         if (i - i_sec > 20) break;                  
+
+//         filtered_values.push_back(samplesmooth[i] / delic); 
+//         Serial.println(samplesmooth[i] / delic);
+//          if (samplesmooth[i] / delic < 1) {
+//             mensi = true;
+//         goto my_label;  
+//          }
+//     }
+//         num_elements_f++;
+//         continue;
+//     }
+
+bool found_first = false;
+size_t i_sec = 0;
+size_t num_elements_f = 0;
+// Iterate through samplesmooth to find numbers between the first and second > 1000
+for (size_t i = 0; i < num_elements; ++i) {
+    if (samplesmooth[i] > 1000) {
+        if (found_first) break;          // Stop after finding the second > 1000
+        found_first = true;
+        i_sec = i;                       // Record the index of the first > 1000
+        continue;                        // Skip the first > 1000 number
+    }
+    
+    if (found_first) {    
+        if (samplesmooth[i] > 1000) break;           // Stop if another > 1000 is found
+        if (i - i_sec > 20) break;                   // Limit the range to 20 elements
+
+        filtered_values.push_back(samplesmooth[i] / 100); // Collect valid values
+        Serial.println(samplesmooth[i] / 100);
+        num_elements_f++;
+        continue;
+    }
+    
+    
+}
+// std::vector<unsigned long> filtered_array;
+
+// for (unsigned long num : samplesmooth) {
+//     if (num > 1000) break;
+//     filtered_array.push_back(num);
+
+//     size_t num_elements_f = sizeof(filtered_values) / sizeof(filtered_values[0]);
+
+
+// Define the square wave pattern by alternating high and low values
+int x_pos = 0;           // Start X position
+int high_value = 80;     // High Y value
+int low_value = 0;       // Low Y value
+int pulse_width;    // Adjust for the width of each high/low segment
+// Increase the point count for more detail
+lv_chart_set_point_count(chart, 100);  // Ensure enough points for waveform
+Serial.println("yes");
+// Populate the series with square wave data
+for (int i = 0; i < num_elements_f; i++) {  // Adjust loop count based on desired wave length
+pulse_width = filtered_values[i];
+
+
+    // Draw horizontal high segment
+    lv_chart_set_next_value2(chart, ser1, x_pos, high_value);
+    lv_chart_set_next_value2(chart, ser1, x_pos + pulse_width, high_value);
+    
+    // Move to next X position
+    x_pos += pulse_width;
+
+    // Draw horizontal low segment
+    lv_chart_set_next_value2(chart, ser1, x_pos, low_value);
+    lv_chart_set_next_value2(chart, ser1, x_pos + pulse_width, low_value);
+
+    // Move to next X position
+    x_pos += pulse_width;
+
+}
+
+lv_obj_set_style_line_width(chart, 2, LV_PART_ITEMS); // Sets the series line width to 1 pixel
+
+
+// Optionally scroll to the start to view the beginning of the waveform
+lv_obj_scroll_to_x(container, 0, LV_ANIM_OFF);
+
+// Refresh the chart to display the waveform
+lv_chart_refresh(chart);
 
      FlipperSubFile subFile;
      CC1101_CLASS::disableReceiver();
     SD_RF.restartSD();
-delay(10);
+
 if (!SD_RF.directoryExists("/recordedRF/")) {
     SD_RF.createDirectory("/recordedRF/");
 }
-delay(10);
+
 String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
 String fullPath = "/recordedRF/" + filename;
-delay(10);
+
 File32* outputFile = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
 if (outputFile) {
     std::vector<byte> customPresetData;
@@ -451,11 +568,10 @@ if (outputFile) {
         customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
     }
 
-    // Use the new writeFile method to handle the data writing with optional delay
-    if (!SD_RF.writeFile(outputFile, customPresetData, /* writeDelay */ 5)) {
+    if (!SD_RF.writeFile(outputFile, customPresetData, 5)) {
         Serial.println("Failed to write data to SD card");
     }
-    delay(10);
+
     SD_RF.closeFile(outputFile);
 }
 
@@ -483,7 +599,7 @@ void CC1101_CLASS::sendRaw() {
         delayMicroseconds(lowTime);
     }
     Serial.print("Transmitted\n");
-    delay(20);
+
     digitalWrite(CC1101_CCGDO0A, LOW); 
 
     Serial.print(F("\r\nReplaying RAW data complete.\r\n\r\n"));
@@ -534,55 +650,7 @@ String CC1101_CLASS::generateRandomString(int length)
     return String(ss.str().c_str());
 }
 
-//     void CC1101_CLASS::sendFromFile() {
-//     int samplesWarmup[] = {600, 600, 200, 600, 600, 200, 200, 600, 600, 200, 600, 600, 200, 200, 600, 25000};
-//     int samplesWarmupLenght = 16;
-    
 
-//     Serial.println("Warming up the radio");
-//     detachInterrupt(CC1101_CCGDO0A);
-//     CC1101.initrRaw();
-//     ELECHOUSE_cc1101.setCCMode(0); 
-//     ELECHOUSE_cc1101.setPktFormat(3);
-//     ELECHOUSE_cc1101.SetTx();
-//     pinMode(CC1101_CCGDO0A, OUTPUT);
-
-//     detachInterrupt(CC1101_CCGDO0A);
-//     CC1101.initrRaw();
-//     ELECHOUSE_cc1101.setCCMode(0); 
-//     ELECHOUSE_cc1101.setPktFormat(3);
-//     ELECHOUSE_cc1101.SetTx();
-//     pinMode(CC1101_CCGDO0A, OUTPUT);
-//     CC1101.setCC1101Preset(C1101preset);
-//     CC1101.setFrequency(CC1101_MHZ);
-//     CC1101.loadPreset(); 
-
-//     CC1101.sendSamples(samplesWarmup, samplesWarmupLenght);
-
-//     delay(5);
-
-//     Serial.println("Warming up the radio");
-//     detachInterrupt(CC1101_CCGDO0A);
-//     CC1101.initrRaw();
-//     ELECHOUSE_cc1101.setCCMode(0); 
-//     ELECHOUSE_cc1101.setPktFormat(3);
-//     ELECHOUSE_cc1101.SetTx();
-//     pinMode(CC1101_CCGDO0A, OUTPUT);
-
-//     detachInterrupt(CC1101_CCGDO0A);
-//     CC1101.initrRaw();
-//     ELECHOUSE_cc1101.setCCMode(0); 
-//     ELECHOUSE_cc1101.setPktFormat(3);
-//     ELECHOUSE_cc1101.SetTx();
-//     pinMode(CC1101_CCGDO0A, OUTPUT);
-//     CC1101.setCC1101Preset(C1101preset);
-//     CC1101.setFrequency(CC1101_MHZ);
-//     CC1101.loadPreset(); 
-
-//     CC1101.sendSamples(samplesWarmup, samplesWarmupLenght);
-
-
-// }
 
 void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
 {
@@ -599,10 +667,6 @@ void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
     Serial.print(samplesLength);
 
     Serial.print("\n----------------\n");
-        digitalWrite(CC1101_CCGDO0A, HIGH);
-        delayMicroseconds(110);
-        digitalWrite(CC1101_CCGDO0A, LOW);
-        delayMicroseconds(150);
     for (int i = 1; i < samplesLength - 1; i += 2)
     {
         unsigned long highTime = max((unsigned long)(samples[i]), 0UL);
@@ -613,7 +677,7 @@ void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
         delayMicroseconds(lowTime);
     }
     Serial.print("Transmitted\n");
-    delay(20);
+
     digitalWrite(CC1101_CCGDO0A, LOW); 
 
     Serial.print(F("\r\nReplaying RAW data complete.\r\n\r\n"));
