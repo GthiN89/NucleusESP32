@@ -60,7 +60,7 @@ The timing tolerance is around 1-5 microseconds. Transmission quality from `.sub
 ![AM650 Transmission](https://github.com/GthiN89/NucleusESP32/blob/main/images/AM650.PNG)
 
 ### Capture Times
-![Capture Times](https://github.com/GthiN89/NucleusESP32/blob/main/images/capture%20times.bmp)
+![Capture Times](https://github.com/GthiN89/NucleusESP32/blob/main/images/capture%20times.jpeg)
 
 ## Hardware
 - Cheap Yellow Display (CYD)  
