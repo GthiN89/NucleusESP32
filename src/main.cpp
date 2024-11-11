@@ -96,6 +96,7 @@ void loop() {
      if(C1101CurrentState == STATE_ANALYZER) {
              if (CC1101.CheckReceived())
              {
+                delay(5);
                CC1101.signalanalyse();
                CC1101.disableReceiver();
                delay(10);

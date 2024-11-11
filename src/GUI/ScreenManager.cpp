@@ -53,6 +53,7 @@ ScreenManager::ScreenManager()
       text_area_replay(nullptr),
       button_container_RCSwitchMethod2_(nullptr),
       button_container_RCSwitchMethod1_(nullptr),
+      quareLine_container(nullptr),
       detect_dropdown_(nullptr)
   
 {
@@ -113,6 +114,10 @@ lv_obj_t *ScreenManager::getDetectDropdown(){
     return detect_dropdown_;
 }
 
+lv_obj_t *ScreenManager::getSquareLineContainer(){
+    return quareLine_container;
+}
+
 void ScreenManager::createReplayScreen() {
     ContainerHelper containerHelper;    
 
@@ -127,22 +132,27 @@ void ScreenManager::createReplayScreen() {
     lv_obj_set_flex_align(ReplayScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
 
+    lv_obj_set_style_pad_column(ReplayScreen_, 1, LV_PART_MAIN);
+    lv_obj_set_style_pad_row(ReplayScreen_, 1, LV_PART_MAIN);
+
     containerHelper.createContainer(&topLabel_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
     lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
+    lv_obj_set_style_pad_left(topLabel_container_, 10, LV_PART_MAIN);
+    lv_obj_set_style_pad_right(topLabel_container_, 0, LV_PART_MAIN);
 
+    containerHelper.fillTopContainer(topLabel_container_, "MHz:  ", TEXT_AREA, &customPreset, "433.92", "433.92", 10, NULL, NULL);
+    lv_obj_set_size(customPreset, 70, 30);                   
+    lv_obj_add_event_cb(customPreset, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, kb_freq_);
 
     kb_qwert_ = KeyboardHelper::createKeyboard(ReplayScreen_, LV_KEYBOARD_MODE_TEXT_LOWER);
     kb_freq_ = KeyboardHelper::createKeyboard(ReplayScreen_, LV_KEYBOARD_MODE_NUMBER);
     lv_keyboard_set_textarea(kb_freq_, customPreset);
 
-
-    containerHelper.fillTopContainer(topLabel_container_, "Mhz:  ", TEXT_AREA, &customPreset, "433.92", "433.92", 10, NULL, NULL);
-    lv_obj_set_size(customPreset, 70, 30);                   
-    lv_obj_add_event_cb(customPreset, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, kb_freq_);
-
-
     containerHelper.createContainer(&secondLabel_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
     lv_obj_set_style_border_width(secondLabel_container_, 0, LV_PART_MAIN);
+    lv_obj_set_style_pad_left(secondLabel_container_, 0, LV_PART_MAIN);
+    lv_obj_set_style_pad_right(secondLabel_container_, 0, LV_PART_MAIN);
+
 
    C1101preset_dropdown_ = lv_dropdown_create(secondLabel_container_);
     lv_dropdown_set_options(C1101preset_dropdown_, "AM650\n"
@@ -157,24 +167,24 @@ void ScreenManager::createReplayScreen() {
                                 );
 
     lv_obj_add_event_cb(C1101preset_dropdown_, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, C1101preset_dropdown_);
-
+    lv_obj_set_width(C1101preset_dropdown_, 120);  
     C1101type_dropdown_ = lv_dropdown_create(secondLabel_container_);
     lv_dropdown_set_options(C1101type_dropdown_, "Raw\n"
                                 "Analyze\n"
 
                                 );
-
+    lv_obj_set_width(C1101type_dropdown_, 120);  
     lv_obj_add_event_cb(C1101type_dropdown_, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, C1101type_dropdown_);
 
 
     // Create main text area
     text_area_replay = lv_textarea_create(ReplayScreen_);
-    lv_obj_set_size(text_area_replay, 240, 140);
+    lv_obj_set_size(text_area_replay, 240, 70);
     lv_obj_align(text_area_replay, LV_ALIGN_CENTER, 0, -20);
-    lv_textarea_set_text(text_area_replay, "RAW protocol tool.\nDuring radio operation device may not respond.");
+    lv_textarea_set_text(text_area_replay, "RAW protocol tool.\nPress listen to start.");
     lv_obj_set_scrollbar_mode(text_area_replay, LV_SCROLLBAR_MODE_OFF); 
     lv_textarea_set_cursor_click_pos(text_area_replay, false);
-
+    containerHelper.createContainer(&quareLine_container, ReplayScreen_, LV_FLEX_FLOW_ROW, 100, 240);
 
     containerHelper.createContainer(&button_container_RCSwitchMethod1_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
@@ -195,6 +205,7 @@ void ScreenManager::createReplayScreen() {
 
     lv_obj_add_event_cb(playButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, NULL); 
     lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
+
 }
 
 void ScreenManager::createRFdetectScreen() {
@@ -251,88 +262,88 @@ void ScreenManager::createRFdetectScreen() {
 }
 
 void ScreenManager::createSourAppleScreen() {
-    ContainerHelper containerHelper;
+    // ContainerHelper containerHelper;
 
-    SourAppleScreen_ = lv_obj_create(NULL);
+    // SourAppleScreen_ = lv_obj_create(NULL);
 
-    lv_scr_load(SourAppleScreen_);
-    lv_obj_delete(previous_screen);
-    previous_screen = SourAppleScreen_;
-    lv_obj_set_flex_flow(SourAppleScreen_, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(SourAppleScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    // lv_scr_load(SourAppleScreen_);
+    // lv_obj_delete(previous_screen);
+    // previous_screen = SourAppleScreen_;
+    // lv_obj_set_flex_flow(SourAppleScreen_, LV_FLEX_FLOW_COLUMN);
+    // lv_obj_set_flex_align(SourAppleScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-    lv_obj_t * topLabel_container_;
-    containerHelper.createContainer(&topLabel_container_, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-    lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
+    // lv_obj_t * topLabel_container_;
+    // containerHelper.createContainer(&topLabel_container_, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    // lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
 
-    // Create main text area
-    text_area_SourApple = lv_textarea_create(SourAppleScreen_);
-    lv_obj_set_size(text_area_SourApple, 240, 140);
-    lv_obj_align(text_area_SourApple, LV_ALIGN_CENTER, 0, -20);
-    lv_textarea_set_text(text_area_SourApple, "Sour Apple\nWill spam BLE devices\nMay cause crash of Apple devices");
-    lv_obj_set_scrollbar_mode(text_area_SourApple, LV_SCROLLBAR_MODE_OFF); 
-    lv_textarea_set_cursor_click_pos(text_area_SourApple, false);
+    // // Create main text area
+    // text_area_SourApple = lv_textarea_create(SourAppleScreen_);
+    // lv_obj_set_size(text_area_SourApple, 240, 140);
+    // lv_obj_align(text_area_SourApple, LV_ALIGN_CENTER, 0, -20);
+    // lv_textarea_set_text(text_area_SourApple, "Sour Apple\nWill spam BLE devices\nMay cause crash of Apple devices");
+    // lv_obj_set_scrollbar_mode(text_area_SourApple, LV_SCROLLBAR_MODE_OFF); 
+    // lv_textarea_set_cursor_click_pos(text_area_SourApple, false);
 
-    lv_obj_t *buttonContainer;
-    containerHelper.createContainer(&buttonContainer, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    // lv_obj_t *buttonContainer;
+    // containerHelper.createContainer(&buttonContainer, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
 
-    lv_obj_t *listenButton = ButtonHelper::createButton(buttonContainer, "Start");
-    lv_obj_add_event_cb(listenButton, EVENTS::btn_event_SourApple_Start, LV_EVENT_CLICKED, NULL); 
+    // lv_obj_t *listenButton = ButtonHelper::createButton(buttonContainer, "Start");
+    // lv_obj_add_event_cb(listenButton, EVENTS::btn_event_SourApple_Start, LV_EVENT_CLICKED, NULL); 
 
-    lv_obj_t *saveButton = ButtonHelper::createButton(buttonContainer, "Stop");
-    lv_obj_add_event_cb(saveButton, EVENTS::btn_event_SourApple_Stop, LV_EVENT_CLICKED, NULL); 
+    // lv_obj_t *saveButton = ButtonHelper::createButton(buttonContainer, "Stop");
+    // lv_obj_add_event_cb(saveButton, EVENTS::btn_event_SourApple_Stop, LV_EVENT_CLICKED, NULL); 
 }
 
 void ScreenManager::createBTSPamScreen() {
-    ContainerHelper containerHelper;
+    // ContainerHelper containerHelper;
 
-    BTSpamScreen_ = lv_obj_create(NULL);
-    lv_scr_load(BTSpamScreen_);
-    lv_obj_delete(previous_screen);
-    previous_screen = BTSpamScreen_;
-    lv_obj_set_flex_flow(BTSpamScreen_, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(BTSpamScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    // BTSpamScreen_ = lv_obj_create(NULL);
+    // lv_scr_load(BTSpamScreen_);
+    // lv_obj_delete(previous_screen);
+    // previous_screen = BTSpamScreen_;
+    // lv_obj_set_flex_flow(BTSpamScreen_, LV_FLEX_FLOW_COLUMN);
+    // lv_obj_set_flex_align(BTSpamScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-    lv_obj_t * topLabel_container_;
-    containerHelper.createContainer(&topLabel_container_, BTSpamScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-    lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
+    // lv_obj_t * topLabel_container_;
+    // containerHelper.createContainer(&topLabel_container_, BTSpamScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    // lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
 
-    // Create main text area
-    text_area_BTSpam = lv_textarea_create(BTSpamScreen_);
-    lv_obj_set_size(text_area_BTSpam, 240, 140);
-    lv_obj_align(text_area_BTSpam, LV_ALIGN_CENTER, 0, -20);
-    lv_textarea_set_text(text_area_BTSpam, "Will spam BLE devices\nMay cause crash of some");
-    lv_obj_set_scrollbar_mode(text_area_BTSpam, LV_SCROLLBAR_MODE_OFF); 
-    lv_textarea_set_cursor_click_pos(text_area_BTSpam, false);
+    // // Create main text area
+    // text_area_BTSpam = lv_textarea_create(BTSpamScreen_);
+    // lv_obj_set_size(text_area_BTSpam, 240, 140);
+    // lv_obj_align(text_area_BTSpam, LV_ALIGN_CENTER, 0, -20);
+    // lv_textarea_set_text(text_area_BTSpam, "Will spam BLE devices\nMay cause crash of some");
+    // lv_obj_set_scrollbar_mode(text_area_BTSpam, LV_SCROLLBAR_MODE_OFF); 
+    // lv_textarea_set_cursor_click_pos(text_area_BTSpam, false);
 
-    lv_obj_t *buttonContainer;
-    containerHelper.createContainer(&buttonContainer, BTSpamScreen_, LV_FLEX_FLOW_ROW_WRAP, 120, 240);
-    lv_obj_set_flex_align(buttonContainer, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    // lv_obj_t *buttonContainer;
+    // containerHelper.createContainer(&buttonContainer, BTSpamScreen_, LV_FLEX_FLOW_ROW_WRAP, 120, 240);
+    // lv_obj_set_flex_align(buttonContainer, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
 
-    int applle = 0;
-    int Microsoft = 1;
-    int Samsung = 2;
-    int Android = 3;
-    int ALL = 4;
+    // int applle = 0;
+    // int Microsoft = 1;
+    // int Samsung = 2;
+    // int Android = 3;
+    // int ALL = 4;
 
-    lv_obj_t *startButton = ButtonHelper::createButton(buttonContainer, "Start Apple");
-    lv_obj_add_event_cb(startButton, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &applle); 
+    // lv_obj_t *startButton = ButtonHelper::createButton(buttonContainer, "Start Apple");
+    // lv_obj_add_event_cb(startButton, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &applle); 
 
-    lv_obj_t *startButton1 = ButtonHelper::createButton(buttonContainer, "Start Microsoft");
-    lv_obj_add_event_cb(startButton1, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &Microsoft); 
+    // lv_obj_t *startButton1 = ButtonHelper::createButton(buttonContainer, "Start Microsoft");
+    // lv_obj_add_event_cb(startButton1, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &Microsoft); 
 
-    lv_obj_t *startButton2 = ButtonHelper::createButton(buttonContainer, "Start Samsung");
-    lv_obj_add_event_cb(startButton2, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &Samsung); 
+    // lv_obj_t *startButton2 = ButtonHelper::createButton(buttonContainer, "Start Samsung");
+    // lv_obj_add_event_cb(startButton2, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &Samsung); 
 
-    lv_obj_t *startButton3 = ButtonHelper::createButton(buttonContainer, "Start Android");
-    lv_obj_add_event_cb(startButton3, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &Android); 
+    // lv_obj_t *startButton3 = ButtonHelper::createButton(buttonContainer, "Start Android");
+    // lv_obj_add_event_cb(startButton3, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &Android); 
 
-    lv_obj_t *startButton4 = ButtonHelper::createButton(buttonContainer, "Start ALL");
-    lv_obj_add_event_cb(startButton4, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &ALL); 
+    // lv_obj_t *startButton4 = ButtonHelper::createButton(buttonContainer, "Start ALL");
+    // lv_obj_add_event_cb(startButton4, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &ALL); 
 
-    lv_obj_t *saveButton = ButtonHelper::createButton(buttonContainer, "Stop");
-    lv_obj_add_event_cb(saveButton, EVENTS::btn_event_SourApple_Stop, LV_EVENT_CLICKED, NULL); 
+    // lv_obj_t *saveButton = ButtonHelper::createButton(buttonContainer, "Stop");
+    // lv_obj_add_event_cb(saveButton, EVENTS::btn_event_SourApple_Stop, LV_EVENT_CLICKED, NULL); 
 }
 
 
