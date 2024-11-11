@@ -13,8 +13,11 @@
 #include <cstdio>   // For snprintf
 #include "modules/dataProcessing/SubGHzParser.h"
 using namespace std;
+#include "modules/ETC/SDcard.h"
 
 #define MAX_PATH_LENGTH 256
+
+    SDcard& SD_EVN = SDcard::getInstance();  
 
 int SpamDevice = 1;
 bool updatetransmitLabel = false;
@@ -536,7 +539,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
     lv_obj_t * clicked_btn = static_cast<lv_obj_t *>(lv_event_get_target(e));
 
     if (clicked_btn == yes_btn) {
-    
+    SD_EVN.restartSD();
             Serial.print("Transmiting?");
             Serial.println(EVENTS::fullPath);
             String text = "Transmitting\n Codes send: " + String(codesSend);
@@ -552,7 +555,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
             lv_label_set_text(close_btn_lbl, "Close");
             lv_obj_add_event_cb(close_btn, EVENTS::close_explorer_play_sub_cb, LV_EVENT_CLICKED, msgbox);
 
-
+  
         //warm up of CC1101
   
 
@@ -574,6 +577,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
 
     }
 
+
         // Signal transmitted, so let's refresh the screen
                    
         } else {
@@ -586,6 +590,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
 
 
 void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
+    RFstate == WARM_UP;
     updatetransmitLabel = false;
     stopTransmit = true;
     codesSend = 0;

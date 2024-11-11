@@ -93,9 +93,10 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
 
 
   void SubGHzParser::sendRawData(const std::vector<RawDataElement>& rawData) {
-    if(stopTransmit) {
-        return;
-    }
+    // if(stopTransmit) {
+    //     return;
+    // }
+    
 
     int tempSampleCount = rawData.size();
     if (tempSampleCount % 2 == 0) {
@@ -224,13 +225,15 @@ bool SubGHzParser::loadFile(const char* filename) {
         line.trim();
 
         if (line.startsWith("RAW_Data:")) {
+            raw_data_sequence = parseRawData(line.substring(9));
+            parsingRawData = true;
+
             if (parsingRawData) {
                 sendRawData(raw_data_sequence);  
                 raw_data_sequence.clear();       
             }
             // Start a new RAW_Data section
-            raw_data_sequence = parseRawData(line.substring(9));
-            parsingRawData = true;
+            
         
         } else if (parsingRawData && (line[0] == '-' || isDigit(line[0]))) {
             Serial.print(line);
@@ -260,10 +263,10 @@ bool SubGHzParser::loadFile(const char* filename) {
 
 
 void SubGHzParser::clearData() {
-    data = SubGHzData();  // Reset data to a new instance (clears all fields)
-    SD_SUB.tempFreq = 0;
-    SD_SUB.tempSampleCount = 0;
-    C1101CurrentState = STATE_IDLE;
-    codesSend = 0;
+ //   data = SubGHzData();  // Reset data to a new instance (clears all fields)
+   // SD_SUB.tempFreq = 0;
+//    SD_SUB.tempSampleCount = 0;
+  //  C1101CurrentState = STATE_IDLE;
+ //   codesSend = 0;
     SD_SUB.FlipperFileFlag = false;
 }

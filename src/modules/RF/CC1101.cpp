@@ -281,6 +281,29 @@ bool CC1101_CLASS::CheckReceived()
     }
 }
 
+void CC1101_CLASS::signalanalyseTask(void* pvParameters) {
+    CC1101_CLASS* cc1101 = static_cast<CC1101_CLASS*>(pvParameters);  // Pointer to the instance
+    SD_RF.initializeSD();
+    while (true) {
+        cc1101->signalanalyse();
+        delay(100);  
+    }
+}
+
+
+void CC1101_CLASS::startSignalanalyseTask() {
+    xTaskCreatePinnedToCore(
+        CC1101_CLASS::signalanalyseTask,  // Function to run
+        "SignalAnalyseTask",               // Task name
+        8192,                              // Stack size in bytes
+        NULL,                              // Parameter for task
+        1,                                 // Priority
+        NULL,                              // Task handle
+        1                                  // Core 1
+    );
+}
+
+
 void CC1101_CLASS::signalanalyse(){
  #define signalstorage 10
 
@@ -396,21 +419,23 @@ void CC1101_CLASS::signalanalyse(){
     lv_textarea_add_text(textareaRC, rawString.c_str());
 Serial.print("start");
 
-
+    delay(10);
 
      FlipperSubFile subFile;
      CC1101_CLASS::disableReceiver();
-
+    SD_RF.restartSD();
+delay(10);
 if (!SD_RF.directoryExists("/recordedRF/")) {
     SD_RF.createDirectory("/recordedRF/");
 }
-
+delay(10);
 String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
 String fullPath = "/recordedRF/" + filename;
-
+delay(10);
 File32* outputFile = SD_RF.createOrOpenFile(fullPath.c_str(), O_RDWR | O_CREAT | O_TRUNC);
 if (outputFile) {
     std::vector<byte> customPresetData;
+
     if (C1101preset == CUSTOM) {
         customPresetData.insert(customPresetData.end(), {
             CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
@@ -425,8 +450,12 @@ if (outputFile) {
         ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
         customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
     }
-    subFile.generateRaw(*outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
-    Serial.print(rawString);
+
+    // Use the new writeFile method to handle the data writing with optional delay
+    if (!SD_RF.writeFile(outputFile, customPresetData, /* writeDelay */ 5)) {
+        Serial.println("Failed to write data to SD card");
+    }
+    delay(10);
     SD_RF.closeFile(outputFile);
 }
 
