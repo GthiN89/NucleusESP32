@@ -432,7 +432,7 @@ delay(10);
 String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
 String fullPath = "/recordedRF/" + filename;
 delay(10);
-File32* outputFile = SD_RF.createOrOpenFile(fullPath.c_str(), O_RDWR | O_CREAT | O_TRUNC);
+File32* outputFile = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
 if (outputFile) {
     std::vector<byte> customPresetData;
 

@@ -78,7 +78,7 @@ void setup() {
         lv_fs_if_init();
 
 
-     
+    
  
 }
  ulong next_millis;
@@ -138,7 +138,7 @@ void loop() {
         auto const tedkom = millis();
         
         
-    if (millis() - previousMillis >= 100) {
+    if (millis() - previousMillis >= 50) {
         RFstate = GENERAL; 
 
       //  SDInit();
