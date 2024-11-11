@@ -2,17 +2,13 @@
 
 #include "globals.h"
 
+
 char* current_dir;
 //char* selected_file;
 
 uint8_t C1101CurrentState = STATE_IDLE;
 uint8_t BTCurrentState = STATE_IDLE;
 uint8_t RFstate = GENERAL;
-
-
-
-CC1101_PRESET C1101preset = AM650;
-
 
 
 bool C1101LoadPreset = true;
@@ -37,7 +33,7 @@ extern bool bruteIsRunning = false;
 
 extern uint16_t bruteCounter = 0;
 
-
+CC1101_PRESET  C1101preset = AM650;
 
 
 CC1101_PRESET convert_str_to_enum(const char * selected_str) {

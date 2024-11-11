@@ -2,13 +2,11 @@
 #include "KeyboardHelper.h"
 #include "ContainerHelper.h"
 #include "ButtonHelper.h"
-#include "globals.h"
 #include "events.h"
-#include "FS.h"
-#include "modules/ETC/SDcard.h"
+//#include "FS.h"
 #include "modules/dataProcessing/SubGHzParser.h"
 #include "modules/dataProcessing/dataProcessing.h"
-#include "SD.h"
+#include "SDfat.h"
 #include "XPT2046_Bitbang.h"
 
 #define MAX_PATH_LENGTH 256
@@ -38,7 +36,7 @@ ScreenManager::ScreenManager()
       BTSpamScreen_(nullptr),
       fileExplorerScreen(nullptr),   
       text_area_(nullptr),
-      freqInput_(nullptr),
+      customPreset(nullptr),
       kb_freq_(nullptr),
       kb_qwert_(nullptr),
       fileName_container_(nullptr),
@@ -55,7 +53,7 @@ ScreenManager::ScreenManager()
       text_area_replay(nullptr),
       button_container_RCSwitchMethod2_(nullptr),
       button_container_RCSwitchMethod1_(nullptr),
-      brute_dropdown_(nullptr)
+      detect_dropdown_(nullptr)
   
 {
 }
@@ -68,7 +66,7 @@ ScreenManager::~ScreenManager()
 
 lv_obj_t *ScreenManager::getFreqInput()
 {
-    return freqInput_;
+    return customPreset;
 }
 
 lv_obj_t *ScreenManager::getTextArea()
@@ -107,12 +105,12 @@ lv_obj_t *ScreenManager::getSyncDropdown()
 }
 
 
-lv_obj_t *ScreenManager::getTextAreaBrute(){
-    return text_area__BruteForce;
+lv_obj_t *ScreenManager::getdetectLabel(){
+    return detectLabel;
 }
 
-lv_obj_t *ScreenManager::getBruteDropdown(){
-    return brute_dropdown_;
+lv_obj_t *ScreenManager::getDetectDropdown(){
+    return detect_dropdown_;
 }
 
 void ScreenManager::createReplayScreen() {
@@ -135,12 +133,12 @@ void ScreenManager::createReplayScreen() {
 
     kb_qwert_ = KeyboardHelper::createKeyboard(ReplayScreen_, LV_KEYBOARD_MODE_TEXT_LOWER);
     kb_freq_ = KeyboardHelper::createKeyboard(ReplayScreen_, LV_KEYBOARD_MODE_NUMBER);
-    lv_keyboard_set_textarea(kb_freq_, freqInput_);
+    lv_keyboard_set_textarea(kb_freq_, customPreset);
 
 
-    containerHelper.fillTopContainer(topLabel_container_, "Mhz:  ", TEXT_AREA, &freqInput_, "433.92", "433.92", 10, NULL, NULL);
-    lv_obj_set_size(freqInput_, 70, 30);                   
-    lv_obj_add_event_cb(freqInput_, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, kb_freq_);
+    containerHelper.fillTopContainer(topLabel_container_, "Mhz:  ", TEXT_AREA, &customPreset, "433.92", "433.92", 10, NULL, NULL);
+    lv_obj_set_size(customPreset, 70, 30);                   
+    lv_obj_add_event_cb(customPreset, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, kb_freq_);
 
 
     containerHelper.createContainer(&secondLabel_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
@@ -199,64 +197,57 @@ void ScreenManager::createReplayScreen() {
     lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
 }
 
-void ScreenManager::createBruteForceScreen() {
+void ScreenManager::createRFdetectScreen() {
     ContainerHelper containerHelper;
 
-    BruteForceScreen_ = lv_obj_create(NULL);
-    lv_scr_load(BruteForceScreen_);
-    lv_obj_delete(previous_screen);
-    previous_screen = BruteForceScreen_;
-    lv_obj_set_flex_flow(BruteForceScreen_, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(BruteForceScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    // CC1101_MODULATION = 0;  0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
+    // CC1101_DRATE = 4.79794; 0.02 to 1621.83. Default is 99.97 kBaud!
+    // CC1101_RX_BW = 270.833333; // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
+    // CC1101_DEVIATION = 2.380371;
+
+    detectScreen_ = lv_obj_create(NULL);
+    lv_scr_load(detectScreen_);
+    previous_screen = detectScreen_;
 
 
-    containerHelper.createContainer(&topLabel_BruteForce_container_, BruteForceScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-    lv_obj_set_style_border_width(BruteForceScreen_, 0, LV_PART_MAIN);
+    // Top label container for dropdowns
+   // containerHelper.createContainer(&topLabel_detectForce_container_, detectScreen_, LV_FLEX_FLOW_COLUMN, 35, 240);
 
-    kb_freq_ = KeyboardHelper::createKeyboard(BruteForceScreen_, LV_KEYBOARD_MODE_NUMBER);
-    lv_keyboard_set_textarea(kb_freq_, freqInput_);
+    // Dropdown for signal presets
+    detect_dropdown_ = lv_dropdown_create(detectScreen_);
+    lv_dropdown_set_options(detect_dropdown_, "AM650\nAM270\nFM238\nFM476\nFM95\nFM15k\nPAGER\nHND1\nHND2\n");
 
+    // Custom frequency preset dropdown
+    customPreset = lv_dropdown_create(detectScreen_);
+    lv_dropdown_set_options(customPreset, "FRQ1\nFRQ2\nFRQ3\nFRQ4\nFRQ5\n");
+    //lv_obj_set_size(customPreset, 70, 30);
 
-    containerHelper.fillTopContainer(topLabel_BruteForce_container_, "Mhz:  ", TEXT_AREA, &freqInput_, "433.92", "433.92", 10, NULL, NULL);
-    lv_obj_set_size(freqInput_, 70, 30);                   
-    lv_obj_add_event_cb(freqInput_, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, kb_freq_);
-
-
-    containerHelper.createContainer(&secondLabel_BruteForce_container_, BruteForceScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-    lv_obj_set_style_border_width(secondLabel_BruteForce_container_, 0, LV_PART_MAIN);
-
-    brute_dropdown_ = lv_dropdown_create(secondLabel_BruteForce_container_);
-    lv_dropdown_set_options(brute_dropdown_, "Czech Bells\n"
-                                "Empty\n"
-                                );
-
-    lv_obj_add_event_cb(brute_dropdown_, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, brute_dropdown_);
+    // Second container for additional elements
+    containerHelper.createContainer(&secondLabel_detectForce_container_, detectScreen_, LV_FLEX_FLOW_COLUMN, 100, 160);
 
 
-    // Create main text area
-    text_area__BruteForce = lv_textarea_create(BruteForceScreen_);
-    lv_obj_set_size(text_area__BruteForce, 240, 140);
-    lv_obj_align(text_area__BruteForce, LV_ALIGN_CENTER, 0, -20);
-    lv_textarea_set_text(text_area__BruteForce, "SubGhz BruteForce.\nSet/get frequency,type, and start attack.\nDuring radio operation device may not respond.");
-    lv_obj_set_scrollbar_mode(text_area__BruteForce, LV_SCROLLBAR_MODE_OFF); 
-    lv_textarea_set_cursor_click_pos(text_area__BruteForce, false);
+    // Label for displaying detected signals
+    detectLabel = lv_label_create(secondLabel_detectForce_container_);
+    lv_obj_set_size(detectLabel, 210, 140);
+    lv_obj_align(detectLabel, LV_ALIGN_LEFT_MID, 0, -20);
+    lv_label_set_text(detectLabel, "signal 1:\nsignal 2:\nsignal 3:\nsignal 4:\nsignal 5:");
 
-    containerHelper.createContainer(&button_container_BruteForce1_, BruteForceScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    // Container for start and pause buttons
+  //  containerHelper.createContainer(&button_container_Detec1_, detectScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
-    lv_obj_t *listenButton = ButtonHelper::createButton(button_container_BruteForce1_, "Start");
-    lv_obj_add_event_cb(listenButton, EVENTS::btn_event_brute_run, LV_EVENT_CLICKED, NULL); 
+   // lv_obj_t *startButton = ButtonHelper::createButton(button_container_Detec1_, "Start");
+    // lv_obj_add_event_cb(startButton, EVENTS::btn_event_detect_run, LV_EVENT_CLICKED, NULL);
 
-    lv_obj_t *saveButton = ButtonHelper::createButton(button_container_BruteForce1_, "Pause");
-    lv_obj_add_event_cb(saveButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL);
+   // lv_obj_t *stopButton = ButtonHelper::createButton(button_container_Detec1_, "Pause");
+    // lv_obj_add_event_cb(stopButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL);
 
-    containerHelper.createContainer(&button_container_BruteForce2_, BruteForceScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    // Container for save and exit buttons
+ //   containerHelper.createContainer(&button_container_detectForce2_, detectScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
-    lv_obj_t *playButton = ButtonHelper::createButton(button_container_BruteForce2_, "Save");
-    lv_obj_t *exitButton = ButtonHelper::createButton(button_container_BruteForce2_, "Exit");
-
-
-    lv_obj_add_event_cb(playButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, NULL); 
-    lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
+  //  lv_obj_t *setButton = ButtonHelper::createButton(button_container_detectForce2_, "Save");
+  //  lv_obj_t *exitButton = ButtonHelper::createButton(button_container_detectForce2_, "Exit");
+    // lv_obj_add_event_cb(setButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, NULL);
+    // lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL);
 }
 
 void ScreenManager::createSourAppleScreen() {
@@ -444,14 +435,14 @@ void ScreenManager::createRFMenu()
     lv_label_set_text(label_c1101Alanalyzer_menu, "rec/play");
     lv_obj_center(label_c1101Alanalyzer_menu);
 
-        lv_obj_t *btn_SubGhzBruteForce_menu = lv_btn_create(lv_scr_act());
-    lv_obj_set_pos(btn_SubGhzBruteForce_menu, 25, 190);
-    lv_obj_set_size(btn_SubGhzBruteForce_menu, 200, 50);
-    lv_obj_add_event_cb(btn_SubGhzBruteForce_menu, EVENTS::btn_event_BruteForce_run, LV_EVENT_ALL, NULL);
+        lv_obj_t *btn_SubGhzdetectForce_menu = lv_btn_create(lv_scr_act());
+    lv_obj_set_pos(btn_SubGhzdetectForce_menu, 25, 190);
+    lv_obj_set_size(btn_SubGhzdetectForce_menu, 200, 50);
+    lv_obj_add_event_cb(btn_SubGhzdetectForce_menu, EVENTS::btn_event_detectForce_run, LV_EVENT_ALL, NULL);
 
-    lv_obj_t *label_SubGhzBruteForce_menu = lv_label_create(btn_SubGhzBruteForce_menu);
-    lv_label_set_text(label_SubGhzBruteForce_menu, "Brute Force");
-    lv_obj_center(label_SubGhzBruteForce_menu);
+    lv_obj_t *label_SubGhzdetectForce_menu = lv_label_create(btn_SubGhzdetectForce_menu);
+    lv_label_set_text(label_SubGhzdetectForce_menu, "detect signal");
+    lv_obj_center(label_SubGhzdetectForce_menu);
 
     lv_obj_t *btn_c1101Others_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_c1101Others_menu, 25, 250);
@@ -508,3 +499,5 @@ void ScreenManager::createFileExplorerScreen()
 
     lv_obj_add_event_cb(file_explorer, EVENTS::file_explorer_event_handler,  LV_EVENT_VALUE_CHANGED, NULL);
 }
+
+

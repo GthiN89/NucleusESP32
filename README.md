@@ -9,6 +9,7 @@ This is my first project in C, which I began in early summer, with prior experie
 
 **Status**: Work in Progress (WIP)  
 Please go easy on it; it's still evolving!
+Getting near to 0.1 nightly relase!
 
 ## Features Implemented
 
@@ -26,14 +27,13 @@ Currently, I’m planning to reintegrate RCswitch, as it hasn't been added to th
 - **CYD Smart Display Library Compatibility**: The compiler may have issues with `display->sw_rotate` and `LED_RGB`. You can comment out or delete these sections; they would only cause problems anyway.
 
 ### Priority List
-- Saving Sub-GHz files
 - Fully functional/featured file explorer  
-- Parsing custom protocol data from Sub-GHz files and writing them to CC1101 registers to ensure functionality
+- Bugs
 - Basically, getting everything around RAW timing Sub-GHz functionality done and releasing version 0.1 of the firmware.
 
 ### Current Functionalities
-- **CC1101 RAW Replay**: Now operates similarly to the Flipper. (Saving not working after LVGL update; high-priority repair)  
-- **`.sub` Files Player**: Supports RAW files, tested with AM270 and AM650.  
+- **CC1101 RAW Replay**: Now operates similarly to the Flipper. Saves arround 3 files, then need restart, but on second card, saves nothing, so may be shit card.
+- **`.sub` Files Player**: Supports RAW files, tested with AM270 and AM650. Sends only only one file, then need restart.   
 - **Tesla Charger Opener**: Currently deactivated; will return later, not a priority.  
 - **Large `.sub` File Support**: Handles virtually unlimited file sizes, tested with a 3MB "Came_top_brute.sub" file.  
 - **Brute Force Attack on 8-bit RF Codes**: Experimental feature for the M1E IC by MOSDESIGN SEMICONDUCTOR CORP. [M1E Datasheet](https://www.cika.com/soporte/Information/Semiconductores/CIencoder-decoder/M1E-MOSDESIGN.pdf)  

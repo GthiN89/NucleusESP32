@@ -2,7 +2,7 @@
 #define FILE_EXPLORER_H
 
 #include "lvgl.h"
-#include <SD.h>
+#include <SDfat.h>
 #include <SPI.h>
 
 // Function declarations
@@ -15,7 +15,7 @@ lv_fs_res_t fs_tell(lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p);
 lv_fs_res_t fs_remove(lv_fs_drv_t * drv, const char * path);
 lv_fs_res_t fs_size(lv_fs_drv_t * drv, void * file_p, uint32_t * size_p);
 void * fs_dir_open(lv_fs_drv_t * drv, const char * path);
-lv_fs_res_t fs_dir_read(lv_fs_drv_t * drv, void * rddir_p, char * fn, uint32_t fn_len);
+lv_fs_res_t fs_dir_read(lv_fs_drv_t*, void*, char*, unsigned int);
 lv_fs_res_t fs_dir_close(lv_fs_drv_t * drv, void * dir_p);
 
 // Initialization function for LVGL file system driver

@@ -30,6 +30,14 @@ struct SubGHzData {
 };
 
 
+struct RFDetect {
+    uint32_t frequencyIN;
+    uint32_t PAIn;
+    uint32_t frequencyOUT;
+    uint32_t PAOut;
+    uint32_t Preset;
+};
+
 class SubGHzParser {
 public:
     SubGHzParser();
@@ -44,6 +52,9 @@ private:
     std::vector<CustomPresetElement> parseCustomPresetData(const String& line);
     // Helper method to parse a line of raw data
     std::vector<RawDataElement> parseRawData(const String& line);
+    void clearData();
 };
+
+
 
 #endif // SUBGHZ_PARSER_H

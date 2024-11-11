@@ -5,7 +5,6 @@
 
 #include <lvgl.h>
 //#include <RCSwitch.h>
-#include "globals.h"
 #include "main.h"
 extern bool updatetransmitLabel;
 extern bool stopTransmit;
@@ -50,8 +49,8 @@ static void btn_event_SourApple_Stop(lv_event_t * e);
 static void btn_event_BTSpam(lv_event_t * e);
 static void btn_event_BTSpam_Start(lv_event_t * e);
 static void btn_event_BTSpam_Stop(lv_event_t * e);
-static void btn_event_BruteForce_run(lv_event_t* e);
-static void btn_event_brute_run(lv_event_t* e);
+static void btn_event_detectForce_run(lv_event_t* e);
+static void btn_event_detect_run(lv_event_t* e);
 static void ta_rf_type_event_cb(lv_event_t * e);
 static void warmup();
 
@@ -79,15 +78,26 @@ static void file_explorer_play_sub();
 static void CC1101TransmitTask(void* pvParameters);
 static void initLabelUpdater();
 static void labelUpdateTask(void* parameter);
+static lv_obj_t * spinbox;
 
+// Define a list of concrete values for the spinbox
+static int32_t valuesDrate[];
+static int32_t current_indexDrate;
+static const int32_t value_countDrate;
+
+static void lv_spinbox_set_value_from_index();
+static void lv_spinbox_increment_event_cb(lv_event_t * e);
+
+static void lv_spinbox_decrement_event_cb(lv_event_t * e);
 
 static bool recievedSubGhz;
 
 
-static CC1101_PRESET stringToCC1101Preset(String presetStr);
 
 private:
 
 };
 
 #endif // EVENTS_H
+
+

@@ -1,23 +1,18 @@
 #include "CC1101.h"
 #include "Arduino.h"
 #include "ELECHOUSE_CC1101_SRC_DRV.h"
-#include "globals.h"
-#include "FS.h"
 #include "GUI/ScreenManager.h"
 #include <sstream>
 #include <ctime>
-#include "FS.h"
-#include <LittleFS.h>
-#include "SPIFFS.h"
-#include <vector>
-#include "FlipperSubFile.h"
-#include "RCSwitch.h"
-#include "modules/ETC/SDcard.h"
-#include <string> 
-#include "../../../../NucleusESP32/src/GUI/events.h"
-#include "../ETC/SDcard.h"
-#include "SPI.h"
 
+#include <vector>
+
+#include <string> 
+#include "GUI/events.h"
+#include "SPI.h"
+#include "modules/ETC/SDcard.h"
+
+SDcard& SD_RF = SDcard::getInstance();
 
 
 using namespace std;
@@ -387,8 +382,6 @@ void CC1101_CLASS::signalanalyse(){
       ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t * textareaRC = screenMgr.getTextArea();
 
-    File outputFile;
-
     lv_textarea_set_text(textareaRC, "New RAW signal, Count: ");
     lv_textarea_add_text(textareaRC, String(smoothcount).c_str());
     lv_textarea_add_text(textareaRC,"\n");
@@ -401,54 +394,50 @@ void CC1101_CLASS::signalanalyse(){
 
     lv_textarea_add_text(textareaRC, "Capture Complete | Sample: ");
     lv_textarea_add_text(textareaRC, rawString.c_str());
+Serial.print("start");
 
 
 
+     FlipperSubFile subFile;
+     CC1101_CLASS::disableReceiver();
 
-
-    FlipperSubFile subFile;
-    CC1101_CLASS::disableReceiver();
-    if (SDInit()) {
-    if (!SD.exists("/recordedRF/" )) {
-        SD.mkdir("/recordedRF/" );
-    }  
-        String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
-        String fullPath = "/recordedRF/" + filename; 
-        outputFile = SD.open(fullPath.c_str(), "w");
-        if (outputFile) {
-            std::vector<byte> customPresetData;
-            if (C1101preset == CUSTOM) {
-                customPresetData.insert(customPresetData.end(), {
-                    CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
-                    CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
-                    CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
-                    CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
-                    CC1101_FREND0,  ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
-                    0x00, 0x00
-                });
-
-                std::array<byte,8> paTable;
-                ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
-                customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
-            }
-            subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
-            Serial.print(rawString);
-            outputFile.close();
-        } else {
-
-        }
-        SD.end();
-        digitalWrite(CC1101_CS, LOW);
-        digitalWrite(SDCARD_CS, HIGH);
-        CC1101_CLASS::enableReceiver();     
-
-    }
+if (!SD_RF.directoryExists("/recordedRF/")) {
+    SD_RF.createDirectory("/recordedRF/");
 }
+
+String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
+String fullPath = "/recordedRF/" + filename;
+
+File32* outputFile = SD_RF.createOrOpenFile(fullPath.c_str(), O_RDWR | O_CREAT | O_TRUNC);
+if (outputFile) {
+    std::vector<byte> customPresetData;
+    if (C1101preset == CUSTOM) {
+        customPresetData.insert(customPresetData.end(), {
+            CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
+            CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
+            CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
+            CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
+            CC1101_FREND0,  ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
+            0x00, 0x00
+        });
+
+        std::array<byte,8> paTable;
+        ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
+        customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
+    }
+    subFile.generateRaw(*outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
+    Serial.print(rawString);
+    SD_RF.closeFile(outputFile);
+}
+
+CC1101_CLASS::enableReceiver();
+}
+
 
 void CC1101_CLASS::sendRaw() {
     detachInterrupt(CC1101_CCGDO0A);
-    disconnectSD();
-    digitalWrite(SDCARD_CS, HIGH);
+    //disconnectSD();
+    //digitalWrite(SDCARD_CS, HIGH);
     CC1101_CLASS::initrRaw();
     Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
 
@@ -516,18 +505,75 @@ String CC1101_CLASS::generateRandomString(int length)
     return String(ss.str().c_str());
 }
 
+//     void CC1101_CLASS::sendFromFile() {
+//     int samplesWarmup[] = {600, 600, 200, 600, 600, 200, 200, 600, 600, 200, 600, 600, 200, 200, 600, 25000};
+//     int samplesWarmupLenght = 16;
+    
+
+//     Serial.println("Warming up the radio");
+//     detachInterrupt(CC1101_CCGDO0A);
+//     CC1101.initrRaw();
+//     ELECHOUSE_cc1101.setCCMode(0); 
+//     ELECHOUSE_cc1101.setPktFormat(3);
+//     ELECHOUSE_cc1101.SetTx();
+//     pinMode(CC1101_CCGDO0A, OUTPUT);
+
+//     detachInterrupt(CC1101_CCGDO0A);
+//     CC1101.initrRaw();
+//     ELECHOUSE_cc1101.setCCMode(0); 
+//     ELECHOUSE_cc1101.setPktFormat(3);
+//     ELECHOUSE_cc1101.SetTx();
+//     pinMode(CC1101_CCGDO0A, OUTPUT);
+//     CC1101.setCC1101Preset(C1101preset);
+//     CC1101.setFrequency(CC1101_MHZ);
+//     CC1101.loadPreset(); 
+
+//     CC1101.sendSamples(samplesWarmup, samplesWarmupLenght);
+
+//     delay(5);
+
+//     Serial.println("Warming up the radio");
+//     detachInterrupt(CC1101_CCGDO0A);
+//     CC1101.initrRaw();
+//     ELECHOUSE_cc1101.setCCMode(0); 
+//     ELECHOUSE_cc1101.setPktFormat(3);
+//     ELECHOUSE_cc1101.SetTx();
+//     pinMode(CC1101_CCGDO0A, OUTPUT);
+
+//     detachInterrupt(CC1101_CCGDO0A);
+//     CC1101.initrRaw();
+//     ELECHOUSE_cc1101.setCCMode(0); 
+//     ELECHOUSE_cc1101.setPktFormat(3);
+//     ELECHOUSE_cc1101.SetTx();
+//     pinMode(CC1101_CCGDO0A, OUTPUT);
+//     CC1101.setCC1101Preset(C1101preset);
+//     CC1101.setFrequency(CC1101_MHZ);
+//     CC1101.loadPreset(); 
+
+//     CC1101.sendSamples(samplesWarmup, samplesWarmupLenght);
+
+
+// }
+
 void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
 {
-    disconnectSD();
-    digitalWrite(SDCARD_CS, HIGH);
+
+    // disconnectSD();
+    // digitalWrite(SDCARD_CS, HIGH);
     CC1101_CLASS::initrRaw();
+    
 
     pinMode(CC1101_CCGDO0A, OUTPUT);
     Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
 
     Serial.print("Transmitting\n");
     Serial.print(samplesLength);
+
     Serial.print("\n----------------\n");
+        digitalWrite(CC1101_CCGDO0A, HIGH);
+        delayMicroseconds(110);
+        digitalWrite(CC1101_CCGDO0A, LOW);
+        delayMicroseconds(150);
     for (int i = 1; i < samplesLength - 1; i += 2)
     {
         unsigned long highTime = max((unsigned long)(samples[i]), 0UL);
@@ -545,7 +591,7 @@ void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
     ELECHOUSE_cc1101.setSidle(); 
     ELECHOUSE_cc1101.goSleep();  
     disableTransmit();
-    SDInit();
+  //  SDInit();
 }
 
 void CC1101_CLASS::enableTransmit()
@@ -582,109 +628,6 @@ void CC1101_CLASS::disableTransmit()
 
 void CC1101_CLASS::saveSignal() {
 //;
-}
-
-void CC1101_CLASS::sendBrute(int type) {
-    bruteIsRunning = true;
- //initializing library with custom pins selected
-     #include "../RFBrute/came12bit.h"
-    #include "../RFBrute/czech_bell_8bit.h"
-    CC1101_CLASS::initrRaw();
-    CC1101_CLASS::loadPreset();   
-    // types:
-    // 1 - czech bell (6-bit combinations)
-    // 2 - came 12-bit combinations
-    int count6 = 64;  
-    int count12 = 4096;  
-    int i = 0;
-    int sc = 0;
-    uint16_t sr = 0;
-    
-    switch (type) {
-        case 1:
- 
-            while (i < count6)  
-            {
-            int times[26];
-            times[1] = 420;
-            int index = 1;
-                int j = 0;
-                while (j < 6) {
-                if (((binary_combinations_czech_bell[i] >> j) & 1) == 1) {
-                    times[index] = 420;
-                    index++; 
-                    times[index] = 840;
-                    index++;
-                } else {
-                    times[index] = 840;
-                    index++; 
-                    times[index++] = 420;
-                    index++; 
-                }
-                j++;                 
-                }
-                    times[index] = 840;
-                    index++; 
-                    times[index++] = 420;
-                    times[index] = 840;
-                    index++; 
-                    times[index++] = 420;
-                    times[index] = 420;
-                    index++; 
-                    times[index] = 840;
-                    index++;
-                    times[index] = 420;
-                    index++; 
-                    times[index] = 840;
-                    index++;
-                sc++;
-                sr++;
-                if(sc > 9) {
-                    sc = 0;
-                    bruteCounter = sr;
-                }
-                Serial.print(" \n");
-                for (int i = 1; i < index - 1; i += 1)
-                {
-                    Serial.print(times[i]);
-                    Serial.print(", ");
-
-                }
-                Serial.print(" \n");
-
-                for (int i = 1; i < index - 1; i += 2)
-                {
-                    digitalWrite(CC1101_CCGDO0A, HIGH);
-                    delayMicroseconds(times[i]);
-                    digitalWrite(CC1101_CCGDO0A, LOW);
-                    delayMicroseconds(times[i+1]);
-                }
-                delayMicroseconds(15000);  
-                for (int i = 1; i < index - 1; i += 2)
-                {
-                    digitalWrite(CC1101_CCGDO0A, HIGH);
-                    delayMicroseconds(times[i]);
-                    digitalWrite(CC1101_CCGDO0A, LOW);
-                    delayMicroseconds(times[i+1]);
-                }
-                delayMicroseconds(15000);                 
-                i++;
-                 }
-            break;
-        case 2:
-            while (i < count12)  
-            {
-               // ELECHOUSE_cc1101.SendData((char*)binary_combinations_came_12bit[i], 12);
-                i++;  
-            }
-            break;
-        default:
-            break;
-    }
-
-    delay(20);
-    digitalWrite(CC1101_CCGDO0A, LOW);
-    bruteIsRunning = false;
 }
 
 void CC1101_CLASS::enableRCSwitch()

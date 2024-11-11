@@ -1,14 +1,11 @@
 #include "GUI/ScreenManager.h"
-#include "modules/ETC/SDcard.h"
 #include <RCSwitch.h>
 #include <Arduino.h>
 #include "modules/RF/CC1101.h"
-#include "globals.h"
 #include <cstring> 
 #include <iostream>
 #include <unordered_map>
 #include "ELECHOUSE_CC1101_SRC_DRV.h"
-#include "main.h"
 #include "modules/BLE/SourApple.h"
 #include "modules/BLE/BLESpam.h"
 #include "events.h"
@@ -23,7 +20,14 @@ int SpamDevice = 1;
 bool updatetransmitLabel = false;
 bool stopTransmit = false;
 
+//datarate
+int values[32];
+
 char* selected_file;
+
+int32_t valuesDrate[] = {300, 1200, 2400, 4800, 9600, 19200, 38400, 50000, 76800, 100000, 150000, 200000, 250000};
+int32_t current_indexDrate = 0;
+const int32_t value_countDrate = sizeof(values) / sizeof(values[0]);
 
 //CC1101_CLASS CC1101;
 
@@ -100,10 +104,10 @@ void EVENTS::btn_event_Replay_run(lv_event_t* e) {
     }
 }
 
-void EVENTS::btn_event_BruteForce_run(lv_event_t* e) {
+void EVENTS::btn_event_detectForce_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {          
-          screenMgr.createBruteForceScreen();
+          screenMgr.createRFdetectScreen();
     }
 }
 
@@ -282,34 +286,6 @@ void EVENTS::btn_event_mainMenu_run(lv_event_t* e) {
     screenMgr.createmainMenu();
 }
 
-const char* presetStrings[] = {
-    "AM650",
-    "AM270",
-    "FM238",
-    "FM476",
-    "FM95",
-    "FM15k",
-    "PAGER",
-    "HND1",
-    "HND2"
-};
-
-
-CC1101_PRESET EVENTS::stringToCC1101Preset(String presetStr) {
-    presetStr.trim();
-
-    for (int i = 0; i < sizeof(presetStrings) / sizeof(presetStrings[0]); i++) {
-        if (presetStr == presetStrings[i]) {
-            return static_cast<CC1101_PRESET>(i);  
-        }
-    }
-
-    Serial.println("Invalid preset string: " + presetStr);  
-    return AM650; 
-}
-
-
-
 
 void EVENTS::ta_preset_event_cb(lv_event_t * e) {
      char selected_text[32];
@@ -318,14 +294,13 @@ void EVENTS::ta_preset_event_cb(lv_event_t * e) {
 
     lv_dropdown_get_selected_str(screenMgr.C1101preset_dropdown_, selected_text, sizeof(selected_text));  
     if (code == LV_EVENT_VALUE_CHANGED) {
-        C1101preset = stringToCC1101Preset(selected_text);
+        C1101preset = convert_str_to_enum(selected_text);
         lv_textarea_add_text(text_area, "Preset set to: ");
         lv_textarea_add_text(text_area,selected_text);
         lv_textarea_add_text(text_area, "\n");
     }  
 
-    CC1101_PRESET preset = convert_str_to_enum(selected_text);
-    C1101preset = preset;
+    C1101preset = convert_str_to_enum(selected_text);
     CC1101.loadPreset();
 
 } 
@@ -339,7 +314,7 @@ void EVENTS::ta_rf_type_event_cb(lv_event_t * e) {
     lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text, sizeof(selected_text)); 
 
     if (code == LV_EVENT_VALUE_CHANGED) {
-        C1101preset = stringToCC1101Preset(selected_text);
+        C1101preset = convert_str_to_enum(selected_text);
         lv_textarea_add_text(text_area, "Type set to: ");
         lv_textarea_add_text(text_area,selected_text);
         lv_textarea_add_text(text_area, "\n");
@@ -378,17 +353,17 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 }
 
 
-void EVENTS::btn_event_brute_run(lv_event_t* e) {
+void EVENTS::btn_event_detect_run(lv_event_t* e) {
     char string[32]; 
     CC1101.setCC1101Preset(AM650);
-    lv_obj_t * text_area__BruteForce = screenMgr.getTextAreaBrute();
-    lv_dropdown_get_selected_str(screenMgr.brute_dropdown_, string, sizeof(string));    
-    lv_textarea_set_text(text_area__BruteForce, "Brute forcing");
+    lv_obj_t * detectLabe = screenMgr.getdetectLabel();
+    lv_dropdown_get_selected_str(screenMgr.detect_dropdown_, string, sizeof(string));    
+    lv_label_set_text(detectLabe, "detect forcing");
     delay(1000);
     if(strcmp(string, "Czech Bells") == 0) {
         Serial.println("czech bells");
     }
-    C1101CurrentState = STATE_BRUTE;
+    C1101CurrentState = STATE_DETECT;
 }
 
 
@@ -403,13 +378,13 @@ void EVENTS::confirm_delete_event_handler(lv_event_t * e)
 
 
     if (clicked_btn == yes_btn) {
-        // if(deleteFile(cur_path)) {
-        //     lv_obj_t * file_explorer = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
-        //     const char * cur_path = lv_file_explorer_get_current_path(file_explorer);
-        //     lv_file_explorer_open_dir(file_explorer, cur_path);
-        // } else {
-        //     Serial.println(F("Failed to delete file."));
-        // }
+        if(deleteFile(cur_path.c_str())) {
+            lv_obj_t * file_explorer = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+            const char * cur_path = lv_file_explorer_get_current_path(file_explorer);
+            lv_file_explorer_open_dir(file_explorer, cur_path);
+        } else {
+            Serial.println(F("Failed to delete file."));
+        }
     } else {
         lv_obj_del(msgbox);
     }
@@ -617,9 +592,9 @@ void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
     lv_obj_t * msgbox = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
     lv_obj_del(msgbox);
     isWarmupStarted = true;
-   // CC1101.disableTransmit();
-   // digitalWrite(CC1101_CS, HIGH);
-  //  C1101CurrentState = STATE_IDLE;
+   CC1101.disableTransmit();
+   digitalWrite(CC1101_CS, HIGH);
+   C1101CurrentState = STATE_IDLE;
 }
 
 
@@ -644,21 +619,21 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
     parser.loadFile(fullPath);
     SubGHzData data = parser.parseContent();
 
-   disconnectSD();
+   //disconnectSD();
 
+ 
+
+
+//   if (SD.exists(fullPath)) {
+//       read_sd_card_flipper_file(fullPath);
+//       delay(1);
+//   } else {
+//       Serial.println("File does not exist.");
+//   }
     
-
-    Serial.print("Using file at path: ");
-    Serial.println(fullPath);
-
- //  if (SD.exists(fullPath)) {
- //      read_sd_card_flipper_file(fullPath);
- //      delay(1);
- //  } else {
- //      Serial.println("File does not exist.");
- //  }
-    
-    free(fullPath);
+   free(fullPath);
 
     vTaskDelete(NULL);
 }
+
+

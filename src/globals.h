@@ -1,10 +1,27 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#include <RCSwitch.h>
+ enum CC1101_PRESET {
+     AM650,
+     AM270,
+     FM238,
+     FM476,
+     FM95,
+     FM15k,
+     PAGER,
+     HND1,
+     HND2,
+     CUSTOM
+ };
+
+extern CC1101_PRESET  C1101preset;
+
+
+
 #include <lvgl.h>
-#include "ELECHOUSE_CC1101_SRC_DRV.h"
 #include <vector>
+#include <stdio.h>
+#include <string.h>
    //---------------------------------------------------------------------------//
   //-----------------------------SETINGS---------------------------------------//
  //---------------------------------------------------------------------------//
@@ -28,6 +45,7 @@
 #define MISO_PIN 39
 #define CLK_PIN  25
 #define CS_PIN   33
+
 #define SD_CS 5 // SD card CS pin
 
 extern bool teslaSucessFlag;
@@ -38,20 +56,11 @@ extern uint8_t RFstate;
  //---------------------------------------------------------------------------//
 // C1101 Presets
 
-enum CC1101_PRESET {
-    AM650,
-    AM270,
-    FM238,
-    FM476,
-    FM95,
-    FM15k,
-    PAGER,
-    HND1,
-    HND2,
-    CUSTOM
-};
 
-extern CC1101_PRESET C1101preset;
+
+
+
+
 // C1101 state mashine
 enum C1101State
 {
@@ -69,7 +78,7 @@ enum C1101State
   STATE_WIFI_SCAN,
   STATE_SEND_BLESPAM,
   STATE_PULSE_SCAN,
-  STATE_BRUTE,
+  STATE_DETECT,
 };
 
 // Current State

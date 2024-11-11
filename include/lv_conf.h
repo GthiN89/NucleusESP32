@@ -31,7 +31,14 @@
  *====================*/
 
 /*Color depth: 1 (I1), 8 (L8), 16 (RGB565), 24 (RGB888), 32 (XRGB8888)*/
-#define LV_COLOR_DEPTH 16
+#define LV_COLOR_DEPTH 16            // Set color depth to 16 bits
+#define LV_COLOR_16_SWAP 0           // Disable RGB565 swapping
+
+// Define LV_COLOR_MAKE for ARGB1555
+//#define LV_COLOR_MAKE(r, g, b) ((uint16_t)((1 << 15) | (((r) & 0x1F) << 10) | (((g) & 0x1F) << 5) | ((b) & 0x1F)))
+
+// or, define LV_COLOR_MAKE for ABGR1555 if using that
+ //#define LV_COLOR_MAKE(r, g, b) ((uint16_t)((1 << 15) | (((b) & 0x1F) << 10) | (((g) & 0x1F) << 5) | ((r) & 0x1F)))
 
 /*=========================
    STDLIB WRAPPER SETTINGS
@@ -1049,7 +1056,7 @@
 #endif
 
 /*Drivers for LCD devices connected via SPI/parallel port*/
-#define LV_USE_ST7735        0
+#define LV_USE_ST7735        1
 #define LV_USE_ST7789        0
 #define LV_USE_ST7796        0
 #define LV_USE_ILI9341       0

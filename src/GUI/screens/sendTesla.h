@@ -2,7 +2,7 @@
 #define SEND_TESLA_H
 
 #include <lvgl.h>              
-#include <SD.h>               
+#include <SDfat.h>               
 //#include "modules/RF/subGhz.h" 
 
 // External declarations for global variables

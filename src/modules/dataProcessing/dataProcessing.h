@@ -7,4 +7,4 @@ enum dataProcessing_state {
 // Funkce používající enum jako návratový typ
 dataProcessing_state getDataProcessingState() {
     return DATA_PROCESS_IDLE;
-}
+};
