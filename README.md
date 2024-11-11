@@ -35,8 +35,7 @@ Currently, I’m planning to reintegrate RCswitch, as it hasn't been added to th
 - **CC1101 RAW Replay**: Now operates similarly to the Flipper. Saves arround 3 files, then need restart, but on second card, saves nothing, so may be shit card.
 - **`.sub` Files Player**: Supports RAW files, tested with AM270 and AM650. Sends only only one file, then need restart.   
 - **Tesla Charger Opener**: Currently deactivated; will return later, not a priority.  
-- **Large `.sub` File Support**: Handles virtually unlimited file sizes, tested with a 3MB "Came_top_brute.sub" file.  
-- **Brute Force Attack on 8-bit RF Codes**: Experimental feature for the M1E IC by MOSDESIGN SEMICONDUCTOR CORP. [M1E Datasheet](https://www.cika.com/soporte/Information/Semiconductores/CIencoder-decoder/M1E-MOSDESIGN.pdf)  
+- **Large `.sub` File Support**: Handles virtually unlimited file sizes, tested with a 3MB "Came_top_brute.sub" file.   
 - **CYD micro USB "bad SPI" Rv2**: As you know, you never know which CYD version you’ll get.
 
 ### Planned Features
