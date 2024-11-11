@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "author": "petr bělohoubek",
+  "editor": "wokwi",
+  "parts": [ { "type": "esp32-2432S028Rv2", "id": "esp", "top": 0, "left": 0, "attrs": {} } ],
+  "connections": [ [ "esp:TX", "$serialMonitor:RX", "", [] ], [ "esp:RX", "$serialMonitor:TX", "", [] ] ],
+  "dependencies": {}
+}

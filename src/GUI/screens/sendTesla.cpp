@@ -3,7 +3,7 @@
 #include <cstring>
 #include "sendTesla.h"
 #include "../events.h"
-#include "globals.h"
+
 
 lv_obj_t* tesla_screen = nullptr;
 lv_obj_t* teslaCont = nullptr;

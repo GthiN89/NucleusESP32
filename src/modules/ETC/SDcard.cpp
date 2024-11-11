@@ -1,43 +1,26 @@
 #include "SDcard.h"
-#include "globals.h"
-#include <SD.h>
-#include <SPI.h>
+#include <SdFat.h>
 #include <map>
 #include <string>
 
-SPIClass sd(SDCARD_SPI_HOST);
-bool FlipperFileFlag;
+#define SPI_DRIVER_SELECT 2
+#define SD_FAT_TYPE 1
 
-bool SDInit() {
-    // Begin SPI with specific pins
-        // Ensure CC1101 is disabled
-    
-  
-    SPI.begin(SDCARD_SCK, SDCARD_MISO, SDCARD_MOSI, SDCARD_CS);
+// SoftSPI configuration
+SoftSpiDriver<SDCARD_MISO_PIN, SDCARD_MOSI_PIN, SDCARD_SCK_PIN> softSpi;
+#define SD_CONFIG SdSpiConfig(SDCARD_CS_PIN, DEDICATED_SPI, SD_SCK_MHZ(0), &softSpi)
 
-    
-    // Begin SD card initialization
-    if (!SD.begin(SDCARD_CS)) {
-        Serial.println("SD Card MOUNT FAIL");
-        return false;
-    } else {
-        Serial.println("SD Card MOUNT SUCCESS");
-        uint32_t cardSize = SD.cardSize() / (1024 * 1024);
-        Serial.println("SDCard Size: " + String(cardSize) + "MB");
-        return true;
-    }
-}
+SdFat32 SD;  
 
-String disconnectSD() {
-    SPI.endTransaction();
-    return "SD card disconnected.\n";
-}
-
-#define MAX_LENGHT_RAW_ARRAY 4096
-
-float tempFreq;
+//bool FlipperFileFlag;
+//float tempFreq;
 int tempSample[MAX_LENGHT_RAW_ARRAY];
-int tempSampleCount;
+//int tempSampleCount;
+String line;
+char buf[MAX_LENGHT_RAW_ARRAY];
+char presetValue[MAX_LENGHT_RAW_ARRAY];
+
+// Preset mapping
 const std::map<CC1101_PRESET, std::string> presetMapping = {
     {AM270, "FuriHalSubGhzPresetOok270Async"},
     {AM650, "FuriHalSubGhzPresetOok650Async"},
@@ -46,39 +29,146 @@ const std::map<CC1101_PRESET, std::string> presetMapping = {
     {CUSTOM, "FuriHalSubGhzPresetCustom"}
 };
 
-String line;
-char buf[MAX_LENGHT_RAW_ARRAY];
-char presetValue[MAX_LENGHT_RAW_ARRAY]; // To store the preset value
+SDcard& SDcard::getInstance() {
+    static SDcard instance;
+    return instance;
+}
 
-
-
-bool read_sd_card_flipper_file(String filename)
-{
-        if (!SDInit()) {
-        Serial.println("SD mounting failed!");
+bool SDcard::initializeSD() {
+    if (!SD.begin(SD_CONFIG)) {
+        Serial.println(F("SD Card MOUNT FAIL"));
         return false;
+    }
+    Serial.println(F("SD Card MOUNT SUCCESS"));
+    uint64_t cardSize = (uint64_t)SD.card()->sectorCount() * 512 / (1024 * 1024);
+    Serial.print(F("Reported SD Card Size: "));
+    Serial.print(cardSize);
+    Serial.println(F(" MB"));
+    return true;
+}
+
+bool SDcard::directoryExists(const char* dirPath) {
+    if (SD.exists(dirPath)) {
+        Serial.print(F("Directory exists: "));
+        Serial.println(dirPath);
+        return true;
     } else {
-        Serial.println("SD mounted");
+        Serial.print(F("Directory does not exist: "));
+        Serial.println(dirPath);
+        return false;
     }
-  Serial.print("Read Flipper File");
+}
 
-    File file = SD.open(filename, FILE_READ);
-    if (!file)
-    {
-        Serial.println("Failed to open file: " + String(filename));
+bool SDcard::createDirectory(const char* dirPath) {
+    if (SD.mkdir(dirPath)) {
+        Serial.print(F("Directory created successfully: "));
+        Serial.println(dirPath);
+        return true;
+    } else {
+        Serial.print(F("Failed to create directory: "));
+        Serial.println(dirPath);
+        return false;
+    }
+}
+
+File32* SDcard::getByPath(const char * path) {
+    File32* file = new File32(SD.open(path));  
+    if (!file->isOpen()) {  
+        delete file;  
+        return nullptr;
+    }
+    return file;
+}
+
+File32* SDcard::createOrOpenFile(const char* filePath, oflag_t mode) {
+    File32* file = new File32();
+    *file = SD.open(filePath);
+    if (!*file) {
+        Serial.print(F("Failed to open/create file: "));
+        Serial.println(filePath);
+        delete file;
+        return nullptr;
+    } 
+    Serial.print(F("File opened/created successfully: "));
+    Serial.println(filePath);
+    return file;
+}
+
+
+bool SDcard::closeFile(File32* file) {
+    if (file) {
+        file->close();
+        delete file;
+        return true;
+    }
+    Serial.println(F("Attempted to close a null file handle."));
+    return false;
+}
+
+bool SDcard::deleteFile(const char* filePath) {
+    if (SD.exists(filePath)) {
+        if (SD.remove(filePath)) {
+            Serial.println(F("File deleted successfully."));
+            return true;
+        } else {
+            Serial.println(F("File deletion failed."));
+            return false;
+        }
+    }
+    Serial.println(F("File doesn't exist."));
+    return false;
+}
+
+bool SDcard::fileExists(const char* filePath) {
+    if (SD.exists(filePath)) {
+        Serial.println(F("File exists."));
+        return true;
+    }
+    Serial.println(F("File does not exist."));
+    return false;
+}
+
+void SDcard::writeFile(const char* filePath, const char* data, bool append) {
+    oflag_t mode = append ? (O_RDWR | O_APPEND) : (O_RDWR | O_CREAT | O_TRUNC);
+    File32* file = createOrOpenFile(filePath, mode);
+    if (!file) {
+        Serial.println(F("Failed to open file for writing."));
+        return;
+    }
+    file->print(data);
+    Serial.println(F("Data written successfully."));
+    closeFile(file);
+}
+
+size_t SDcard::readFile(File32* file, void* buf, size_t bytesToRead) {
+    if (!file || !file->isOpen()) { 
+        Serial.println(F("File is not open."));
+        return 0;
+    }
+
+    return file->read(static_cast<uint8_t*>(buf), bytesToRead);  
+}
+
+bool SDcard::read_sd_card_flipper_file(String filename) {
+    if (!initializeSD()) {
+        Serial.println(F("SD mounting failed!"));
+        return false;
+    }
+    Serial.print(F("Read Flipper File: "));
+    Serial.println(filename);
+
+    File32* file = createOrOpenFile(filename.c_str(), FILE_READ);
+    if (!file) {
         return false;
     }
 
-    // Reset Current
-    memset(tempSample, 0, sizeof(MAX_LENGHT_RAW_ARRAY));       
+    memset(tempSample, 0, sizeof(tempSample));
     tempSampleCount = 0;
-
-    char *buf = (char *) malloc(MAX_LENGHT_RAW_ARRAY);
+    char *buf = (char *)malloc(MAX_LENGHT_RAW_ARRAY);
     String line = "";
 
-    while (file.available())
-    {
-        line = file.readStringUntil('\n');
+    while (file->available()) {
+        line = file->readStringUntil('\n');
         line.toCharArray(buf, MAX_LENGHT_RAW_ARRAY);
         const char sep[2] = ":";
         const char values_sep[2] = " ";
@@ -86,61 +176,69 @@ bool read_sd_card_flipper_file(String filename)
         char *key = strtok(buf, sep);
         char *value;
 
-        if (key != NULL)
-        {
+        if (key != NULL) {
             value = strtok(NULL, sep);
-
-            if (!strcmp(key, "Frequency"))
-            {
+            if (!strcmp(key, "Frequency")) {
                 tempFreq = atoi(value) / 1000000.0f;
             }
+            if (!strcmp(key, "Preset")) {
+                strncpy(presetValue, value, MAX_LENGHT_RAW_ARRAY - 1);
+                presetValue[MAX_LENGHT_RAW_ARRAY - 1] = '\0';
 
-        if (!strcmp(key, "Preset")) {
-            strncpy(presetValue, value, MAX_LENGHT_RAW_ARRAY - 1); // Store the preset value
-            presetValue[MAX_LENGHT_RAW_ARRAY - 1] = '\0'; // Ensure null termination
-            
-            // Find matching preset in the map
-            for (const auto& pair : presetMapping) {
-                if (strcmp(pair.second.c_str(), presetValue) == 0) {
-                    C1101preset = pair.first;
-                    break;
+                for (const auto& pair : presetMapping) {
+                    if (strcmp(pair.second.c_str(), presetValue) == 0) {
+                        C1101preset = pair.first;
+                        break;
+                    }
                 }
             }
-        }
-
-            if (!strcmp(key, "RAW_Data"))
-            {
+            if (!strcmp(key, "RAW_Data")) {
                 FlipperFileFlag = true;
                 char *pulse = strtok(value, values_sep);
-                int i;
-                while (pulse != NULL && tempSampleCount < MAX_LENGHT_RAW_ARRAY)
-                {
-                    tempSample[tempSampleCount] = atoi(pulse);
+                while (pulse != NULL && tempSampleCount < MAX_LENGHT_RAW_ARRAY) {
+                    tempSample[tempSampleCount++] = atoi(pulse);
                     pulse = strtok(NULL, values_sep);
-                    tempSampleCount++;
                 }
             }
         }
     }
 
-    file.close();
-
+    closeFile(file);
     free(buf);
-    
-  return true;
+    return true;
 }
 
-bool  deleteFile(const char *path) {
-    if (SD.exists(path)) {
-        if (SD.remove(path)) {
-            Serial.println("File deleted successfully");
-            return true;
-        } else {
-            Serial.println("File deletion failed");
-            return false;
-        }
-    } else {
-        Serial.println("File doesn't exist");
-        return false;
+lv_fs_res_t SDcard::readNextFileInDir(File32* dir, char* fn, size_t fn_len) {
+    if (!dir) {
+        return LV_FS_RES_FS_ERR;  
     }
+   
+    File32 entry = dir->openNextFile();
+      do {
+        entry = dir->openNextFile(); 
+        if (!entry) {
+            fn[0] = '\0';  
+            return LV_FS_RES_OK;
+        }
+
+        char name[13];  
+        
+
+        entry.getName(name, sizeof(name)); 
+
+        if (entry.isDirectory()) {
+
+            if (fn_len > 1 && fn[0] != '/') {
+                snprintf(fn, fn_len, "/%s", name); 
+            } else {
+                snprintf(fn, fn_len, "%s", name);
+            }
+        } else {
+            snprintf(fn, fn_len, "%s", name);  
+        }
+
+        entry.close();  
+    } while (strcmp(fn, "/.") == 0 || strcmp(fn, "/..") == 0); 
+    return LV_FS_RES_OK;
 }
+

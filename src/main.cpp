@@ -1,4 +1,6 @@
 
+#include "arduino.h"
+#include "SdFat.h"
 #include <Arduino.h>
 #include "GUI/ScreenManager.h"
 #include <esp32_smartdisplay.h>
@@ -7,19 +9,15 @@
 #include "modules/BLE/SourApple.h"
 #include "modules/BLE/BLESpam.h"
 #include "modules/ETC/SDcard.h"
-#include "globals.h"
-#include <nvs.h>
-#include <nvs_flash.h>
+#include <FFat.h>
+
 #include "lv_fs_if.h"
 #include "modules/dataProcessing/SubGHzParser.h"
 
+SDcard& SD_CARD = SDcard::getInstance();
 
 
-
-
-
-
- XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
+XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
 
  // Touch handling variables
  static lv_indev_t *indev = nullptr;
@@ -44,18 +42,18 @@ void init_touch(TouchCallback singleTouchCallback) {
      868350000, 868000000, 915000000, 925000000  //  779-928 MHz
  };
 
-void setup() {
-    Serial.begin(115200);
-    Serial.setDebugOutput(true);
-  //  gpio_set_pull_mode(GPIO_NUM_17, GPIO_PULLDOWN_ONLY);
-   // CC1101.init();
 
-gpio_install_isr_service(0);
-  
-    init_touch([]() { Serial.println(F("Single touch detected!")); });
+
+void setup() {
+  Serial.begin(115200);
+  // Wait for USB Serial
+
+
+  init_touch([]() { Serial.println(F("Single touch detected!")); });
     smartdisplay_init();
     ScreenManager& screenMgr = ScreenManager::getInstance();
     
+
 
 
     auto disp = lv_disp_get_default();
@@ -66,27 +64,21 @@ gpio_install_isr_service(0);
         screenMgr.createmainMenu();
     register_touch(disp);
 
+    SD_CARD.initializeSD();
+
 
         lv_fs_if_init();
-      Serial.begin(115200);
 
 
-  if (!SPIFFS.begin(true)) {
-    Serial.println(F("An error has occurred while mounting SPIFFS"));
-    return;
-  }
-
-  
+     
+ 
 }
-
  ulong next_millis;
  auto lv_last_tick = millis();
 
 auto previousMillis = millis();
-
-void loop()
-{
-   auto const now = millis();
+void loop() {
+     auto const now = millis();
    lv_tick_inc(now - lv_last_tick);
    lv_last_tick = now;
    lv_timer_handler();
@@ -114,14 +106,7 @@ void loop()
          C1101CurrentState = STATE_IDLE;
      }
  }
-     if(C1101CurrentState == STATE_BRUTE) {
-         CC1101.sendBrute(1);
-             ScreenManager& screenMgr = ScreenManager::getInstance();
-             lv_obj_t* ta = screenMgr.getTextAreaBrute();
-             lv_textarea_set_text(ta, ("Brute forcing\n attempt number: " + String(bruteCounter)).c_str());            
-         CC1101.disableTransmit();
-       C1101CurrentState = STATE_IDLE;
-     };
+
      if(C1101CurrentState == STATE_PLAYBACK) {
          CC1101.enableTransmit();
          CC1101.sendRaw();
@@ -132,16 +117,15 @@ void loop()
          sourApple sa;
          sa.loop();
      } 
-    //  if(BTCurrentState == STATE_BT_IDDLE) {
-    //      BLESpam spam;
-    //      spam.aj_adv(SpamDevice);
-    //  }
-    //  if(C1101CurrentState == STATE_SEND_FLIPPER) {        
-    //     SubGHzParser parser;
-    //     parser.loadFile(EVENTS::fullPath);
-    //     SubGHzData data = parser.parseContent();
-
-    //  }
+     if(BTCurrentState == STATE_BT_IDDLE) {
+        //  BLESpam spam;
+        //  spam.aj_adv(SpamDevice);
+     }
+     if(C1101CurrentState == STATE_SEND_FLIPPER) {        
+        SubGHzParser parser;
+        parser.loadFile(EVENTS::fullPath);
+        SubGHzData data = parser.parseContent();
+     }
     if(RFstate == WARM_UP){    
         auto const tedkom = millis();
         
@@ -149,33 +133,33 @@ void loop()
     if (millis() - previousMillis >= 500) {
         RFstate = GENERAL; 
 
-        SDInit();
-        if (SD.exists("/warmpup1.sub")) {
-            read_sd_card_flipper_file("/warmpup1.sub");
-            // detachInterrupt(CC1101_CCGDO0A);
-            // CC1101.initrRaw();
-            // ELECHOUSE_cc1101.setCCMode(0); 
-            // ELECHOUSE_cc1101.setPktFormat(3);
-            // ELECHOUSE_cc1101.SetTx();
-            // pinMode(CC1101_CCGDO0A, OUTPUT);
-            // SubGHzParser parser;
-            // parser.loadFile("/warmpup1.sub");
-            // SubGHzData data = parser.parseContent();
+      //  SDInit();
+        if (SD_CARD.fileExists("/warmpup1.sub")) {
+            SD_CARD.read_sd_card_flipper_file("/warmpup1.sub");
+            detachInterrupt(CC1101_CCGDO0A);
+            CC1101.initrRaw();
+            ELECHOUSE_cc1101.setCCMode(0); 
+            ELECHOUSE_cc1101.setPktFormat(3);
+            ELECHOUSE_cc1101.SetTx();
+            pinMode(CC1101_CCGDO0A, OUTPUT);
+            SubGHzParser parser;
+            parser.loadFile("/warmpup1.sub");
+            SubGHzData data = parser.parseContent();
         } else {
             Serial.println("File does not exist.");
         }
-         SDInit();
-        if (SD.exists("/warmpup1.sub")) {
-            read_sd_card_flipper_file("/warmpup1.sub");
-            // detachInterrupt(CC1101_CCGDO0A);
-            // CC1101.initrRaw();
-            // ELECHOUSE_cc1101.setCCMode(0); 
-            // ELECHOUSE_cc1101.setPktFormat(3);
-            // ELECHOUSE_cc1101.SetTx();
-            // pinMode(CC1101_CCGDO0A, OUTPUT);
-            // SubGHzParser parser;
-            // parser.loadFile("/warmpup1.sub");
-            // SubGHzData data = parser.parseContent();
+       //  SDInit();
+        if (SD_CARD.fileExists("/warmpup1.sub")) {
+            SD_CARD.read_sd_card_flipper_file("/warmpup1.sub");
+            detachInterrupt(CC1101_CCGDO0A);
+            CC1101.initrRaw();
+            ELECHOUSE_cc1101.setCCMode(0); 
+            ELECHOUSE_cc1101.setPktFormat(3);
+            ELECHOUSE_cc1101.SetTx();
+            pinMode(CC1101_CCGDO0A, OUTPUT);
+            SubGHzParser parser;
+            parser.loadFile("/warmpup1.sub");
+            SubGHzData data = parser.parseContent();
         } else {
             Serial.println("File does not exist.");
         }
@@ -183,11 +167,11 @@ void loop()
     }
     if(updatetransmitLabel){
         String text;
-        if(!FlipperFileFlag){
+        if(!SD_CARD.FlipperFileFlag){
             text = "Transmitting\n Count: " + String(codesSend);
         } else {
             text = "Transmision complete";
-            FlipperFileFlag = false;
+            SD_CARD.FlipperFileFlag = false;
         }
         
         lv_label_set_text(label_sub, text.c_str());
@@ -250,3 +234,5 @@ void my_touchpad_read(lv_indev_t * indev_driver, lv_indev_data_t * data) {
      lv_indev_set_read_cb(indev, my_touchpad_read);    
      Serial.println(F("Touch registered."));
  }
+
+

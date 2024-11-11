@@ -1,10 +1,8 @@
-#include "globals.h"
 #include "FlipperSubFile.h"
-#include <iostream>
-#include <string>
 #include <sstream>  
-#include <vector>
 
+
+// Initialize the preset mapping (if this is not done elsewhere)
 const std::map<CC1101_PRESET, std::string> FlipperSubFile::presetMapping = {
     {AM270, "FuriHalSubGhzPresetOok270Async"},
     {AM650, "FuriHalSubGhzPresetOok650Async"},
@@ -14,24 +12,22 @@ const std::map<CC1101_PRESET, std::string> FlipperSubFile::presetMapping = {
 };
 
 void FlipperSubFile::generateRaw(
-    File& file,
-    const CC1101_PRESET& presetName,
+    File32& file,
+    CC1101_PRESET presetName,
     const std::vector<byte>& customPresetData,
-    String& samples,     // Change from std::stringstream to String
+    String& samples,
     float frequency
 ) {
     if (!file) {
         Serial.println("Error: File is not open.");
         return;
     }
-
-    // Write the header, preset info, and protocol data
     writeHeader(file, frequency);
     writePresetInfo(file, presetName, customPresetData);
     writeRawProtocolData(file, samples);
 }
 
-void FlipperSubFile::writeHeader(File& file, float frequency) {
+void FlipperSubFile::writeHeader(File32& file, float frequency) {
     file.println("Filetype: Flipper SubGhz RAW File");
     file.println("Version: 1");
     file.print("Frequency: ");
@@ -39,7 +35,7 @@ void FlipperSubFile::writeHeader(File& file, float frequency) {
     file.println();
 }
 
-void FlipperSubFile::writePresetInfo(File& file, const CC1101_PRESET& presetName, const std::vector<byte>& customPresetData) {
+void FlipperSubFile::writePresetInfo(File32& file, CC1101_PRESET presetName, const std::vector<byte>& customPresetData) {
     file.print("Preset: ");
     file.println(getPresetName(presetName).c_str());
 
@@ -58,14 +54,14 @@ void FlipperSubFile::writePresetInfo(File& file, const CC1101_PRESET& presetName
     }
 }
 
-void FlipperSubFile::writeRawProtocolData(File& file, String& samples) {
+void FlipperSubFile::writeRawProtocolData(File32& file, String& samples) {
     file.println("Protocol: RAW");
     file.print("RAW_Data: ");
 
     std::string sample;
     int wordCount = 0;
     
-    std::string cppString = std::string(samples.c_str());
+    std::string cppString(samples.c_str());
     std::istringstream stream(cppString);
 
     while (std::getline(stream, sample, ' ')) {
@@ -73,19 +69,14 @@ void FlipperSubFile::writeRawProtocolData(File& file, String& samples) {
             file.println();
             file.print("RAW_Data: ");
         }
-        file.print(sample.c_str());  // Corrected line
+        file.print(sample.c_str());
         file.print(' ');
         wordCount++;
     }
-
     file.println();
 }
 
-std::string FlipperSubFile::getPresetName(const CC1101_PRESET& preset) {
+std::string FlipperSubFile::getPresetName(CC1101_PRESET preset) {
     auto it = presetMapping.find(preset);
-    if (it != presetMapping.end()) {
-        return it->second;
-    } else {
-        return "FuriHalSubGhzPresetCustom";
-    }
+    return (it != presetMapping.end()) ? it->second : "FuriHalSubGhzPresetCustom";
 }

@@ -1,18 +1,18 @@
 #include "SubGHzParser.h"
-#include "modules/ETC/SDcard.h"
-#include "globals.h"
-#include <SD.h>
+#include <SDfat.h>
 #include <SPI.h>
 #include <map>
 #include <string>
 #include "modules/RF/CC1101.h"
 #include "GUI/events.h"
+#include "modules/ETC/SDcard.h"
 
 SubGHzParser::SubGHzParser() {}
 CC1101_CLASS CC1101;
 EVENTS events1;
-    SubGHzData data;
+SubGHzData data;
 ELECHOUSE_CC1101 ELECCC1101;
+SDcard& SD_SUB = SDcard::getInstance();  
 
 int codesSend = 0;
 
@@ -29,10 +29,10 @@ SubGHzData SubGHzParser::parseContent() {
         
         if (line.startsWith("Frequency:")) {
             data.frequency = static_cast<Frequency>(line.substring(10).toInt());
-            tempFreq = data.frequency / 1000000.0f;
+            SD_SUB.tempFreq = data.frequency / 1000000.0f;
         } else if (line.startsWith("Preset:")) {
             data.preset = line.substring(7);
-            C1101preset =  events1.stringToCC1101Preset(data.preset);
+            C1101preset =  convert_str_to_enum(data.preset.c_str());
             SubGHzParser::setRegisters();
         } else if (line.startsWith("Custom_preset_data:")) {
             data.custom_preset_data = parseCustomPresetData(line.substring(19));            
@@ -102,7 +102,7 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
     } else {
     tempSampleCount++;
     }
-    Serial.print(disconnectSD());
+   // Serial.print(disconnectSD());
     int samplesClean[tempSampleCount];
     for (int i = 0; i < tempSampleCount; i++) {
     samplesClean[i] = 1;
@@ -133,10 +133,10 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
             Serial.print(", ");
         }
     codesSend++;
-    Serial.print(tempFreq);
-    CC1101.setFrequency(tempFreq);
-    CC1101.setCC1101Preset(C1101preset);
-    CC1101.loadPreset();
+    Serial.print(SD_SUB.tempFreq);
+    CC1101.setFrequency(SD_SUB.tempFreq);
+  //  CC1101.setCC1101Preset(C1101preset);
+   // CC1101.loadPreset();
     Serial.println(presetToString(C1101preset));   
 
    
@@ -201,16 +201,16 @@ std::vector<CustomPresetElement> SubGHzParser::parseCustomPresetData(const Strin
     return result; // returns as a vector of uint8_t, a byte array
 }
 
+
+
 bool SubGHzParser::loadFile(const char* filename) {
-    SDInit();
-    if (!SD.begin(true)) {
-        Serial.println("An error has occurred while mounting SPIFFS");
-        return false;
-    }
-    
-    File file = SD.open(filename, "r");
-    if (!file) {
-        Serial.println("Failed to open file for reading");
+  Serial.print("Read Flipper File");
+  Serial.print(filename);
+
+    File32* file = SD_SUB.createOrOpenFile(filename, O_RDONLY);
+    if (!file)
+    {
+        Serial.println("Failed to open file: " + String(filename));
         return false;
     }
 
@@ -218,9 +218,9 @@ bool SubGHzParser::loadFile(const char* filename) {
     bool parsingRawData = false;
     std::vector<RawDataElement> raw_data_sequence;
 
-    // Read the file line-by-line
-    while (file.available()) {
-        line = file.readStringUntil('\n');
+  //  Read the file line-by-line
+    while (file->available()) {
+        line = file->readStringUntil('\n');
         line.trim();
 
         if (line.startsWith("RAW_Data:")) {
@@ -233,6 +233,7 @@ bool SubGHzParser::loadFile(const char* filename) {
             parsingRawData = true;
         
         } else if (parsingRawData && (line[0] == '-' || isDigit(line[0]))) {
+            Serial.print(line);
             auto parsed_line = parseRawData(line);
             raw_data_sequence.insert(raw_data_sequence.end(), parsed_line.begin(), parsed_line.end());
 
@@ -252,9 +253,17 @@ bool SubGHzParser::loadFile(const char* filename) {
         sendRawData(raw_data_sequence);
     }
 
-    file.close();
+    file->close();
     return true;
 }
 
 
 
+void SubGHzParser::clearData() {
+    data = SubGHzData();  // Reset data to a new instance (clears all fields)
+    SD_SUB.tempFreq = 0;
+    SD_SUB.tempSampleCount = 0;
+    C1101CurrentState = STATE_IDLE;
+    codesSend = 0;
+    SD_SUB.FlipperFileFlag = false;
+}

@@ -959,52 +959,52 @@ unsigned long Keeloq::ReflectPack(unsigned long PackSrc) {
 
 
 void RCSwitch::sendraw(const char* sFilename) {
-  int i=0;
-  int j;
-  int high, low;
-  FILE *file;
-  int array_l[1000];
-  int array_h[1000];
+//   int i=0;
+//   int j;
+//   int high, low;
+//   File32 *file;
+//   int array_l[1000];
+//   int array_h[1000];
 
-  if (this->nTransmitterPin == -1)
-    return;
-#if not defined( RCSwitchDisableReceiving )
-  // make sure the receiver is disabled while we transmit
-  int nReceiverInterrupt_backup = nReceiverInterrupt;
-  if (nReceiverInterrupt_backup != -1) {
-    this->disableReceive();
-  }
-#endif
+//   if (this->nTransmitterPin == -1)
+//     return;
+// #if not defined( RCSwitchDisableReceiving )
+//   // make sure the receiver is disabled while we transmit
+//   int nReceiverInterrupt_backup = nReceiverInterrupt;
+//   if (nReceiverInterrupt_backup != -1) {
+//     this->disableReceive();
+//   }
+// #endif
 
-  file=fopen(sFilename,"r");
-  if(file==NULL){
-    printf("%s not read", sFilename);
-    return;
-  }
+//   file=fopen(sFilename,"r");
+//   if(file==NULL){
+//     printf("%s not read", sFilename);
+//     return;
+//   }
 
-  while (fscanf (file, "%d\n%d\n",&high, &low)>0)
-  {
-    array_h[i]=high;
-    array_l[i]=low;
-    i++;
-  }
+//   while (fscanf (file, "%d\n%d\n",&high, &low)>0)
+//   {
+//     array_h[i]=high;
+//     array_l[i]=low;
+//     i++;
+//   }
 
-  for(j=0; j<=i; j++){
-    digitalWrite(this->nTransmitterPin, HIGH);
-    delayMicroseconds( array_h[j]);
-    digitalWrite(this->nTransmitterPin, LOW);
-    delayMicroseconds( array_l[j]);
-  }
+//   for(j=0; j<=i; j++){
+//     digitalWrite(this->nTransmitterPin, HIGH);
+//     delayMicroseconds( array_h[j]);
+//     digitalWrite(this->nTransmitterPin, LOW);
+//     delayMicroseconds( array_l[j]);
+//   }
 
-  // Disable transmit after sending (i.e., for inverted protocols)
-  digitalWrite(this->nTransmitterPin, LOW);
+//   // Disable transmit after sending (i.e., for inverted protocols)
+//   digitalWrite(this->nTransmitterPin, LOW);
 
-#if not defined( RCSwitchDisableReceiving )
-  // enable receiver again if we just disabled it
-  if (nReceiverInterrupt_backup != -1) {
-    this->enableReceive(nReceiverInterrupt_backup);
-  }
-#endif
+// #if not defined( RCSwitchDisableReceiving )
+//   // enable receiver again if we just disabled it
+//   if (nReceiverInterrupt_backup != -1) {
+//     this->enableReceive(nReceiverInterrupt_backup);
+//   }
+// #endif
 }
 
 /**
