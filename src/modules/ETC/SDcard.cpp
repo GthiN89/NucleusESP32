@@ -82,7 +82,7 @@ File32* SDcard::getByPath(const char * path) {
 
 File32* SDcard::createOrOpenFile(const char* filePath, oflag_t mode) {
     File32* file = new File32();
-    *file = SD.open(filePath);
+    *file = SD.open(filePath, mode);
     if (!*file) {
         Serial.print(F("Failed to open/create file: "));
         Serial.println(filePath);
