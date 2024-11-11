@@ -419,6 +419,7 @@ void CC1101_CLASS::signalanalyse(){
     lv_textarea_add_text(textareaRC, "Capture Complete.");
     // lv_textarea_add_text(textareaRC, rawString.c_str());
     // lv_obj_set_y(textareaRC, 0);
+    Serial.print(rawString.c_str());
 
 // Enable horizontal scrolling on the container
 lv_obj_set_scroll_dir(container, LV_DIR_HOR);
@@ -437,40 +438,11 @@ lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, -10, 90);  // Adjust range to
 size_t num_elements = sizeof(samplesmooth) / sizeof(samplesmooth[0]);
 std::vector<unsigned long> filtered_values;
 
-// int delic = 100;
-// bool mensi = false;
-// my_label:
-// if(mensi) {
-//     delic = delic - 25;
-// }
-
-// for (size_t i = 0; i < num_elements; ++i) {
-//     if (samplesmooth[i] > 1000) {
-//         if (found_first) break;          
-//         found_first = true;
-//         i_sec = i;                       
-//         continue;                       
-//     }
-    
-//     if (found_first) {    
-//         if (samplesmooth[i] > 1000) break;           
-//         if (i - i_sec > 20) break;                  
-
-//         filtered_values.push_back(samplesmooth[i] / delic); 
-//         Serial.println(samplesmooth[i] / delic);
-//          if (samplesmooth[i] / delic < 1) {
-//             mensi = true;
-//         goto my_label;  
-//          }
-//     }
-//         num_elements_f++;
-//         continue;
-//     }
-
 bool found_first = false;
 size_t i_sec = 0;
 size_t num_elements_f = 0;
-// Iterate through samplesmooth to find numbers between the first and second > 1000
+
+
 for (size_t i = 0; i < num_elements; ++i) {
     if (samplesmooth[i] > 1000) {
         if (found_first) break;          // Stop after finding the second > 1000
@@ -481,7 +453,7 @@ for (size_t i = 0; i < num_elements; ++i) {
     
     if (found_first) {    
         if (samplesmooth[i] > 1000) break;           // Stop if another > 1000 is found
-        if (i - i_sec > 20) break;                   // Limit the range to 20 elements
+     //   if (i - i_sec > 20) break;                   // Limit the range to 20 elements
 
         filtered_values.push_back(samplesmooth[i] / 100); // Collect valid values
         Serial.println(samplesmooth[i] / 100);
@@ -491,56 +463,41 @@ for (size_t i = 0; i < num_elements; ++i) {
     
     
 }
-// std::vector<unsigned long> filtered_array;
 
-// for (unsigned long num : samplesmooth) {
-//     if (num > 1000) break;
-//     filtered_array.push_back(num);
-
-//     size_t num_elements_f = sizeof(filtered_values) / sizeof(filtered_values[0]);
+ 
 
 
-// Define the square wave pattern by alternating high and low values
-int x_pos = 0;           // Start X position
-int high_value = 80;     // High Y value
-int low_value = 0;       // Low Y value
-int pulse_width;    // Adjust for the width of each high/low segment
-// Increase the point count for more detail
-lv_chart_set_point_count(chart, 100);  // Ensure enough points for waveform
-Serial.println("yes");
-// Populate the series with square wave data
-for (int i = 0; i < num_elements_f; i++) {  // Adjust loop count based on desired wave length
+
+int x_pos = 0;           
+int high_value = 80;     
+int low_value = 0;       
+int pulse_width;   
+lv_chart_set_point_count(chart, 100);  
+
+for (int i = 0; i < num_elements_f; i++) {  
 pulse_width = filtered_values[i];
 
-
-    // Draw horizontal high segment
     lv_chart_set_next_value2(chart, ser1, x_pos, high_value);
     lv_chart_set_next_value2(chart, ser1, x_pos + pulse_width, high_value);
     
-    // Move to next X position
     x_pos += pulse_width;
 
-    // Draw horizontal low segment
     lv_chart_set_next_value2(chart, ser1, x_pos, low_value);
     lv_chart_set_next_value2(chart, ser1, x_pos + pulse_width, low_value);
 
-    // Move to next X position
     x_pos += pulse_width;
 
 }
 
-lv_obj_set_style_line_width(chart, 2, LV_PART_ITEMS); // Sets the series line width to 1 pixel
+lv_obj_set_style_line_width(chart, 2, LV_PART_ITEMS); 
 
-
-// Optionally scroll to the start to view the beginning of the waveform
 lv_obj_scroll_to_x(container, 0, LV_ANIM_OFF);
 
-// Refresh the chart to display the waveform
 lv_chart_refresh(chart);
 
-     FlipperSubFile subFile;
-     CC1101_CLASS::disableReceiver();
-    SD_RF.restartSD();
+FlipperSubFile subFile;
+CC1101_CLASS::disableReceiver();
+SD_RF.restartSD();
 
 if (!SD_RF.directoryExists("/recordedRF/")) {
     SD_RF.createDirectory("/recordedRF/");
@@ -549,10 +506,10 @@ if (!SD_RF.directoryExists("/recordedRF/")) {
 String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
 String fullPath = "/recordedRF/" + filename;
 
-File32* outputFile = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
-if (outputFile) {
+File32* outputFilePtr = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
+if (outputFilePtr) {
+    File32& outputFile = *outputFilePtr; 
     std::vector<byte> customPresetData;
-
     if (C1101preset == CUSTOM) {
         customPresetData.insert(customPresetData.end(), {
             CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
@@ -563,16 +520,12 @@ if (outputFile) {
             0x00, 0x00
         });
 
-        std::array<byte,8> paTable;
+        std::array<byte, 8> paTable;
         ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
         customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
     }
-
-    if (!SD_RF.writeFile(outputFile, customPresetData, 5)) {
-        Serial.println("Failed to write data to SD card");
-    }
-
-    SD_RF.closeFile(outputFile);
+    subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
+    SD_RF.closeFile(outputFilePtr);
 }
 
 CC1101_CLASS::enableReceiver();
