@@ -22,7 +22,7 @@
  extern int sample[];
  extern int samplecount;
  extern bool startLow;
-
+ extern int CC1101_MODULATION;
 
 
 
@@ -34,6 +34,7 @@ public:
     int CC1101_PKT_FORMAT = 0;
     int CC1101_SYNC = 2;
     float CC1101_FREQ = 433.92;
+
     
     bool init();
     RCSwitch getRCSwitch();

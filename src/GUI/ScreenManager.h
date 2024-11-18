@@ -11,6 +11,9 @@ public:
     lv_obj_t* C1101preset_dropdown_;
     lv_obj_t* C1101type_dropdown_;
     lv_obj_t*  detect_dropdown_;
+    lv_obj_t* ReplayScreen_;
+    lv_obj_t* topLabel_container_;
+    lv_obj_t *mbox_container;
     static ScreenManager& getInstance();
 
     ScreenManager(const ScreenManager&) = delete;
@@ -22,6 +25,13 @@ public:
     void createSourAppleScreen();
     void createRFdetectScreen();
     void createFileExplorerScreen();
+
+
+    lv_obj_t* customPreset;
+    lv_obj_t *input_datarate;
+    lv_obj_t *input_bandwidth;
+    lv_obj_t *input_deviation;
+    lv_obj_t *dropdown_modulation;
 
     lv_obj_t* getFreqInput();  
     lv_obj_t* getTextArea();  
@@ -44,18 +54,18 @@ private:
     ScreenManager();
     ~ScreenManager();
     
-    lv_obj_t* ReplayScreen_;
+    
     lv_obj_t* detectScreen_;
     lv_obj_t* SourAppleScreen_;
     lv_obj_t* BTSpamScreen_;
     lv_obj_t* fileExplorerScreen;
     lv_obj_t* text_area_;
-    lv_obj_t* customPreset;
+
     lv_obj_t* filenameInput_;
     lv_obj_t* kb_freq_;
     lv_obj_t* kb_qwert_;
     lv_obj_t* fileName_container_;
-    lv_obj_t* topLabel_container_;
+    
     lv_obj_t* browserButton_container_;
     lv_obj_t* browserButton2_container_;
     lv_obj_t* text_area_replay;
