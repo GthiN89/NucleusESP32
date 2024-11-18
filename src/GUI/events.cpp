@@ -336,13 +336,7 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     frequency_buffer[sizeof(frequency_buffer) - 1] = '\0'; 
     CC1101_MHZ = atof(frequency_buffer);
     lv_dropdown_get_selected_str(screenMgr.C1101preset_dropdown_, selected_text, sizeof(selected_text));  
-    lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text_type, sizeof(selected_text_type));
-    // lv_obj_t * container = screenMgr.getSquareLineContainer();
-    // lv_obj_t * child = lv_obj_get_child(container, NULL);
-    //     while (child) {
-    // lv_obj_del(child);  // Delete each child individually
-    // child = lv_obj_get_child(container, NULL);  // Get the next child
-    // }
+    lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text_type, sizeof(selected_text_type)); 
 
     lv_textarea_set_text(text_area, "Waiting for signal.\n");
 
