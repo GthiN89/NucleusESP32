@@ -140,7 +140,7 @@ void ScreenManager::createReplayScreen() {
     lv_obj_set_style_pad_left(topLabel_container_, 10, LV_PART_MAIN);
     lv_obj_set_style_pad_right(topLabel_container_, 0, LV_PART_MAIN);
 
-    containerHelper.fillTopContainer(topLabel_container_, "MHz:  ", TEXT_AREA, &customPreset, "433.92", "433.92", 10, NULL, NULL);
+    containerHelper.fillTopContainer(topLabel_container_, "MHz:  ", TEXT_AREA, &customPreset, "433.867", "433.867", 10, NULL, NULL);
     lv_obj_set_size(customPreset, 70, 30);                   
     lv_obj_add_event_cb(customPreset, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, kb_freq_);
 

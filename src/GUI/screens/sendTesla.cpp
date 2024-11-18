@@ -109,7 +109,7 @@ bool sendTeslaSignal(lv_obj_t* teslaCont, float freq) {
 
     
 
-    ELECHOUSE_cc1101.setGDO0(CCGDO0A);
+    ELECHOUSE_cc1101.setGDO(CCGDO0A, 0);
     ELECHOUSE_cc1101.setMHZ(freq);
     Serial.println("freque");
 
