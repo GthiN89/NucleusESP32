@@ -20,7 +20,6 @@ int receiverGPIO;
 
 String rawString;
 
-int CC1101_MODULATION = 2;
 
 static unsigned long lastTime = 0;
 
@@ -36,6 +35,8 @@ bool CC1101_recieve_is_running = false;
 bool CC1101_transmit_is_running = false;
 bool CC1101_isiddle = true;
 bool CC1101_interup_attached = false;
+
+int CC1101_MODULATION = 2;
 
 int smoothcount;
 unsigned long samplesmooth[SAMPLE_SIZE];
@@ -164,6 +165,7 @@ void CC1101_CLASS::enableReceiver()
     ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
     ELECHOUSE_cc1101.setDRate(CC1101_DRATE); // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
+ 
     
     pinMode(CC1101_CCGDO0A, INPUT);
     receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO0A);    
@@ -221,41 +223,42 @@ void CC1101_CLASS::loadPreset() {
             CC1101_DRATE = 4.798;
             CC1101_RX_BW = 270;
             CC1101_DEVIATION = 9.521;
-   //         CC1101_SYNC = 6;
+            CC1101_SYNC = 6;
             break;
         case FM15k:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 3.794;
             CC1101_RX_BW = 135;
             CC1101_DEVIATION = 15.869;
-    //        CC1101_SYNC = 7;
+            CC1101_SYNC = 7;
             break;
         case PAGER:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 0.625;
             CC1101_RX_BW = 270;
             CC1101_DEVIATION = 5.157;
-//            CC1101_SYNC = 6;
+            CC1101_SYNC = 6;
             break;
         case HND1:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 15.357;
-            CC1101_RX_BW = 270;
+            CC1101_RX_BW = 250;
             CC1101_DEVIATION = 25;
- //           CC1101_SYNC = 6;
+            CC1101_SYNC = 6;
             break;
         case HND2:
             CC1101_MODULATION = 0;
             CC1101_DRATE = 15.357;
             CC1101_RX_BW = 67;
             CC1101_DEVIATION = 15.869;
- //           CC1101_SYNC = 7;
+            CC1101_SYNC = 7;
             break;
         default:
-            CC1101_MODULATION = 2;
-            CC1101_DRATE = 3.79372;
-            CC1101_RX_BW = 650.00;
-            CC1101_DEVIATION = 1.58;
+            Serial.println(CC1101_MODULATION);
+            
+            // CC1101_DRATE = 3.79372;
+            // CC1101_RX_BW = 650.00;
+            // CC1101_DEVIATION = 1.58;
   //          CC1101_SYNC = 2;
             break;
     }
@@ -410,12 +413,14 @@ void CC1101_CLASS::signalanalyse(){
     lv_textarea_add_text(textareaRC, String(smoothcount).c_str());
     lv_textarea_add_text(textareaRC,"\n");
     String rawString = "";
-
+Serial.println("");
     for (int i = 0; i < smoothcount; i++) {
             rawString += (i > 0 ? (i % 2 == 1 ? " -" : " ") : "");
             rawString += samplesmooth[i];
+            Serial.print(samplesmooth[i]);
+            Serial.print(", ");
         }
-
+Serial.println("");
     lv_textarea_add_text(textareaRC, "Capture Complete.");
     // lv_textarea_add_text(textareaRC, rawString.c_str());
     // lv_obj_set_y(textareaRC, 0);

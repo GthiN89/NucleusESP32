@@ -140,9 +140,107 @@ void ScreenManager::createReplayScreen() {
     lv_obj_set_style_pad_left(topLabel_container_, 10, LV_PART_MAIN);
     lv_obj_set_style_pad_right(topLabel_container_, 0, LV_PART_MAIN);
 
-    containerHelper.fillTopContainer(topLabel_container_, "MHz:  ", TEXT_AREA, &customPreset, "433.867", "433.867", 10, NULL, NULL);
-    lv_obj_set_size(customPreset, 70, 30);                   
-    lv_obj_add_event_cb(customPreset, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, kb_freq_);
+    containerHelper.fillTopContainer(topLabel_container_, "MHz:  ", TEXT_AREA, &customPreset, "433.92", "433.92", 10, NULL, NULL);
+    lv_obj_set_size(customPreset, 90, 30);                   
+lv_obj_add_event_cb(customPreset, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, (void *)"freq");// Create a parent container for the message box
+mbox_container = lv_obj_create(ReplayScreen_);
+lv_obj_set_size(mbox_container, 240, 220); // Ensure enough height for the container
+lv_obj_align(mbox_container, LV_ALIGN_TOP_MID, 0, 10);
+lv_obj_set_flex_flow(mbox_container, LV_FLEX_FLOW_COLUMN);
+lv_obj_set_style_pad_all(mbox_container, 5, 0); // Slight padding for a clean look
+
+// Create the message box
+lv_obj_t *mbox = lv_msgbox_create(mbox_container);
+lv_obj_set_size(mbox, LV_PCT(100), LV_SIZE_CONTENT); // Ensure the message box fills the container's width
+lv_obj_set_style_pad_all(mbox, 0, 0); 
+lv_obj_clear_flag(mbox, LV_OBJ_FLAG_SCROLLABLE);
+
+// Create a container for the message box content
+lv_obj_t *content_container = lv_obj_create(mbox);
+lv_obj_set_size(content_container, LV_PCT(100), LV_SIZE_CONTENT);
+lv_obj_set_flex_flow(content_container, LV_FLEX_FLOW_COLUMN);
+lv_obj_set_style_pad_all(content_container, 0, 0);
+lv_obj_clear_flag(content_container, LV_OBJ_FLAG_SCROLLABLE);
+
+// Add a dropdown for ASK/FSK selection
+lv_obj_t *dropdown_container = lv_obj_create(content_container);
+lv_obj_set_size(dropdown_container, LV_PCT(100), LV_SIZE_CONTENT);
+lv_obj_set_flex_flow(dropdown_container, LV_FLEX_FLOW_ROW);
+lv_obj_set_style_pad_all(dropdown_container, 0, 0);
+
+lv_obj_t *label_modulation = lv_label_create(dropdown_container);
+lv_label_set_text(label_modulation, "Mode:");
+lv_obj_set_width(label_modulation, 50);
+dropdown_modulation = lv_dropdown_create(dropdown_container);
+lv_dropdown_set_options(dropdown_modulation, "ASK\nFSK");
+lv_obj_set_width(dropdown_modulation, LV_PCT(70));
+//lv_obj_add_event_cb(dropdown_modulation, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, dropdown_modulation);
+lv_obj_add_event_cb(dropdown_modulation, EVENTS::dropdown_modulation_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+// Add a row for Data Rate input
+lv_obj_t *datarate_container = lv_obj_create(content_container);
+lv_obj_set_size(datarate_container, LV_PCT(100), LV_SIZE_CONTENT);
+lv_obj_set_flex_flow(datarate_container, LV_FLEX_FLOW_ROW);
+lv_obj_set_style_pad_all(datarate_container, 0, 0);
+
+lv_obj_t *label_datarate = lv_label_create(datarate_container);
+lv_label_set_text(label_datarate, "Data:");
+lv_obj_set_width(label_datarate, 50);
+
+input_datarate = lv_textarea_create(datarate_container);
+lv_textarea_set_placeholder_text(input_datarate, "kbps");
+lv_textarea_set_one_line(input_datarate, true);
+lv_obj_set_width(input_datarate, LV_PCT(70));
+lv_obj_add_event_cb(input_datarate, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, (void *)"drate");
+// Add a row for Bandwidth input
+lv_obj_t *bandwidth_container = lv_obj_create(content_container);
+lv_obj_set_size(bandwidth_container, LV_PCT(100), LV_SIZE_CONTENT);
+lv_obj_set_flex_flow(bandwidth_container, LV_FLEX_FLOW_ROW);
+lv_obj_set_style_pad_all(bandwidth_container, 0, 0);
+
+lv_obj_t *label_bandwidth = lv_label_create(bandwidth_container);
+lv_label_set_text(label_bandwidth, "BW:");
+lv_obj_set_width(label_bandwidth, 50);
+
+input_bandwidth = lv_textarea_create(bandwidth_container);
+lv_textarea_set_placeholder_text(input_bandwidth, "kHz");
+lv_textarea_set_one_line(input_bandwidth, true);
+lv_obj_set_width(input_bandwidth, LV_PCT(70));
+lv_obj_add_event_cb(input_bandwidth, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, (void *)"BW");
+// Add a row for Deviation input
+lv_obj_t *deviation_container = lv_obj_create(content_container);
+lv_obj_set_size(deviation_container, LV_PCT(100), LV_SIZE_CONTENT);
+lv_obj_set_flex_flow(deviation_container, LV_FLEX_FLOW_ROW);
+lv_obj_set_style_pad_all(deviation_container, 0, 0);
+
+lv_obj_t *label_deviation = lv_label_create(deviation_container);
+lv_label_set_text(label_deviation, "Dev:");
+lv_obj_set_width(label_deviation, 50);
+
+input_deviation = lv_textarea_create(deviation_container);
+lv_textarea_set_placeholder_text(input_deviation, "kHz");
+lv_textarea_set_one_line(input_deviation, true);
+lv_obj_set_width(input_deviation, LV_PCT(70));
+lv_obj_add_event_cb(input_deviation, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, (void *)"DEV");
+// Create a button container
+lv_obj_t *button_container = lv_obj_create(content_container);
+lv_obj_set_size(button_container, LV_PCT(100), LV_SIZE_CONTENT);
+lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW);
+lv_obj_set_flex_align(button_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+lv_obj_set_style_pad_all(button_container, 0, 0);
+
+lv_obj_t *ok_btn = lv_btn_create(button_container);
+lv_obj_set_size(ok_btn, 60, 30);
+lv_obj_t *ok_label = lv_label_create(ok_btn);
+lv_label_set_text(ok_label, "OK");
+lv_obj_add_event_cb(ok_btn, EVENTS::ok_button_event_cb, LV_EVENT_CLICKED, mbox_container);
+lv_obj_t *cancel_btn = lv_btn_create(button_container);
+lv_obj_set_size(cancel_btn, 60, 30);
+lv_obj_t *cancel_label = lv_label_create(cancel_btn);
+lv_label_set_text(cancel_label, "Cancel");
+
+lv_obj_add_flag(mbox_container, LV_OBJ_FLAG_HIDDEN); // Hide the keyboard initially
+
+
 
     kb_qwert_ = KeyboardHelper::createKeyboard(ReplayScreen_, LV_KEYBOARD_MODE_TEXT_LOWER);
     kb_freq_ = KeyboardHelper::createKeyboard(ReplayScreen_, LV_KEYBOARD_MODE_NUMBER);
@@ -164,6 +262,7 @@ void ScreenManager::createReplayScreen() {
                                 "PAGER\n"
                                 "HND1\n"
                                 "HND2\n"
+                                "CSTM"
                                 );
 
     lv_obj_add_event_cb(C1101preset_dropdown_, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, C1101preset_dropdown_);
