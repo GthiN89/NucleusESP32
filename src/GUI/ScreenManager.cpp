@@ -54,7 +54,8 @@ ScreenManager::ScreenManager()
       button_container_RCSwitchMethod2_(nullptr),
       button_container_RCSwitchMethod1_(nullptr),
       quareLine_container(nullptr),
-      detect_dropdown_(nullptr)
+      detect_dropdown_(nullptr),
+      teslaScreen_(nullptr)
   
 {
 }
@@ -445,7 +446,32 @@ void ScreenManager::createBTSPamScreen() {
     // lv_obj_add_event_cb(saveButton, EVENTS::btn_event_SourApple_Stop, LV_EVENT_CLICKED, NULL); 
 }
 
+void ScreenManager::createTeslaScreen() {
+    ContainerHelper containerHelper;
+    teslaScreen_ = lv_obj_create(NULL);
+    lv_scr_load(teslaScreen_);
+    lv_obj_delete(previous_screen);
+    previous_screen = teslaScreen_;
+    lv_obj_set_flex_flow(teslaScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(teslaScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
+    lv_obj_t * topLabel_container_;
+    containerHelper.createContainer(&topLabel_container_, teslaScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
+
+    lv_obj_t * topLabel = lv_label_create(topLabel_container_);
+    lv_obj_align(topLabel, LV_ALIGN_CENTER, 0, 0);
+    lv_label_set_text(topLabel, "Tesla charger signal\n Push the button.");
+
+    lv_obj_t* sendButton = lv_button_create(teslaScreen_);
+    lv_obj_t * sendBtnLbl = lv_label_create(sendButton);
+    lv_label_set_text(sendBtnLbl, "Send");
+    lv_obj_align_to(sendButton, teslaScreen_, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_align_to(sendBtnLbl, sendButton, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_size(sendButton, 120, 60);
+
+    lv_obj_add_event_cb(sendButton, EVENTS::sendTesla, LV_EVENT_CLICKED, NULL);
+}
 
 
 void ScreenManager::createmainMenu()
@@ -471,6 +497,14 @@ void ScreenManager::createmainMenu()
     lv_label_set_text(label_BT_main, "BlueTooth");       
     lv_obj_center(label_BT_main);
 
+        lv_obj_t *btn_teslaCharger_menu = lv_btn_create(mainMenu);
+    lv_obj_set_pos(btn_teslaCharger_menu, 25, 70);
+    lv_obj_set_size(btn_teslaCharger_menu, 200, 50);
+    lv_obj_add_event_cb(btn_teslaCharger_menu, EVENTS::btn_event_teslaCharger_run, LV_EVENT_ALL, NULL);
+
+    lv_obj_t *label_teslaCharger_menu = lv_label_create(btn_teslaCharger_menu);
+    lv_label_set_text(label_teslaCharger_menu, "Transmit tesla charger code");
+    lv_obj_center(label_teslaCharger_menu);
 
 }
 
@@ -526,15 +560,6 @@ void ScreenManager::createRFMenu()
     lv_obj_t *label_playZero_menu = lv_label_create(btn_playZero_menu);
     lv_label_set_text(label_playZero_menu, "Transmit saved codes");
     lv_obj_center(label_playZero_menu);
-
-    lv_obj_t *btn_teslaCharger_menu = lv_btn_create(rfMenu);
-    lv_obj_set_pos(btn_teslaCharger_menu, 25, 70);
-    lv_obj_set_size(btn_teslaCharger_menu, 200, 50);
-    lv_obj_add_event_cb(btn_teslaCharger_menu, EVENTS::btn_event_teslaCharger_run, LV_EVENT_ALL, NULL);
-
-    lv_obj_t *label_teslaCharger_menu = lv_label_create(btn_teslaCharger_menu);
-    lv_label_set_text(label_teslaCharger_menu, "Transmit tesla charger code");
-    lv_obj_center(label_teslaCharger_menu);
 
     lv_obj_t *btn_c1101Alanalyzer_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_c1101Alanalyzer_menu, 25, 130);

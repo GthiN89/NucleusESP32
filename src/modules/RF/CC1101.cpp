@@ -631,6 +631,20 @@ if (outputFile) {
 CC1101_CLASS::enableReceiver();
 }
 
+void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength) {
+    uint8_t dataByte;
+    uint8_t i; 
+    for (i = 0; i <= messageLength; i++) 
+    {
+        dataByte = sequence[i];
+        for (int8_t bit = 7; bit >= 0; bit--)
+        { 
+            digitalWrite(CC1101_CCGDO0A, (dataByte & (1 << bit)) != 0 ? HIGH : LOW);
+            delayMicroseconds(pulseWidth);
+        }
+    }    
+}
+
 
 void CC1101_CLASS::sendRaw() {
     detachInterrupt(CC1101_CCGDO0A);
@@ -743,6 +757,7 @@ void CC1101_CLASS::sendSamples(int samples[], int samplesLength)
 void CC1101_CLASS::enableTransmit()
 {
     digitalWrite(CC1101_CS, LOW);
+    pinMode(CC1101_CCGDO0A, OUTPUT); 
     ELECHOUSE_cc1101.Init();
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);               // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
     ELECHOUSE_cc1101.setModulation(CC1101_MODULATION); // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
@@ -757,10 +772,10 @@ void CC1101_CLASS::enableTransmit()
                                                       // ELECHOUSE_cc1101.setSyncMode(3);        // Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.
 
     ELECHOUSE_cc1101.setPA(12);
-    ELECHOUSE_cc1101.SetRx();
-    pinMode(CC1101_CCGDO0A, OUTPUT);  
+    ELECHOUSE_cc1101.SetTx();
+     
 
-    mySwitch.enableTransmit(CC1101_CCGDO0A);
+ //   mySwitch.enableTransmit(CC1101_CCGDO0A);
 }
 
 void CC1101_CLASS::disableTransmit()

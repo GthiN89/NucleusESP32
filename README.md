@@ -33,8 +33,8 @@ Currently, I’m planning to reintegrate RCswitch, as it hasn't been added to th
 
 ### Current Functionalities
 - **CC1101 RAW Replay**: Now operates similarly to the Flipper. Save files to sd card. Fully Flipper compatible.
-- **`.sub` Files Player**: Supports RAW files, tested with AM270 and AM650. Sending prettz much works now.  
-- **Tesla Charger Opener**: Currently deactivated; will return later, not a priority.  
+- **`.sub` Files Player**: Supports RAW files, tested with AM270 and AM650, should send FM too, but timings files only. Sending pretty much works now.  
+- **Tesla Charger Opener**: Is back, should work.
 - **Large `.sub` File Support**: Handles virtually unlimited file sizes, tested with a 3MB "Came_top_brute.sub" file.   
 - **CYD micro USB "bad SPI" Rv2**: As you know, you never know which CYD version you’ll get.
 
