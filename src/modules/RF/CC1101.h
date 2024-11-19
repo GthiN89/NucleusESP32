@@ -23,7 +23,7 @@
  extern int samplecount;
  extern bool startLow;
  extern int CC1101_MODULATION;
-
+ extern uint32_t actualFreq;
 
 
 class CC1101_CLASS {
@@ -58,6 +58,7 @@ public:
     void sendSamples(int samples[], int samplesLength);
    static void signalanalyseTask(void* pvParameters);
     void startSignalanalyseTask();
+    void fskAnalyze();
 private:
     SPIClass  CC1101SPI;;
     int smoothcount;

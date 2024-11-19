@@ -35,6 +35,7 @@ bool CC1101_recieve_is_running = false;
 bool CC1101_transmit_is_running = false;
 bool CC1101_isiddle = true;
 bool CC1101_interup_attached = false;
+uint32_t actualFreq;
 
 int CC1101_MODULATION = 2;
 
@@ -129,6 +130,53 @@ void CC1101_CLASS::setSync(int sync)
 void CC1101_CLASS::setPTK(int ptk)
 {
     CC1101_PKT_FORMAT = ptk;
+}
+
+void CC1101_CLASS::fskAnalyze() {
+    // Initialize CC1101
+    ELECHOUSE_cc1101.Init();
+
+    // Set starting frequency (433.92 MHz) and RX bandwidth
+    ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);      // Set approximate frequency in MHz
+    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);   // Set RX bandwidth to 250 kHz
+
+    // Enter receive mode
+    ELECHOUSE_cc1101.SetRx();
+
+    // Allow time for the receiver to stabilize
+    delay(100);
+
+    // Check RSSI to detect signal strength
+    int8_t rssi = ELECHOUSE_cc1101.SpiReadReg(CC1101_RSSI);
+    Serial.print("RSSI: ");
+    Serial.println(rssi);
+
+    // If RSSI is very low, treat it as silence
+    if (rssi < -100) {
+        Serial.println("Silence detected (low RSSI).");
+        return;  // Exit the function
+    }
+
+    // Read frequency offset (signed 8-bit value)
+    int8_t freqOffset = ELECHOUSE_cc1101.SpiReadReg(CC1101_FREQEST);
+    Serial.print("FreqOffset Raw: ");
+    Serial.println(freqOffset);
+
+    // Check if freqOffset is zero, indicating no valid signal
+    if (freqOffset == 0) {
+        Serial.println("No valid signal detected.");
+        return;  // Exit the function
+    }
+
+    // Starting frequency in Hz (433.92 MHz)
+    uint32_t startFreq = CC1101_MHZ * 1000000;
+
+    // Calculate the actual carrier frequency
+    actualFreq = startFreq + ((int32_t)freqOffset * (CC1101_RX_BW * 1000) / 256);
+
+    // Print the calculated frequency
+    Serial.print("Detected Carrier Frequency: ");
+    Serial.println(actualFreq);
 }
 
 void CC1101_CLASS::enableReceiver()
@@ -241,9 +289,9 @@ void CC1101_CLASS::loadPreset() {
             break;
         case HND1:
             CC1101_MODULATION = 0;
-            CC1101_DRATE = 15.357;
+            CC1101_DRATE = 37.04;
             CC1101_RX_BW = 250;
-            CC1101_DEVIATION = 25;
+            CC1101_DEVIATION = 30;
             CC1101_SYNC = 6;
             break;
         case HND2:
