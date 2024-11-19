@@ -52,7 +52,7 @@ void setup() {
     gpio_set_pull_mode(GPIO_NUM_17, GPIO_PULLDOWN_ONLY);
     gpio_install_isr_service(0);
 
-    CC1101.init();
+   // CC1101.init();
 
    
   
@@ -81,11 +81,18 @@ void setup() {
     
  
 }
+
+
+
  ulong next_millis;
  auto lv_last_tick = millis();
 
 auto previousMillis = millis();
+
+
 void loop() {
+
+
      auto const now = millis();
    lv_tick_inc(now - lv_last_tick);
    lv_last_tick = now;
@@ -94,6 +101,7 @@ void loop() {
   delay(1); 
  
      if(C1101CurrentState == STATE_ANALYZER) {
+      //   CC1101.fskAnalyze();
              if (CC1101.CheckReceived())
              {
                 delay(5);

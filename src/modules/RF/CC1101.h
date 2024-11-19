@@ -22,8 +22,8 @@
  extern int sample[];
  extern int samplecount;
  extern bool startLow;
-
-
+ extern int CC1101_MODULATION;
+ extern uint32_t actualFreq;
 
 
 class CC1101_CLASS {
@@ -34,6 +34,7 @@ public:
     int CC1101_PKT_FORMAT = 0;
     int CC1101_SYNC = 2;
     float CC1101_FREQ = 433.92;
+
     
     bool init();
     RCSwitch getRCSwitch();
@@ -55,8 +56,10 @@ public:
     void initrRaw();
     void sendRaw();
     void sendSamples(int samples[], int samplesLength);
-   static void signalanalyseTask(void* pvParameters);
+    static void signalanalyseTask(void* pvParameters);
     void startSignalanalyseTask();
+    void fskAnalyze();
+    void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
 
 private:
     SPIClass  CC1101SPI;;
@@ -64,15 +67,6 @@ private:
     unsigned long samplesmooth[SAMPLE_SIZE];
     String rawString = "";
     int minsample = 15;
-
-    std::vector<int> filter_until_threshold(const std::vector<int>& smoothcount) {
-    std::vector<int> result;
-    for (int num : smoothcount) {
-        if (std::abs(num) > 1000) break;
-        result.push_back(num);
-    }
-    return result;
-}
     
 };
 

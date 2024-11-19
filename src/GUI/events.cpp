@@ -117,43 +117,93 @@ void EVENTS::btn_event_detectForce_run(lv_event_t* e) {
 void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-     //   teslaScreen();
-        // Uncomment and use if needed:
-        // if (sendTeslaSignal(433.92)) {
-        //     teslaSucessFlag = true;
-        // }
-        // if (sendTeslaSignal(315.00)) {
-        //     teslaSucessFlag = true;
-        // }
+        screenMgr.createTeslaScreen();
+        delay(10);
+        detachInterrupt(CC1101_CCGDO0A);
+        CC1101_MODULATION = 2;
+        CC1101.CC1101_FREQ = 433.92;
+        CC1101.CC1101_PKT_FORMAT = 3;
+        CC1101.initrRaw();
     }
 }
 
 
-void EVENTS::ta_freq_event_cb(lv_event_t * e) {
+void EVENTS::ta_freq_event_cb(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
-     lv_obj_t * kb = (lv_obj_t *)lv_event_get_user_data(e); 
-
-    lv_obj_t * text_area = screenMgr.getTextArea();
-     lv_obj_t * ta = screenMgr.getFreqInput();
-    // lv_obj_t * presetDropdown = screenMgr.getPresetDropdown();
+    lv_obj_t *kb = screenMgr.getKeyboardFreq(); // Get the keyboard object
+    lv_obj_t *obj = (lv_obj_t *)lv_event_get_target(e); // Explicit cast to lv_obj_t*
+    const char *user_data = static_cast<const char *>(lv_event_get_user_data(e));
 
     if (code == LV_EVENT_FOCUSED) {
-         lv_keyboard_set_textarea(kb, ta);
-         lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN);  
-         Serial.println("Keyboard shown");
-     } else if (code == LV_EVENT_DEFOCUSED || code == LV_EVENT_READY) {
-         lv_keyboard_set_textarea(kb, NULL);
-         lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);  
+        if(strcmp(user_data, "freq") == 0) {
+            lv_keyboard_set_textarea(kb, screenMgr.customPreset); // Link the textarea to the keyboard
+        }
+        if(strcmp(user_data, "drate") == 0) {
+            lv_keyboard_set_textarea(kb, screenMgr.input_datarate); // Link the textarea to the keyboard
+        }
+        if(strcmp(user_data, "BW") == 0) {
+            lv_keyboard_set_textarea(kb, screenMgr.input_bandwidth); // Link the textarea to the keyboard
+        }
+        if(strcmp(user_data, "DEV") == 0) {
+            lv_keyboard_set_textarea(kb, screenMgr.input_deviation); // Link the textarea to the keyboard
+        }
+        lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN); // Show the keyboard
+        Serial.println("Keyboard linked and shown");
+    } else if (code == LV_EVENT_DEFOCUSED || code == LV_EVENT_READY) {
+        lv_keyboard_set_textarea(kb, nullptr); // Unlink the keyboard
+        lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN); // Hide the keyboard
 
-         strncpy(frequency_buffer, lv_textarea_get_text(ta), sizeof(frequency_buffer) - 1);
-         frequency_buffer[sizeof(frequency_buffer) - 1] = '\0'; 
-         Serial.print("Frequency set to: \n");
-         
-         CC1101.CC1101_FREQ = atof(lv_textarea_get_text(ta));
-         lv_textarea_add_text(text_area, "Frequency set to: \n");
-         Serial.println(frequency_buffer);
-         lv_textarea_add_text(text_area, frequency_buffer);
-     }    
+        if(strcmp(user_data, "freq") == 0) {
+            const char *freq_text = lv_textarea_get_text(screenMgr.customPreset);
+        if (freq_text && strlen(freq_text) > 0) {
+            CC1101.CC1101_FREQ = atof(freq_text); // Convert text to float
+            Serial.printf("Frequency set to: %.2f MHz\n", CC1101.CC1101_FREQ);
+
+            lv_obj_t *text_area = screenMgr.getTextArea();
+            lv_textarea_add_text(text_area, "Frequency set to: ");
+            lv_textarea_add_text(text_area, freq_text);
+            lv_textarea_add_text(text_area, " MHz\n");
+        } else {
+            Serial.println("Frequency input is empty");
+        }
+
+        if(strcmp(user_data, "drate") == 0) {
+            const char *drate_text = lv_textarea_get_text(screenMgr.input_datarate);
+            CC1101.CC1101_DRATE = atof(drate_text);
+        }
+        if(strcmp(user_data, "BW") == 0) {
+            const char *drate_text = lv_textarea_get_text(screenMgr.input_bandwidth);
+            CC1101.CC1101_RX_BW = atof(drate_text);
+        }
+        if(strcmp(user_data, "DEV") == 0) {
+            const char *drate_text = lv_textarea_get_text(screenMgr.input_deviation);
+            CC1101.CC1101_DEVIATION = atof(drate_text);
+        }
+
+        }
+
+    }
+}
+
+void EVENTS::dropdown_modulation_event_cb(lv_event_t *e) {
+  
+    int selected = lv_dropdown_get_selected(screenMgr.dropdown_modulation); // Get selected index
+
+    if (selected == 0) { // ASK selected
+        CC1101_MODULATION = 2;
+        Serial.println("Modulation set to ASK.");
+    } else if (selected == 1) { // FSK selected
+        CC1101_MODULATION = 0;
+        Serial.println("Modulation set to FSK.");
+    }
+}
+
+void EVENTS::ok_button_event_cb(lv_event_t *e) {
+    lv_obj_t *container = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+    if (container) {
+        lv_obj_add_flag(container, LV_OBJ_FLAG_HIDDEN); // Hide the container
+        Serial.println("Custom settings container hidden.");
+    }
 }
 
 void EVENTS::ta_filename_event_cb(lv_event_t * e) {
@@ -298,9 +348,14 @@ void EVENTS::ta_preset_event_cb(lv_event_t * e) {
     lv_dropdown_get_selected_str(screenMgr.C1101preset_dropdown_, selected_text, sizeof(selected_text));  
     if (code == LV_EVENT_VALUE_CHANGED) {
         C1101preset = convert_str_to_enum(selected_text);
-        lv_textarea_add_text(text_area, "Preset set to: ");
-        lv_textarea_add_text(text_area,selected_text);
-        lv_textarea_add_text(text_area, "\n");
+        if(C1101preset == CUSTOM) {
+            lv_obj_remove_flag(screenMgr.mbox_container, LV_OBJ_FLAG_HIDDEN);
+
+
+
+
+        }
+
     }  
 
     C1101preset = convert_str_to_enum(selected_text);
@@ -336,13 +391,7 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     frequency_buffer[sizeof(frequency_buffer) - 1] = '\0'; 
     CC1101_MHZ = atof(frequency_buffer);
     lv_dropdown_get_selected_str(screenMgr.C1101preset_dropdown_, selected_text, sizeof(selected_text));  
-    lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text_type, sizeof(selected_text_type));
-    // lv_obj_t * container = screenMgr.getSquareLineContainer();
-    // lv_obj_t * child = lv_obj_get_child(container, NULL);
-    //     while (child) {
-    // lv_obj_del(child);  // Delete each child individually
-    // child = lv_obj_get_child(container, NULL);  // Get the next child
-    // }
+    lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text_type, sizeof(selected_text_type)); 
 
     lv_textarea_set_text(text_area, "Waiting for signal.\n");
 
@@ -359,6 +408,20 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
      delay(20);
     
     C1101CurrentState = STATE_ANALYZER;
+}
+
+void EVENTS::sendTesla(lv_event_t* e) {   
+    const uint16_t pulseWidth = 400;
+    const uint8_t messageLength = 43;
+    const uint8_t sequence[messageLength] = {
+    0x02, 0xAA, 0xAA, 0xAA, // Preamble of 26 bits by repeating 1010
+    0x2B,                   // Sync byte
+    0x2C, 0xCB, 0x33, 0x33, 0x2D, 0x34, 0xB5, 0x2B, 0x4D, 0x32, 0xAD, 0x2C, 0x56, 0x59, 0x96, 0x66,
+    0x66, 0x5A, 0x69, 0x6A, 0x56, 0x9A, 0x65, 0x5A, 0x58, 0xAC, 0xB3, 0x2C, 0xCC, 0xCC, 0xB4, 0xD2,
+    0xD4, 0xAD, 0x34, 0xCA, 0xB4, 0xA0};
+    
+    CC1101.sendByteSequence(sequence, pulseWidth, messageLength);
+    digitalWrite(CC1101_CCGDO0A, LOW);
 }
 
 
