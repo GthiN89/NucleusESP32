@@ -101,6 +101,7 @@ void loop() {
   delay(1); 
  
      if(C1101CurrentState == STATE_ANALYZER) {
+         CC1101.fskAnalyze();
              if (CC1101.CheckReceived())
              {
                 delay(5);
