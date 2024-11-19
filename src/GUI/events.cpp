@@ -117,14 +117,13 @@ void EVENTS::btn_event_detectForce_run(lv_event_t* e) {
 void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-     //   teslaScreen();
-        // Uncomment and use if needed:
-        // if (sendTeslaSignal(433.92)) {
-        //     teslaSucessFlag = true;
-        // }
-        // if (sendTeslaSignal(315.00)) {
-        //     teslaSucessFlag = true;
-        // }
+        screenMgr.createTeslaScreen();
+        delay(10);
+        detachInterrupt(CC1101_CCGDO0A);
+        CC1101_MODULATION = 2;
+        CC1101.CC1101_FREQ = 433.92;
+        CC1101.CC1101_PKT_FORMAT = 3;
+        CC1101.initrRaw();
     }
 }
 
@@ -409,6 +408,20 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
      delay(20);
     
     C1101CurrentState = STATE_ANALYZER;
+}
+
+void EVENTS::sendTesla(lv_event_t* e) {   
+    const uint16_t pulseWidth = 400;
+    const uint8_t messageLength = 43;
+    const uint8_t sequence[messageLength] = {
+    0x02, 0xAA, 0xAA, 0xAA, // Preamble of 26 bits by repeating 1010
+    0x2B,                   // Sync byte
+    0x2C, 0xCB, 0x33, 0x33, 0x2D, 0x34, 0xB5, 0x2B, 0x4D, 0x32, 0xAD, 0x2C, 0x56, 0x59, 0x96, 0x66,
+    0x66, 0x5A, 0x69, 0x6A, 0x56, 0x9A, 0x65, 0x5A, 0x58, 0xAC, 0xB3, 0x2C, 0xCC, 0xCC, 0xB4, 0xD2,
+    0xD4, 0xAD, 0x34, 0xCA, 0xB4, 0xA0};
+    
+    CC1101.sendByteSequence(sequence, pulseWidth, messageLength);
+    digitalWrite(CC1101_CCGDO0A, LOW);
 }
 
 

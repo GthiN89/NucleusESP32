@@ -14,6 +14,7 @@ public:
     lv_obj_t* ReplayScreen_;
     lv_obj_t* topLabel_container_;
     lv_obj_t *mbox_container;
+    lv_obj_t* teslaScreen_;
     static ScreenManager& getInstance();
 
     ScreenManager(const ScreenManager&) = delete;
@@ -25,6 +26,7 @@ public:
     void createSourAppleScreen();
     void createRFdetectScreen();
     void createFileExplorerScreen();
+    void createTeslaScreen();
 
 
     lv_obj_t* customPreset;
