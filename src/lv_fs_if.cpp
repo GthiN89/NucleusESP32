@@ -16,18 +16,18 @@ void * fs_dir_open(lv_fs_drv_t * drv, const char * path);
 lv_fs_res_t fs_dir_read(lv_fs_drv_t * drv, void * rddir_p, char * fn, uint32_t fn_len);
 lv_fs_res_t fs_dir_close(lv_fs_drv_t * drv, void * dir_p);
 
-// Helper function to normalize path
-String normalizePath(const String& path) {
-    String normalized = path;
-    normalized.replace("//", "/");
-    normalized.replace("///", "/");
-    normalized.replace("///", "/");
-    return path;
-}
+// // Helper function to normalize path
+// String normalizePath(const String& path) {
+//     String normalized = path;
+//     normalized.replace("//", "/");
+//     normalized.replace("///", "/");
+//     normalized.replace("///", "/");
+//     return path;
+// }
 
 // Open a file
 void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode) {
-    String fullPath = normalizePath(String(path) + "/");
+ //   String fullPath = normalizePath(String(path) + "/");
     uint8_t openMode;
     if (mode == LV_FS_MODE_WR) {
         openMode = O_WRONLY | O_CREAT | O_TRUNC;
@@ -40,7 +40,7 @@ void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode) {
         return NULL;
     }
 
-    File32* file = SD_FE.createOrOpenFile(fullPath.c_str(), O_RDWR | O_CREAT | O_TRUNC);
+    File32* file = SD_FE.createOrOpenFile(path, O_RDWR | O_CREAT | O_TRUNC);
     return static_cast<void*>(file);
 }
 
@@ -149,6 +149,7 @@ lv_fs_res_t fs_dir_read(lv_fs_drv_t * drv, void * rddir_p, char * fn, uint32_t f
 // Close a directory
 lv_fs_res_t fs_dir_close(lv_fs_drv_t * drv, void * dir_p) {
     File32* dir = static_cast<File32*>(dir_p);
+
     if (SD_FE.closeFile(dir)) {
         return LV_FS_RES_OK;
     }

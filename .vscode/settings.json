@@ -60,6 +60,6 @@
         "ui.h": "c",
         "ui_helpers.h": "c"
     },
-    "idf.portWin": "COM10",
+    "idf.portWin": "COM5",
     "C_Cpp.errorSquiggles": "disabled"
 }

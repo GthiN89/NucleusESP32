@@ -1,0 +1,136 @@
+diff --git a/src/misc/lv_fs.c b/src/misc/lv_fs.c
+index 42a6bcf3d..9baca7e41 100644
+--- a/src/misc/lv_fs.c
++++ b/src/misc/lv_fs.c
+@@ -307,6 +307,10 @@ lv_fs_res_t lv_fs_dir_open(lv_fs_dir_t * rddir_p, const char * path)
+ 
+     resolved_path_t resolved_path = lv_fs_resolve_path(path);
+ 
++    if(resolved_path.real_path == NULL) {
++        LV_LOG_USER("Invalid real path");
++    }
++
+     lv_fs_drv_t * drv = lv_fs_get_drv(resolved_path.drive_letter);
+ 
+     if(drv == NULL) {
+diff --git a/src/others/file_explorer/lv_file_explorer.c b/src/others/file_explorer/lv_file_explorer.c
+index bb0220c89..5a1d98bb9 100644
+--- a/src/others/file_explorer/lv_file_explorer.c
++++ b/src/others/file_explorer/lv_file_explorer.c
+@@ -452,8 +452,12 @@ static void quick_access_event_handler(lv_event_t * e)
+             path = &(explorer->fs_dir);
+         }
+ 
+-        if(path != NULL)
++        if(path != NULL) {
+             show_dir(obj, *path);
++        }
++        else {
++            LV_LOG_USER("Path is null");
++        }
+     }
+ }
+ 
+@@ -474,6 +478,9 @@ static void quick_access_area_event_handler(lv_event_t * e)
+ }
+ #endif
+ 
++#define LV_FILE_NAVIGATION_CURRENT_DIR  "."
++#define LV_FILE_NAVIGATION_PARENT_DIR   ".."
++
+ static void browser_file_event_handler(lv_event_t * e)
+ {
+     lv_event_code_t code = lv_event_get_code(e);
+@@ -483,37 +490,64 @@ static void browser_file_event_handler(lv_event_t * e)
+ 
+     if(code == LV_EVENT_VALUE_CHANGED) {
+         char file_name[LV_FILE_EXPLORER_PATH_MAX_LEN];
+-        const char * str_fn = NULL;
++        const char * selected_text = NULL;
+         uint32_t row;
+         uint32_t col;
++        uint8_t navigate_to_current_dir = 0;
++        uint8_t navigate_to_parent_dir = 0;
++        uint8_t navigate_to_child = 0;
+ 
+         lv_memzero(file_name, sizeof(file_name));
+         lv_table_get_selected_cell(explorer->file_table, &row, &col);
+-        str_fn = lv_table_get_cell_value(explorer->file_table, row, col);
++        selected_text = lv_table_get_cell_value(explorer->file_table, row, col);
++
++        selected_text = selected_text + 5; // skip table cell format
+ 
+-        str_fn = str_fn + 5;
+-        if((lv_strcmp(str_fn, ".") == 0))  return;
++        /* Three navigation modes are supported:
++         * - Navigate to current directory
++         * - Navigate to parent directory
++         * - Navigate to (current directory) child */
++        navigate_to_current_dir = (lv_strcmp(selected_text, LV_FILE_NAVIGATION_CURRENT_DIR) == 0);
++        navigate_to_parent_dir = (lv_strcmp(selected_text, LV_FILE_NAVIGATION_PARENT_DIR) == 0);
++        navigate_to_child = !navigate_to_parent_dir;
+ 
+-        if((lv_strcmp(str_fn, "..") == 0) && (lv_strlen(explorer->current_path) > 3)) {
++        if(navigate_to_current_dir)  return; /* Do nothing */
++
++        LV_LOG_USER("Original path: %s", explorer->current_path);
++
++        if((navigate_to_parent_dir) && (lv_strlen(explorer->current_path) > 3)) {
++            LV_LOG_USER("Navigate to parent directory and we're not in drive letter. Stripping current dir: %s",
++                        explorer->current_path);
+             strip_ext(explorer->current_path);
+             /*Remove the last '/' character*/
++            /* Place a NULL character and left us with: A:/\0media */
+             strip_ext(explorer->current_path);
+-            lv_snprintf((char *)file_name, sizeof(file_name), "%s", explorer->current_path);
++            lv_snprintf((char *)file_name, sizeof(file_name), "%s/", explorer->current_path); /* Append / at the end */
+         }
+         else {
+-            if(lv_strcmp(str_fn, "..") != 0) {
+-                lv_snprintf((char *)file_name, sizeof(file_name), "%s%s", explorer->current_path, str_fn);
++            if(navigate_to_child) {
++                LV_LOG_USER("Moving while being in root. Selected text: %s. Current path: %s", selected_text, explorer->current_path);
++                lv_snprintf((char *)file_name, sizeof(file_name), "%s%s", explorer->current_path, selected_text);
++            }
++            else if(navigate_to_parent_dir) {
++                LV_LOG_USER("Navigate to parent directory and we're most likely in the drive letter");
++                return;
+             }
+         }
+ 
++        LV_LOG_USER("Target: %s", file_name);
++
+         lv_fs_dir_t dir;
+         if(lv_fs_dir_open(&dir, file_name) == LV_FS_RES_OK) {
++            LV_LOG_USER("filename: %s", file_name);
+             lv_fs_dir_close(&dir);
+             show_dir(obj, (char *)file_name);
+         }
+         else {
+-            if(lv_strcmp(str_fn, "..") != 0) {
+-                explorer->sel_fn = str_fn;
++            LV_LOG_USER("Error trying to open dir");
++            if(navigate_to_child) {
++                LV_LOG_USER("Opening chilg directory");
++                explorer->sel_fn = selected_text;
+                 lv_obj_send_event(obj, LV_EVENT_VALUE_CHANGED, NULL);
+             }
+         }
+@@ -535,6 +569,8 @@ static void show_dir(lv_obj_t * obj, const char * path)
+     lv_fs_dir_t dir;
+     lv_fs_res_t res;
+ 
++    LV_LOG_USER("Opening dir: %s", path);
++
+     res = lv_fs_dir_open(&dir, path);
+     if(res != LV_FS_RES_OK) {
+         LV_LOG_USER("Open dir error %d!", res);
+@@ -604,7 +640,7 @@ static void show_dir(lv_obj_t * obj, const char * path)
+     lv_label_set_text_fmt(explorer->path_label, LV_SYMBOL_EYE_OPEN" %s", path);
+ 
+     size_t current_path_len = lv_strlen(explorer->current_path);
+-    if((*((explorer->current_path) + current_path_len) != '/') && (current_path_len < LV_FILE_EXPLORER_PATH_MAX_LEN)) {
++    if((explorer->current_path[current_path_len - 1] != '/') && (current_path_len < LV_FILE_EXPLORER_PATH_MAX_LEN)) {
+         *((explorer->current_path) + current_path_len) = '/';
+     }
+ }
