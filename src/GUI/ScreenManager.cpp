@@ -259,7 +259,10 @@ lv_obj_add_flag(mbox_container, LV_OBJ_FLAG_HIDDEN); // Hide the keyboard initia
                                 "FM238\n"
                                 "FM476\n"
                                 "FM95\n"
+                                "FSK12k\n"
                                 "FM15k\n"
+                                "FSK25k\n"
+                                "FSK31k\n"
                                 "PAGER\n"
                                 "HND1\n"
                                 "HND2\n"
@@ -279,12 +282,12 @@ lv_obj_add_flag(mbox_container, LV_OBJ_FLAG_HIDDEN); // Hide the keyboard initia
 
     // Create main text area
     text_area_replay = lv_textarea_create(ReplayScreen_);
-    lv_obj_set_size(text_area_replay, 240, 70);
+    lv_obj_set_size(text_area_replay, 240, 120);
     lv_obj_align(text_area_replay, LV_ALIGN_CENTER, 0, -20);
     lv_textarea_set_text(text_area_replay, "RAW protocol tool.\nPress listen to start.");
     lv_obj_set_scrollbar_mode(text_area_replay, LV_SCROLLBAR_MODE_OFF); 
     lv_textarea_set_cursor_click_pos(text_area_replay, false);
-    containerHelper.createContainer(&quareLine_container, ReplayScreen_, LV_FLEX_FLOW_ROW, 100, 240);
+    containerHelper.createContainer(&quareLine_container, ReplayScreen_, LV_FLEX_FLOW_ROW, 50, 240);
 
     containerHelper.createContainer(&button_container_RCSwitchMethod1_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 

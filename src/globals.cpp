@@ -42,7 +42,10 @@ CC1101_PRESET convert_str_to_enum(const char * selected_str) {
     else if (strcmp(selected_str, "FM238") == 0) return FM238;
     else if (strcmp(selected_str, "FM476") == 0) return FM476;
     else if (strcmp(selected_str, "FM95") == 0) return FM95;
+    else if (strcmp(selected_str, "FSK12k") == 0) return FSK12k;
     else if (strcmp(selected_str, "FM15k") == 0) return FM15k;
+    else if (strcmp(selected_str, "FSK25k") == 0) return FSK25k;
+    else if (strcmp(selected_str, "FSK31k") == 0) return FSK31k;
     else if (strcmp(selected_str, "PAGER") == 0) return PAGER;
     else if (strcmp(selected_str, "HND1") == 0) return HND1;
     else if (strcmp(selected_str, "HND2") == 0) return HND2;
@@ -56,7 +59,10 @@ const char* presetToString(CC1101_PRESET preset) {
         case FM238: return "FM238";
         case FM476: return "FM476";
         case FM95:  return "FM95";
+        case FSK12k: return "FSK12k";
         case FM15k: return "FM15k";
+        case FSK25k: return "FSK25k";
+        case FSK31k: return "FSK31k";
         case PAGER: return "PAGER";
         case HND1:  return "HND1";
         case HND2:  return "HND2";

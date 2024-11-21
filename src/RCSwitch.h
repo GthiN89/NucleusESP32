@@ -71,7 +71,7 @@ class RCSwitch {
 
   public:
     RCSwitch();
-
+    static unsigned int timings[RCSWITCH_MAX_CHANGES];
     void switchOn(int nGroupNumber, int nSwitchNumber);
     void switchOff(int nGroupNumber, int nSwitchNumber);
     void switchOn(const char* sGroup, int nSwitchNumber);
@@ -164,6 +164,7 @@ class RCSwitch {
     void setProtocol(Protocol protocol);
     void setProtocol(int nProtocol);
     void setProtocol(int nProtocol, int nPulseLength);
+    static bool receiveProtocol(const int p, unsigned int changeCount);
 
   private:
     char* getCodeWordA(const char* sGroup, const char* sDevice, bool bStatus);
@@ -174,7 +175,6 @@ class RCSwitch {
 
     #if not defined( RCSwitchDisableReceiving )
     static void handleInterrupt();
-    static bool receiveProtocol(const int p, unsigned int changeCount);
         static void acceptUnknownProtocol(unsigned int changeCount);
     int nReceiverInterrupt;
     #endif
@@ -195,7 +195,7 @@ class RCSwitch {
     /*
      * timings[0] contains sync timing, followed by a number of bits
      */
-    static unsigned int timings[RCSWITCH_MAX_CHANGES];
+
     // буфер длительностей последних четырех пакетов, [0] - последний
     static unsigned int buftimings[4];
     #endif

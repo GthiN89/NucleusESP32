@@ -62,6 +62,15 @@
 #define LV_LIMITS_INCLUDE       <limits.h>
 #define LV_STDARG_INCLUDE       <stdarg.h>
 
+/* Inertial scrolling sensitivity for drag gestures */
+#define LV_INDEV_DEF_DRAG_THROW    5    /* Default: 10 */
+
+/* Inertial scrolling sensitivity for scroll gestures */
+#define LV_INDEV_DEF_SCROLL_THROW  10   /* Default: 20 */
+
+/* Snap scrolling settings */
+#define LV_INDEV_DEF_SCROLL_SNAP   LV_SCROLL_SNAP_NONE /* Default: LV_SCROLL_SNAP_CENTER */
+
 #if LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN
     /*Size of the memory available for `lv_malloc()` in bytes (>= 2kB)*/
     #define LV_MEM_SIZE (46 * 1024U)          /*[bytes]*/

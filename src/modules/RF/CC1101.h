@@ -60,6 +60,7 @@ public:
     void startSignalanalyseTask();
     void fskAnalyze();
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
+    void decodeWithESPiLight(uint16_t *timings, size_t length);
 
 private:
     SPIClass  CC1101SPI;;

@@ -31,7 +31,6 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 //#define KeeLoq_NLF              0x3A5C742EUL
-//#define KeeLoq_NLF              0x3A5C742EUL
 #define KeeLoq_NLF    0x3A5C742E
 
 #include "RCSwitch.h"
@@ -172,8 +171,6 @@ volatile unsigned int RCSwitch::nReceivedBitlength = 0;
 volatile unsigned int RCSwitch::nReceivedDelay = 0;
 volatile unsigned int RCSwitch::nReceivedProtocol = 0;
 int RCSwitch::nReceiveTolerance = 60;
-bool RCSwitch::receiveUsingProtocolTiming = false;
-bool RCSwitch::receiveUnknownProtocol = false;
 const unsigned int RCSwitch::nSeparationLimit = RCSWITCH_SEPARATION_LIMIT;
 unsigned int RCSwitch::timings[RCSWITCH_MAX_CHANGES];
 unsigned int RCSwitch::buftimings[4];
@@ -186,8 +183,6 @@ RCSwitch::RCSwitch() {
   #if not defined( RCSwitchDisableReceiving )
   this->nReceiverInterrupt = -1;
   this->setReceiveTolerance(60);
-   this->setReceiveUsingProtocolTiming(false);
-  this->setReceiveUnknownProtocol(false);
   RCSwitch::nReceivedValue = 0;
   RCSwitch::nReceiveProtocolMask = (1ULL << numProto)-1;  //pow(2,numProto)-1;
   #endif
@@ -697,12 +692,10 @@ void RCSwitch::enableReceive() {
  * Disable receiving data
  */
 void RCSwitch::disableReceive() {
-  if (this->nReceiverInterrupt != -1) {
 #if not defined(RaspberryPi) // Arduino
-    detachInterrupt(this->nReceiverInterrupt);
+  detachInterrupt(this->nReceiverInterrupt);
 #endif // For Raspberry Pi (wiringPi) you can't unregister the ISR
-    this->nReceiverInterrupt = -1;
-  }
+  this->nReceiverInterrupt = -1;
 }
 
 bool RCSwitch::available() {
@@ -741,23 +734,48 @@ static inline unsigned int diff(int A, int B) {
 /**
  *
  */
-bool RECEIVE_ATTR RCSwitch::receiveProtocol(const int p, unsigned int changeCount) {
+bool RCSwitch::receiveProtocol(const int p, unsigned int changeCount) {
 #if defined(ESP8266) || defined(ESP32)
-    const Protocol &pro = proto[p - 1];
+    const Protocol &pro = proto[p-1];
 #else
     Protocol pro;
-    memcpy_P(&pro, &proto[p - 1], sizeof(Protocol));
+    memcpy_P(&pro, &proto[p-1], sizeof(Protocol));
 #endif
 
-    unsigned long code = 0;
-    // Assuming the longer pulse length is the pulse captured in timings[0]
-    const unsigned int syncLengthInPulses = ((pro.Header.low) > (pro.Header.high))
-                                              ? (pro.Header.low)
-                                              : (pro.Header.high);
-    const unsigned int delay = RCSwitch::receiveUsingProtocolTiming
-                               ? pro.pulseLength
-                               : RCSwitch::timings[0] / syncLengthInPulses;
+    unsigned long long code = 0;
+    unsigned int FirstTiming = 0;
+    if (pro.PreambleFactor > 0) {
+      FirstTiming = pro.PreambleFactor + 1;
+    }
+    unsigned int BeginData = 0;
+    if (pro.HeaderFactor > 0) {
+      BeginData = (pro.invertedSignal) ? (2) : (1);
+      // Header pulse count correction for more than one
+      if (pro.HeaderFactor > 1) {
+        BeginData += (pro.HeaderFactor - 1) * 2;
+      }
+    }
+    //Assuming the longer pulse length is the pulse captured in timings[FirstTiming]
+    // берем наибольшее значение из Header
+    const unsigned int syncLengthInPulses =  ((pro.Header.low) > (pro.Header.high)) ? (pro.Header.low) : (pro.Header.high);
+    // определяем длительность Te как длительность первого импульса header деленную на количество импульсов в нем
+    // или как длительность импульса preamble деленную на количество Te в нем
+    unsigned int sdelay = 0;
+    if (syncLengthInPulses > 0) {
+      sdelay = RCSwitch::timings[FirstTiming] / syncLengthInPulses;
+    } else if (pro.PreambleFactor > 0) {
+      sdelay = RCSwitch::timings[FirstTiming-2] / pro.PreambleFactor;
+    }
+    const unsigned int delay = sdelay;
+    // nReceiveTolerance = 60
+    // допустимое отклонение длительностей импульсов на 60 %
     const unsigned int delayTolerance = delay * RCSwitch::nReceiveTolerance / 100;
+
+    // 0 - sync перед preamble или data
+    // BeginData - сдвиг на 1 или 2 от sync к preamble/data
+    // FirstTiming - сдвиг на preamble к header
+    // firstDataTiming первый импульс data
+    // bitChangeCount - количество импульсов в data
 
     /* For protocols that start low, the sync period looks like
      *               _________
@@ -776,9 +794,16 @@ bool RECEIVE_ATTR RCSwitch::receiveProtocol(const int p, unsigned int changeCoun
      *
      * The 2nd saved duration starts the data
      */
-    const unsigned int firstDataTiming = (pro.invertedSignal) ? (2) : (1);
+    // если invertedSignal=false, то сигнал начинается с 1 элемента массива (высокий уровень)
+    // если invertedSignal=true, то сигнал начинается со 2 элемента массива (низкий уровень)
+    // добавляем поправку на Преамбулу и Хедер
+    const unsigned int firstDataTiming = BeginData + FirstTiming;
+    unsigned int bitChangeCount = changeCount - firstDataTiming - 1 + pro.invertedSignal;
+    if (bitChangeCount > 128) {
+      bitChangeCount = 128;
+    }
 
-    for (unsigned int i = firstDataTiming; i < changeCount - 1; i += 2) {
+    for (unsigned int i = firstDataTiming; i < firstDataTiming + bitChangeCount; i += 2) {
         code <<= 1;
         if (diff(RCSwitch::timings[i], delay * pro.zero.high) < delayTolerance &&
             diff(RCSwitch::timings[i + 1], delay * pro.zero.low) < delayTolerance) {
@@ -793,9 +818,9 @@ bool RECEIVE_ATTR RCSwitch::receiveProtocol(const int p, unsigned int changeCoun
         }
     }
 
-    if (changeCount > 7) {    // Ignore very short transmissions: no device sends them, so this must be noise
+    if (bitChangeCount > 14) {    // ignore very short transmissions: no device sends them, so this must be noise
         RCSwitch::nReceivedValue = code;
-        RCSwitch::nReceivedBitlength = (changeCount - 1) / 2;
+        RCSwitch::nReceivedBitlength = bitChangeCount / 2;
         RCSwitch::nReceivedDelay = delay;
         RCSwitch::nReceivedProtocol = p;
         return true;
@@ -804,68 +829,104 @@ bool RECEIVE_ATTR RCSwitch::receiveProtocol(const int p, unsigned int changeCoun
     return false;
 }
 
-
-void RECEIVE_ATTR RCSwitch::acceptUnknownProtocol(unsigned int changeCount) {
-
-    if (changeCount > 7) {    // ignore very short transmissions: no device sends them, so this must be noise
-        RCSwitch::nReceivedValue = -1;
-        RCSwitch::nReceivedBitlength = (changeCount - 1) / 2;
-        RCSwitch::nReceivedDelay = 0;
-        RCSwitch::nReceivedProtocol = -1;
-    }
-}
-
 void RECEIVE_ATTR RCSwitch::handleInterrupt() {
-
-  // The timings table should remain unchanged
-  // until previously received data is consumed 
-  if (RCSwitch::receiveUnknownProtocol && RCSwitch::nReceivedValue != 0) {
-      return;
-  }
 
   static unsigned int changeCount = 0;
   static unsigned long lastTime = 0;
-  static unsigned int repeatCount = 0;
+  static byte repeatCount = 0;
 
   const long time = micros();
   const unsigned int duration = time - lastTime;
 
-  if (duration > RCSwitch::nSeparationLimit) {
+  RCSwitch::buftimings[3]=RCSwitch::buftimings[2];
+  RCSwitch::buftimings[2]=RCSwitch::buftimings[1];
+  RCSwitch::buftimings[1]=RCSwitch::buftimings[0];
+  RCSwitch::buftimings[0]=duration;
+
+  if (duration > RCSwitch::nSeparationLimit ||
+      changeCount == 156 ||
+      (diff(RCSwitch::buftimings[3], RCSwitch::buftimings[2]) < 50 &&
+        diff(RCSwitch::buftimings[2], RCSwitch::buftimings[1]) < 50 &&
+        changeCount > 25)) {
+    // принят длинный импульс продолжительностью более nSeparationLimit (4300)
     // A long stretch without signal level change occurred. This could
     // be the gap between two transmission.
-    if ((repeatCount==0) || (diff(duration, RCSwitch::timings[0]) < 200)) {
+    if (diff(duration, RCSwitch::timings[0]) < 400 ||
+        changeCount == 156 ||
+        (diff(RCSwitch::buftimings[3], RCSwitch::timings[1]) < 50 &&
+          diff(RCSwitch::buftimings[2], RCSwitch::timings[2]) < 50 &&
+          diff(RCSwitch::buftimings[1], RCSwitch::timings[3]) < 50 &&
+          changeCount > 25)) {
+      // если его длительность отличается от первого импульса,
+      // который приняли раньше, менее чем на +-200 (исходно 200)
+      // то считаем это повторным пакетом и игнорируем его
       // This long signal is close in length to the long signal which
       // started the previously recorded timings; this suggests that
       // it may indeed by a a gap between two transmissions (we assume
       // here that a sender will send the signal multiple times,
       // with roughly the same gap between them).
+
+      // количество повторных пакетов
       repeatCount++;
-      if (repeatCount == 2) {
+      // при приеме второго повторного начинаем анализ принятого первым
+      if (repeatCount == 1) {
+        unsigned long long thismask = 1;
         for(unsigned int i = 1; i <= numProto; i++) {
-          if (receiveProtocol(i, changeCount)) {
-            // receive succeeded for protocol i
-            break;
+          if (RCSwitch::nReceiveProtocolMask & thismask) {
+            if (receiveProtocol(i, changeCount)) {
+              // receive succeeded for protocol i
+              break;
+            }
           }
+          thismask <<= 1;
         }
-        if (RCSwitch::receiveUnknownProtocol && RCSwitch::nReceivedValue == 0) {
-          acceptUnknownProtocol(changeCount);
-        }
+        // очищаем количество повторных пакетов
         repeatCount = 0;
       }
     }
+    // дительность отличается более чем на +-200 от первого
+    // принятого ранее, очищаем счетчик для приема нового пакета
     changeCount = 0;
+    if (diff(RCSwitch::buftimings[3], RCSwitch::buftimings[2]) < 50 &&
+        diff(RCSwitch::buftimings[2], RCSwitch::buftimings[1]) < 50) {
+      RCSwitch::timings[1]=RCSwitch::buftimings[3];
+      RCSwitch::timings[2]=RCSwitch::buftimings[2];
+      RCSwitch::timings[3]=RCSwitch::buftimings[1];
+      changeCount = 4;
+    }
   }
- 
+
   // detect overflow
   if (changeCount >= RCSWITCH_MAX_CHANGES) {
     changeCount = 0;
     repeatCount = 0;
   }
 
-  RCSwitch::timings[changeCount++] = duration;
-  lastTime = time;  
+  // заносим в массив длительность очередного принятого импульса
+  if (changeCount > 0 && duration < 100) { // игнорируем шумовые всплески менее 100 мкс
+    RCSwitch::timings[changeCount-1] += duration;
+  } else {
+    RCSwitch::timings[changeCount++] = duration;
+  }
+  lastTime = time;
 }
 #endif
+
+/**
+  * Initilize Keeloq
+  */
+Keeloq::Keeloq() {
+  _keyHigh = 0;
+  _keyLow = 0;
+}
+
+/**
+  * Set Keeloq 64 bit cypher key
+  */
+void Keeloq::SetKey(unsigned long keyHigh, unsigned long keyLow) {
+  _keyHigh = keyHigh;
+  _keyLow = keyLow;
+}
 
 /**
   * Get Key data
@@ -956,68 +1017,3 @@ unsigned long Keeloq::ReflectPack(unsigned long PackSrc) {
   }
   return PackOut;
 }
-
-
-void RCSwitch::sendraw(const char* sFilename) {
-//   int i=0;
-//   int j;
-//   int high, low;
-//   File32 *file;
-//   int array_l[1000];
-//   int array_h[1000];
-
-//   if (this->nTransmitterPin == -1)
-//     return;
-// #if not defined( RCSwitchDisableReceiving )
-//   // make sure the receiver is disabled while we transmit
-//   int nReceiverInterrupt_backup = nReceiverInterrupt;
-//   if (nReceiverInterrupt_backup != -1) {
-//     this->disableReceive();
-//   }
-// #endif
-
-//   file=fopen(sFilename,"r");
-//   if(file==NULL){
-//     printf("%s not read", sFilename);
-//     return;
-//   }
-
-//   while (fscanf (file, "%d\n%d\n",&high, &low)>0)
-//   {
-//     array_h[i]=high;
-//     array_l[i]=low;
-//     i++;
-//   }
-
-//   for(j=0; j<=i; j++){
-//     digitalWrite(this->nTransmitterPin, HIGH);
-//     delayMicroseconds( array_h[j]);
-//     digitalWrite(this->nTransmitterPin, LOW);
-//     delayMicroseconds( array_l[j]);
-//   }
-
-//   // Disable transmit after sending (i.e., for inverted protocols)
-//   digitalWrite(this->nTransmitterPin, LOW);
-
-// #if not defined( RCSwitchDisableReceiving )
-//   // enable receiver again if we just disabled it
-//   if (nReceiverInterrupt_backup != -1) {
-//     this->enableReceive(nReceiverInterrupt_backup);
-//   }
-// #endif
-}
-
-/**
- * Set source of recive protocol delay
- */
-void RCSwitch::setReceiveUsingProtocolTiming(bool useProtocolTiming) {
-  RCSwitch::receiveUsingProtocolTiming = useProtocolTiming;
-}
-
-/**
- * Enable receiving of unknown protocol data - for debugging purposes only
- */
-void RCSwitch::setReceiveUnknownProtocol(bool showUnknownProtocol) {
-  RCSwitch::receiveUnknownProtocol = showUnknownProtocol;
-}
-
