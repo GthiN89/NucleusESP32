@@ -10,10 +10,64 @@
 #include "SPI.h"
 #include "modules/ETC/SDcard.h"
 #include "ESPiLight.h"
+#include <rtl_433_ESP.h>
+#include "rtl_433.h"
+
+float start_freq = 433;
+float stop_freq = 434;
+float freq = start_freq;
+long compare_freq;
+float mark_freq;
+int rssi;
+int mark_rssi = -100;
+
+     String protDecode[]={
+"Unknown",
+"01 Princeton, PT-2240",
+"02 AT-Motor?",
+"03",
+"04",
+"05",
+"06 HT6P20B",
+"07 HS2303-PT, i. e. used in AUKEY Remote",
+"08 Came 12bit, HT12E",
+"09 Nice_Flo 12bit",
+"10 V2 phoenix",
+"11 Nice_FloR-S 52bit",
+"12 Keeloq 64/66 falseok",
+"13 test CFM",
+"14 test StarLine",
+"15",
+"16 Einhell",
+"17 InterTechno PAR-1000",
+"18 Intertechno ITT-1500",
+"19 Murcury",
+"20 AC114",
+"21 DC250",
+"22 Mandolyn/Lidl TR-502MSV/RC-402/RC-402DX",
+"23 Lidl TR-502MSV/RC-402 - Flavien",
+"24 Lidl TR-502MSV/RC701",
+"25 NEC",
+"26 Arlec RC210",
+"27 Zap, FHT-7901",
+"28", // github.com/sui77/rc-switch/pull/115
+"29 NEXA",
+"30 Anima",
+"31 Mertik Maxitrol G6R-H4T1",
+"32", //github.com/sui77/rc-switch/pull/277
+"33 Dooya Control DC2708L",
+"34 DIGOO SD10 ", //so as to use this protocol RCSWITCH_SEPARATION_LIMIT must be set to 2600
+"35 Dooya 5-Channel blinds remote DC1603",
+"36 DC2700AC", //Dooya remote DC2700AC for Dooya DT82TV curtains motor
+"37 DEWENWILS Power Strip",
+"38 Nexus weather, 36 bit",
+"39 Louvolite with premable"
+};
 
 SDcard& SD_RF = SDcard::getInstance();
 
 ESPiLight espilight(-1); 
+
 
 ScreenManager& screenMgr1 = ScreenManager::getInstance();
 
@@ -45,6 +99,11 @@ unsigned long samplesmooth[SAMPLE_SIZE];
 String fullPath;   
 
 RCSwitch mySwitch;
+
+ float strongestASKFreqs[4] = {0};  // Store the four strongest ASK/OOK frequencies
+    int strongestASKRSSI[4] = {-200}; // Initialize with very low RSSI values
+    float strongestFSKFreqs[2] = {0}; // Store the two strongest FSK frequencies (F0 and F1)
+    int strongestFSKRSSI[2] = {-200}; // Initialize FSK RSSI values
 
 RCSwitch CC1101_CLASS::getRCSwitch() {
  return mySwitch;
@@ -130,51 +189,123 @@ void CC1101_CLASS::setPTK(int ptk)
 }
 
 void CC1101_CLASS::fskAnalyze() {
-    // Initialize CC1101
-    ELECHOUSE_cc1101.Init();
+    Serial.println("ana run");         
 
-    // Set starting frequency (433.92 MHz) and RX bandwidth
-    ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);      // Set approximate frequency in MHz
-    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);   // Set RX bandwidth to 250 kHz
+    while (true) { // Run indefinitely
+        // Check modulation mode
+        if (CC1101_MODULATION == 2) { // ASK/OOK
+            freq = start_freq;
 
-    // Enter receive mode
-    ELECHOUSE_cc1101.SetRx();
+            while (freq <= stop_freq) {
+                ELECHOUSE_cc1101.setMHZ(freq);
+                int rssi = ELECHOUSE_cc1101.getRssi();
 
-    // Allow time for the receiver to stabilize
-    delay(100);
+                if (rssi > -80) { // RSSI threshold
+                    // Update the four strongest ASK frequencies
+                    for (int i = 0; i < 4; i++) {
+                        if (rssi > strongestASKRSSI[i]) {
+                            // Shift weaker entries down
+                            for (int j = 3; j > i; j--) {
+                                strongestASKRSSI[j] = strongestASKRSSI[j - 1];
+                                strongestASKFreqs[j] = strongestASKFreqs[j - 1];
+                            }
+                            // Insert new strongest entry
+                            strongestASKRSSI[i] = rssi;
+                            strongestASKFreqs[i] = freq;
 
-    // Check RSSI to detect signal strength
-    int8_t rssi = ELECHOUSE_cc1101.SpiReadReg(CC1101_RSSI);
-    Serial.print("RSSI: ");
-    Serial.println(rssi);
+                            // Immediately print the new strongest frequency
+                            Serial.println(String("New ASK Frequency: ") + strongestASKFreqs[i] +
+                                           " MHz | RSSI: " + strongestASKRSSI[i]);
+         
+                            break;
+                        }
+                    }
+                }
 
-    // If RSSI is very low, treat it as silence
-    if (rssi < -100) {
-        Serial.println("Silence detected (low RSSI).");
-        return;  // Exit the function
+                freq += 0.10; // Frequency step size
+            }
+        } else if (CC1101_MODULATION == 0) { // FSK
+            freq = start_freq;
+
+            while (freq <= stop_freq) {
+                ELECHOUSE_cc1101.setMHZ(freq);
+                int rssi = ELECHOUSE_cc1101.getRssi();
+
+                if (rssi > -80) { // RSSI threshold
+                    if (rssi > strongestFSKRSSI[0]) {
+                        // Update F0 and shift the previous F0 to F1
+                        strongestFSKRSSI[1] = strongestFSKRSSI[0];
+                        strongestFSKFreqs[1] = strongestFSKFreqs[0];
+
+                        strongestFSKRSSI[0] = rssi;
+                        strongestFSKFreqs[0] = freq;
+
+                        // Print the strongest FSK frequency pair (F0 and F1)
+                        Serial.println(String("New FSK Frequencies: F0 = ") + strongestFSKFreqs[0] +
+                                       " MHz | RSSI: " + strongestFSKRSSI[0] +
+                                       ", F1 = " + strongestFSKFreqs[1] +
+                                       " MHz | RSSI: " + strongestFSKRSSI[1]);
+                    } else if (rssi > strongestFSKRSSI[1]) {
+                        // Update F1
+                        strongestFSKRSSI[1] = rssi;
+                        strongestFSKFreqs[1] = freq;
+
+                        // Print the updated F1 frequency
+                        Serial.println(String("Updated FSK F1: ") + strongestFSKFreqs[1] +
+                                       " MHz | RSSI: " + strongestFSKRSSI[1]);
+                    }
+                }
+
+                freq += 0.10; // Frequency step size
+            }
+        } else {
+            Serial.println("Unsupported modulation type");
+        }
     }
-
-    // Read frequency offset (signed 8-bit value)
-    int8_t freqOffset = ELECHOUSE_cc1101.SpiReadReg(CC1101_FREQEST);
-    Serial.print("FreqOffset Raw: ");
-    Serial.println(freqOffset);
-
-    // Check if freqOffset is zero, indicating no valid signal
-    if (freqOffset == 0) {
-        Serial.println("No valid signal detected.");
-        return;  // Exit the function
-    }
-
-    // Starting frequency in Hz (433.92 MHz)
-    uint32_t startFreq = CC1101_MHZ * 1000000;
-
-    // Calculate the actual carrier frequency
-    actualFreq = startFreq + ((int32_t)freqOffset * (CC1101_RX_BW * 1000) / 256);
-
-    // Print the calculated frequency
-    Serial.print("Detected Carrier Frequency: ");
-    Serial.println(actualFreq);
 }
+
+void CC1101_CLASS::enableScanner(float start, float stop)
+{
+    start_freq = start;
+    stop_freq = stop;
+    freq = start_freq;
+
+    if (!CC1101_is_initialized) {
+        CC1101_CLASS::init();
+    }
+    CC1101_CLASS::loadPreset();
+
+   // ELECHOUSE_cc1101.Init();
+
+    if (CC1101_MODULATION == 2)
+    {
+        ELECHOUSE_cc1101.setDcFilterOff(0);
+    }
+
+    if (CC1101_MODULATION == 0)
+    {
+        ELECHOUSE_cc1101.setDcFilterOff(1);
+    }
+
+     
+    ELECHOUSE_cc1101.setSyncMode(CC1101_SYNC);  // Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.
+    ELECHOUSE_cc1101.setPktFormat(CC1101_PKT_FORMAT); // Format of RX and TX data. 0 = Normal mode, use FIFOs for RX and TX.
+                                                      // 1 = Synchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
+                                                      // 2 = Random TX mode; sends random data using PN9 generator. Used for test. Works as normal mode, setting 0 (00), in RX.
+                                                      // 3 = Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
+                                                      // ELECHOUSE_cc1101.setSyncMode(3);       
+    ELECHOUSE_cc1101.setModulation(CC1101_MODULATION); // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
+    ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);               // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
+    ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
+    ELECHOUSE_cc1101.setDRate(CC1101_DRATE); // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
+    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
+ 
+    
+    pinMode(CC1101_CCGDO0A, INPUT);
+    ELECHOUSE_cc1101.SetRx();
+/////////////////////////////
+}
+
 
 void CC1101_CLASS::enableReceiver()
 {
@@ -198,7 +329,7 @@ void CC1101_CLASS::enableReceiver()
         ELECHOUSE_cc1101.setDcFilterOff(1);
     }
 
-     ELECHOUSE_cc1101.setDcFilterOff(1);
+
     ELECHOUSE_cc1101.setSyncMode(CC1101_SYNC);  // Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.
     ELECHOUSE_cc1101.setPktFormat(CC1101_PKT_FORMAT); // Format of RX and TX data. 0 = Normal mode, use FIFOs for RX and TX.
                                                       // 1 = Synchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
@@ -305,10 +436,11 @@ if (foundSeparator && endIndex > startIndex) {
     // Attempt to decode with RC Switch
     for (int protocol = 1; protocol <= mySwitch.getNumProtos(); protocol++) {
         if (mySwitch.receiveProtocol(protocol, length)) {
+            
            unsigned long long receivedValue = mySwitch.getReceivedValue();
             Serial.println("Decoded Signal using RC Switch:");
             Serial.print("Protocol: ");
-            Serial.println(protocol);
+            Serial.println(protDecode[protocol]);
             Serial.print("Value: ");
             Serial.println(receivedValue);
             Serial.print("Bit Length: ");
@@ -319,7 +451,7 @@ if (foundSeparator && endIndex > startIndex) {
             lv_textarea_add_text(ta, "\nDecoded Signal:");
 
             lv_textarea_add_text(ta, "\nProtocol: ");
-            lv_textarea_add_text(ta, std::to_string(protocol).c_str());
+            lv_textarea_add_text(ta, protDecode[protocol].c_str());
             lv_textarea_add_text(ta, "\nValue: ");
             lv_textarea_add_text(ta, std::to_string(receivedValue).c_str());
             lv_textarea_add_text(ta, "\nBit Length: ");
@@ -347,9 +479,9 @@ snprintf(hexBuffer, sizeof(hexBuffer), "0x%lX", receivedValue); // Convert to he
 lv_textarea_add_text(ta, "\nHex: ");
 lv_textarea_add_text(ta, hexBuffer);
 
-// Convert to ASCII and display in text area
-if (receivedValue <= 0x7F) { // Ensure the value fits within printable ASCII
-    char asciiBuffer[2] = {0}; // Single character + null terminator
+
+if (receivedValue <= 0x7F) { 
+    char asciiBuffer[2] = {0}; 
     asciiBuffer[0] = static_cast<char>(receivedValue); // Convert to character
     Serial.print("ASCII: '");
     Serial.write(asciiBuffer[0]); // Debug in Serial
@@ -371,8 +503,68 @@ if (receivedValue <= 0x7F) { // Ensure the value fits within printable ASCII
 
     // If neither ESPiLight nor RC Switch could decode the signal
     Serial.println("Failed to decode signal with RC Switch as well.");
+    // Serial.println("Attempting RTL433 decoding...");
+
+    // // Check if the pulse train is within reasonable limits
+    // if (length > 0 && length < 750) {  // Using MAXPULSESTREAMLENGTH from header
+    //     // Allocate a pulse_data_t structure
+    //     pulse_data_t *pulse_data = (pulse_data_t*)malloc(sizeof(pulse_data_t));
+    //     if (!pulse_data) {
+    //         Serial.println("Memory allocation failed");
+    //         return;
+    //     }
+
+    //     // Clear the structure
+    //     memset(pulse_data, 0, sizeof(pulse_data_t));
+
+    //     // Copy pulse train to pulse_data
+    //     pulse_data->num_pulses = length;
+    //     for (size_t i = 0; i < length; i++) {
+    //         pulse_data->pulse[i] = pulseTrain[i];
+    //     }
+
+    //     // Create a callback function to handle the output
+    //     auto rtl433Callback = [](char *message) {
+    //         lv_obj_t * ta = screenMgr1.getTextArea();
+            
+    //         Serial.println("RTL433 Decoded Message:");
+    //         Serial.println(message);
+            
+    //         lv_textarea_add_text(ta, "\nRTL433 Decoded Message:");
+    //         lv_textarea_add_text(ta, message);
+    //     };
+
+    //     // Allocate a message buffer
+    //     char messageBuffer[256];  // Adjust size as needed
+    //     rtl_433_ESP rtl433(ONBOARD_LED);  // Using the onboard LED pin
+        
+    //     // Set the callback
+    //     rtl433.setCallback(rtl433Callback, messageBuffer, sizeof(messageBuffer));
+
+    //     // Attempt to process the pulse data
+    //     // Note: This is speculative and may require modification
+    //     r_cfg_t cfg;
+    //     rtl_433_ESP::rtlSetup(&cfg);
+
+    //     // Dispatch the pulse data (method to be confirmed)
+    //     // You'll need to replace this with the actual method from the library
+    //     // This is a placeholder
+    //  //   int result = process_pulse_data(&cfg, pulse_data);
+
+    //     // Free the allocated memory
+    //     free(pulse_data);
+
+    //     // if (result == 0) {
+    //     //     Serial.println("RTL433 processing completed");
+    //     //     return;
+    //     // }
+   // }
+
+    // If all decoding methods fail
+    Serial.println("Failed to decode signal with all methods.");
 }
 }
+
 
 void CC1101_CLASS::disableReceiver()
 {
@@ -523,9 +715,9 @@ bool CC1101_CLASS::CheckReceived()
 
 void CC1101_CLASS::signalanalyseTask(void* pvParameters) {
     CC1101_CLASS* cc1101 = static_cast<CC1101_CLASS*>(pvParameters);  // Pointer to the instance
-    SD_RF.initializeSD();
+   // SD_RF.initializeSD();
     while (true) {
-        cc1101->signalanalyse();
+        cc1101->fskAnalyze();
         delay(10);  
     }
 }
@@ -628,8 +820,9 @@ void CC1101_CLASS::signalanalyse(){
     sample[1] = timingdelay[0];
   }
 
-
+lv_obj_t * textareaRC = screenMgr1.getTextArea();
   bool lastbin=0;
+  lv_textarea_set_text(textareaRC, "\nDemodulating\n");
   for (int i=1; i<samplecount; i++){
     float r = (float)sample[i]/timingdelay[0];
     int calculate = r;
@@ -642,14 +835,25 @@ void CC1101_CLASS::signalanalyse(){
       }else{
       lastbin=0;
     }
+//        lv_task_handler();
       if (lastbin==0 && calculate>8){
-        Serial.print(" [Pause: ");
-        Serial.print(sample[i]);
-        Serial.println(" samples]");
+        // lv_textarea_add_text(textareaRC, "\n[Pause: ");
+        // lv_task_handler();
+        // lv_textarea_add_text(textareaRC, std::to_string(sample[i]).c_str());
+        // lv_task_handler();
+        // lv_textarea_add_text(textareaRC, " samples]");
+        // lv_task_handler();
       }else{
-        for (int b=0; b<calculate; b++){
-          Serial.print(lastbin);
-        }
+        
+        // char combinedText[calculate + 1];
+        
+        // for (int b = 0; b < calculate; b++) {
+        //     combinedText[b] = (lastbin ? '1' : '0');
+        // }
+        // combinedText[calculate] = '\0';        
+        
+        // lv_textarea_add_text(textareaRC, combinedText);
+        // lv_task_handler(); 
       }
     }
   }
@@ -658,7 +862,7 @@ void CC1101_CLASS::signalanalyse(){
   Serial.println(timingdelay[0]);
   Serial.println();
 
-  int smoothcount=0;
+  smoothcount=0;
   for (int i=1; i<samplecount; i++){
     float r = (float)sample[i]/timingdelay[0];
     int calculate = r;
@@ -678,12 +882,13 @@ for (size_t i = 0; i < smoothcount; i++) {
     pulseTrain[i] = static_cast<uint16_t>(samplesmooth[i]);
 }
 
-    lv_obj_t * textareaRC = screenMgr1.getTextArea();
+    
     lv_obj_t * container = screenMgr1.getSquareLineContainer();
 
-    lv_textarea_set_text(textareaRC, "New RAW signal, \nCount: ");
+    lv_textarea_add_text(textareaRC, "\nNew RAW signal, \nCount: ");
     lv_textarea_add_text(textareaRC, String(smoothcount).c_str());
     String rawString = "";
+
 Serial.println("");
     for (int i = 0; i < smoothcount; i++) {
             rawString += (i > 0 ? (i % 2 == 1 ? " -" : " ") : "");
@@ -787,10 +992,10 @@ if (!SD_RF.directoryExists("/recordedRF/")) {
 String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
 String fullPath = "/recordedRF/" + filename;
 
-File32* outputFile = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
-if (outputFile) {
+File32* outputFilePtr = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
+if (outputFilePtr) {
+    File32& outputFile = *outputFilePtr; 
     std::vector<byte> customPresetData;
-
     if (C1101preset == CUSTOM) {
         customPresetData.insert(customPresetData.end(), {
             CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
@@ -801,19 +1006,15 @@ if (outputFile) {
             0x00, 0x00
         });
 
-        std::array<byte,8> paTable;
+        std::array<byte, 8> paTable;
         ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
         customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
     }
-
-    if (!SD_RF.writeFile(outputFile, customPresetData, 5)) {
-        Serial.println("Failed to write data to SD card");
-    }
-
-    SD_RF.closeFile(outputFile);
-}
+    subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
+    SD_RF.closeFile(outputFilePtr);
 
 CC1101_CLASS::enableReceiver();
+}
 }
 
 void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength) {
@@ -982,15 +1183,15 @@ void CC1101_CLASS::enableRCSwitch()
 
    // ELECHOUSE_cc1101.Init();
 
-    if (CC1101_MODULATION == 2)
-    {
-        ELECHOUSE_cc1101.setDcFilterOff(0);
-    }
+    // if (CC1101_MODULATION == 2)
+    // {
+    //     ELECHOUSE_cc1101.setDcFilterOff(0);
+    // }
 
-    if (CC1101_MODULATION == 0)
-    {
-        ELECHOUSE_cc1101.setDcFilterOff(1);
-    }
+    // if (CC1101_MODULATION == 0)
+    // {
+    //     ELECHOUSE_cc1101.setDcFilterOff(1);
+    // }
 
      ELECHOUSE_cc1101.setDcFilterOff(1);
     ELECHOUSE_cc1101.setSyncMode(CC1101_SYNC);  // Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.
@@ -1006,7 +1207,7 @@ void CC1101_CLASS::enableRCSwitch()
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
     
     pinMode(CC1101_CCGDO0A, INPUT);
-//    receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO0A);    
+    receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO0A);    
 
     mySwitch.enableReceive(CC1101_CCGDO0A); // Receiver on
 

@@ -5,9 +5,11 @@
 #include "RCSwitch.h"
 #include "SPI.h"
 #define SAMPLE_SIZE 512
+#include "pulse_demod.h"
+#include "r_api.h"
 
 
-
+ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device);
    //---------------------------------------------------------------------------//
   //-----------------------------Presets-Variables-----------------------------//
  //---------------------------------------------------------------------------//
@@ -24,6 +26,12 @@
  extern bool startLow;
  extern int CC1101_MODULATION;
  extern uint32_t actualFreq;
+extern float strongestASKFreqs[4];  // Store the four strongest ASK/OOK frequencies
+extern int strongestASKRSSI[4]; // Initialize with very low RSSI values
+extern float strongestFSKFreqs[2]; // Store the two strongest FSK frequencies (F0 and F1)
+extern int strongestFSKRSSI[2]; // Initialize FSK RSSI values
+
+
 
 
 class CC1101_CLASS {
@@ -46,8 +54,6 @@ public:
     void enableReceiver();
     void setSync(int sync);
     void setPTK(int ptk);
-    String generateFilename(float frequency, int modulation, float bandwidth);
-    String generateRandomString(int length);
     void enableTransmit();
     void disableTransmit();
     void saveSignal();
@@ -60,7 +66,8 @@ public:
     void startSignalanalyseTask();
     void fskAnalyze();
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
-    void decodeWithESPiLight(uint16_t *timings, size_t length);
+   
+    void enableScanner(float start, float stop);
 
 private:
     SPIClass  CC1101SPI;;
@@ -68,6 +75,12 @@ private:
     unsigned long samplesmooth[SAMPLE_SIZE];
     String rawString = "";
     int minsample = 15;
+
+    String generateFilename(float frequency, int modulation, float bandwidth);
+    String generateRandomString(int length);
+    void decodeWithESPiLight(uint16_t *timings, size_t length);
+
+
     
 };
 

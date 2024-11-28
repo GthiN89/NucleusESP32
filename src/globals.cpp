@@ -19,7 +19,7 @@ float CC1101_MHZ;
 
 bool teslaSucessFlag;
 
-
+IR_Mashine IRCurrentState = STATE_IDDLE;
 
 
 ////////////////////////////////////////

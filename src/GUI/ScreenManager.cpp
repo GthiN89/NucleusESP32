@@ -322,38 +322,44 @@ void ScreenManager::createRFdetectScreen() {
     detectScreen_ = lv_obj_create(NULL);
     lv_scr_load(detectScreen_);
     previous_screen = detectScreen_;
-
+   lv_obj_set_flex_flow(detectScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(detectScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
     // Top label container for dropdowns
    // containerHelper.createContainer(&topLabel_detectForce_container_, detectScreen_, LV_FLEX_FLOW_COLUMN, 35, 240);
 
+    lv_obj_t * topLabel_container_;
+    containerHelper.createContainer(&topLabel_container_, teslaScreen_, LV_FLEX_FLOW_ROW, 125, 240);
+    lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
+
     // Dropdown for signal presets
-    detect_dropdown_ = lv_dropdown_create(detectScreen_);
+    detect_dropdown_ = lv_dropdown_create(topLabel_container_);
     lv_dropdown_set_options(detect_dropdown_, "AM650\nAM270\nFM238\nFM476\nFM95\nFM15k\nPAGER\nHND1\nHND2\n");
 
     // Custom frequency preset dropdown
-    customPreset = lv_dropdown_create(detectScreen_);
+    customPreset = lv_dropdown_create(topLabel_container_);
     lv_dropdown_set_options(customPreset, "FRQ1\nFRQ2\nFRQ3\nFRQ4\nFRQ5\n");
     //lv_obj_set_size(customPreset, 70, 30);
 
     // Second container for additional elements
-    containerHelper.createContainer(&secondLabel_detectForce_container_, detectScreen_, LV_FLEX_FLOW_COLUMN, 100, 160);
+    containerHelper.createContainer(&secondLabel_detectForce_container_, detectScreen_, LV_FLEX_FLOW_COLUMN, 240, 240);
+    lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
 
 
     // Label for displaying detected signals
     detectLabel = lv_label_create(secondLabel_detectForce_container_);
     lv_obj_set_size(detectLabel, 210, 140);
-    lv_obj_align(detectLabel, LV_ALIGN_LEFT_MID, 0, -20);
-    lv_label_set_text(detectLabel, "signal 1:\nsignal 2:\nsignal 3:\nsignal 4:\nsignal 5:");
+    lv_obj_align(detectLabel, LV_ALIGN_LEFT_MID, 0, 0);
+    lv_label_set_text(detectLabel, "detect label");
 
-    // Container for start and pause buttons
-  //  containerHelper.createContainer(&button_container_Detec1_, detectScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
-   // lv_obj_t *startButton = ButtonHelper::createButton(button_container_Detec1_, "Start");
-    // lv_obj_add_event_cb(startButton, EVENTS::btn_event_detect_run, LV_EVENT_CLICKED, NULL);
+   containerHelper.createContainer(&button_container_Detec1_, detectScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
-   // lv_obj_t *stopButton = ButtonHelper::createButton(button_container_Detec1_, "Pause");
-    // lv_obj_add_event_cb(stopButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL);
+   lv_obj_t *startButton = ButtonHelper::createButton(button_container_Detec1_, "Start");
+    lv_obj_add_event_cb(startButton, EVENTS::btn_event_detect_run, LV_EVENT_CLICKED, NULL);
+
+   lv_obj_t *stopButton = ButtonHelper::createButton(button_container_Detec1_, "Pause");
+    lv_obj_add_event_cb(stopButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL);
 
     // Container for save and exit buttons
  //   containerHelper.createContainer(&button_container_detectForce2_, detectScreen_, LV_FLEX_FLOW_ROW, 35, 240);
@@ -476,6 +482,19 @@ void ScreenManager::createTeslaScreen() {
     lv_obj_add_event_cb(sendButton, EVENTS::sendTesla, LV_EVENT_CLICKED, NULL);
 }
 
+void ScreenManager::createIRMenuScreen() {
+    lv_obj_t *IRMenu = lv_obj_create(NULL);                                        
+    lv_scr_load(IRMenu);    
+    previous_screen = IRMenu;                                                        
+    lv_obj_t *btn_IR_BGONE = lv_btn_create(IRMenu);                                
+    lv_obj_set_pos(btn_IR_BGONE, 25, 10);                                             
+    lv_obj_set_size(btn_IR_BGONE, 200, 50);                                           
+    lv_obj_add_event_cb(btn_IR_BGONE, EVENTS::btn_event_UR_BGONE, LV_EVENT_CLICKED, NULL); 
+
+    lv_obj_t *label_IR_BGONE = lv_label_create(btn_IR_BGONE);
+    lv_label_set_text(label_IR_BGONE, "Turn the TV's OFF!!!");       
+    lv_obj_center(label_IR_BGONE);
+}
 
 void ScreenManager::createmainMenu()
 {
@@ -484,23 +503,23 @@ void ScreenManager::createmainMenu()
     previous_screen = mainMenu;                                                        
     lv_obj_t *btn_subGhz_main = lv_btn_create(mainMenu);                                
     lv_obj_set_pos(btn_subGhz_main, 25, 10);                                             
-    lv_obj_set_size(btn_subGhz_main, 150, 50);                                           
+    lv_obj_set_size(btn_subGhz_main, 200, 50);                                           
     lv_obj_add_event_cb(btn_subGhz_main, EVENTS::btn_event_subGhzTools, LV_EVENT_CLICKED, NULL); 
 
     lv_obj_t *label_subGhz_main = lv_label_create(btn_subGhz_main);
     lv_label_set_text(label_subGhz_main, "RF SubGhz Tools");       
     lv_obj_center(label_subGhz_main);
 
-    lv_obj_t *btn_BT_main = lv_btn_create(mainMenu);                                
-    lv_obj_set_pos(btn_BT_main, 25, 70);                                            
-    lv_obj_set_size(btn_BT_main, 150, 50);                                          
-    lv_obj_add_event_cb(btn_BT_main, EVENTS::btn_event_BTTools, LV_EVENT_CLICKED, NULL); 
+    // lv_obj_t *btn_BT_main = lv_btn_create(mainMenu);                                
+    // lv_obj_set_pos(btn_BT_main, 25, 70);                                            
+    // lv_obj_set_size(btn_BT_main, 200, 50);                                          
+    // lv_obj_add_event_cb(btn_BT_main, EVENTS::btn_event_BTTools, LV_EVENT_CLICKED, NULL); 
 
-    lv_obj_t *label_BT_main = lv_label_create(btn_BT_main);
-    lv_label_set_text(label_BT_main, "BlueTooth");       
-    lv_obj_center(label_BT_main);
+    // lv_obj_t *label_BT_main = lv_label_create(btn_BT_main);
+    // lv_label_set_text(label_BT_main, "BlueTooth");       
+    // lv_obj_center(label_BT_main);
 
-        lv_obj_t *btn_teslaCharger_menu = lv_btn_create(mainMenu);
+    lv_obj_t *btn_teslaCharger_menu = lv_btn_create(mainMenu);
     lv_obj_set_pos(btn_teslaCharger_menu, 25, 70);
     lv_obj_set_size(btn_teslaCharger_menu, 200, 50);
     lv_obj_add_event_cb(btn_teslaCharger_menu, EVENTS::btn_event_teslaCharger_run, LV_EVENT_ALL, NULL);
@@ -508,6 +527,15 @@ void ScreenManager::createmainMenu()
     lv_obj_t *label_teslaCharger_menu = lv_label_create(btn_teslaCharger_menu);
     lv_label_set_text(label_teslaCharger_menu, "Transmit tesla charger code");
     lv_obj_center(label_teslaCharger_menu);
+
+    lv_obj_t *btn_IR_menu = lv_btn_create(mainMenu);
+    lv_obj_set_pos(btn_IR_menu, 25, 130);
+    lv_obj_set_size(btn_IR_menu, 200, 50);
+    lv_obj_add_event_cb(btn_IR_menu, EVENTS::btn_event_IR_menu_run, LV_EVENT_ALL, NULL);
+
+    lv_obj_t *label_IR_menu = lv_label_create(btn_IR_menu);
+    lv_label_set_text(label_IR_menu, "IR Tools");
+    lv_obj_center(label_IR_menu);
 
 }
 

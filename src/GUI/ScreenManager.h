@@ -15,6 +15,7 @@ public:
     lv_obj_t* topLabel_container_;
     lv_obj_t *mbox_container;
     lv_obj_t* teslaScreen_;
+    lv_obj_t* detectLabel;
     static ScreenManager& getInstance();
 
     ScreenManager(const ScreenManager&) = delete;
@@ -27,6 +28,7 @@ public:
     void createRFdetectScreen();
     void createFileExplorerScreen();
     void createTeslaScreen();
+    void createIRMenuScreen();
 
 
     lv_obj_t* customPreset;
@@ -71,7 +73,7 @@ private:
     lv_obj_t* browserButton_container_;
     lv_obj_t* browserButton2_container_;
     lv_obj_t* text_area_replay;
-    lv_obj_t* detectLabel;
+
 
     lv_obj_t* text_area_SourApple;
     lv_obj_t* text_area_BTSpam;

@@ -130,7 +130,7 @@ class RCSwitch {
      * A "protocol" describes how zero and one bits are encoded into high/low
      * pulses.
      */
-    struct Protocol {
+struct Protocol {
         /** base pulse length in microseconds, e.g. 350 */
         uint16_t pulseLength;
         uint8_t PreambleFactor;

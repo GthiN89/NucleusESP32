@@ -14,6 +14,7 @@
 #include "modules/dataProcessing/SubGHzParser.h"
 using namespace std;
 #include "modules/ETC/SDcard.h"
+#include "modules/IR/TV-B-Gone.h"
 
 #define MAX_PATH_LENGTH 256
 
@@ -124,6 +125,13 @@ void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {
         CC1101.CC1101_FREQ = 433.92;
         CC1101.CC1101_PKT_FORMAT = 3;
         CC1101.initrRaw();
+    }
+}
+
+void EVENTS::btn_event_IR_menu_run(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+            screenMgr.createIRMenuScreen();
     }
 }
 
@@ -291,6 +299,10 @@ void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
     screenMgr.createRFMenu();
 }
 
+void EVENTS::btn_event_UR_BGONE(lv_event_t * e) {
+    IRCurrentState = STATE_TV_B_GONE;
+}
+
  void EVENTS::btn_event_SourApple(lv_event_t * e){
     screenMgr.createSourAppleScreen();
     sourApple sa;
@@ -426,16 +438,19 @@ void EVENTS::sendTesla(lv_event_t* e) {
 
 
 void EVENTS::btn_event_detect_run(lv_event_t* e) {
-    char string[32]; 
+   // char string[32]; 
+   Serial.println("Scanner");
     CC1101.setCC1101Preset(AM650);
-    lv_obj_t * detectLabe = screenMgr.getdetectLabel();
-    lv_dropdown_get_selected_str(screenMgr.detect_dropdown_, string, sizeof(string));    
-    lv_label_set_text(detectLabe, "detect forcing");
-    delay(1000);
-    if(strcmp(string, "Czech Bells") == 0) {
-        Serial.println("czech bells");
-    }
+  //  lv_obj_t * detectLabe = screenMgr.getdetectLabel();
+   // lv_dropdown_get_selected_str(screenMgr.detect_dropdown_, string, sizeof(string));    
+    CC1101.enableScanner(432, 435);
+    Serial.println("Scanner2");
+    CC1101.startSignalanalyseTask();
+    delay(15);
     C1101CurrentState = STATE_DETECT;
+
+      Serial.println("Scanner3");  
+
 }
 
 

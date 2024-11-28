@@ -56,7 +56,8 @@ static void warmup();
 static void dropdown_modulation_event_cb(lv_event_t *e);
 static void ok_button_event_cb(lv_event_t *e);
 static void sendTesla(lv_event_t *e);
-
+static void btn_event_IR_menu_run(lv_event_t *e);
+static void btn_event_UR_BGONE(lv_event_t *e);
 
 
 

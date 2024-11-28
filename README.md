@@ -8,35 +8,36 @@ I modified the device by desoldering the RGB diode to use it as a GPIO.
 This is my first project in C, which I began in early summer, with prior experience in PHP and some FPGA tinkering. I'm learning as I go, figuring things out by experimenting.
 
 **Status**: Work in Progress (WIP)  
-Please go easy on it; it's still evolving!
-Getting near to 0.1 nightly relase!
+Please go easy on it; it's still evolving!  
+Getting near to 0.1 nightly release!
 
 ## Features Implemented
 
 With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol for replay using a simple bit-bang method, with plans to upgrade it to more precise timing (previously, I sampled every 430 microseconds).
 
-Currently, I’m planning to reintegrate RCswitch, as it hasn't been added to the new interface yet.
+TV-B-GONE
 
 **Last Stable Version**: Compiled into bin files. Occasionally, things may break in new versions, so for consistent testing, use this stable version.
 
 ### Last Commit Status
 - **Updated to new LVGL**: This was challenging.  
-- **Touch drivers**: Moving to the new LVGL reminded me why I use bitbang drivers - drivers are included, and should compile from source.  
+- **Touch drivers**: Moving to the new LVGL reminded me why I use bitbang drivers - drivers are included and should compile from source.  
 - **New file browser**: Unlike the previous version, this one is usable, even with bare hands.  
 - **SubGhz file transmission**: When the system starts transmitting, if the `.sub` file contains more codes (e.g., brute-force files), sending completes when the counter stops increasing. You need to copy warmup `.sub` files to the root of your SD card to make it work. (This is due to the classic SPI issues; I’ll find a better solution).
 - **CYD Smart Display Library Compatibility**: The compiler may have issues with `display->sw_rotate` and `LED_RGB`. You can comment out or delete these sections; they would only cause problems anyway.
 
 ### Priority List
 - Fully functional/featured file explorer  
-- Bugs
+- Bugs  
 - Basically, getting everything around RAW timing Sub-GHz functionality done and releasing version 0.1 of the firmware.
 
 ### Current Functionalities
-- **CC1101 RAW Replay**: Now operates similarly to the Flipper. Save files to sd card. Fully Flipper compatible.
+- **CC1101 RAW Replay**: Now operates similarly to the Flipper. Save files to SD card. Fully Flipper compatible.  
 - **`.sub` Files Player**: Supports RAW files, tested with AM270 and AM650, should send FM too, but timings files only. Sending pretty much works now.  
-- **Tesla Charger Opener**: Is back, should work.
-- **Large `.sub` File Support**: Handles virtually unlimited file sizes, tested with a 3MB "Came_top_brute.sub" file.   
-- **CYD micro USB "bad SPI" Rv2**: As you know, you never know which CYD version you’ll get.
+- **Tesla Charger Opener**: Is back, should work.  
+- **Large `.sub` File Support**: Handles virtually unlimited file sizes, tested with a 3MB "Came_top_brute.sub" file.  
+- **CYD micro USB "bad SPI" Rv2**: As you know, you never know which CYD version you’ll get.  
+- **TV-B-Gone**: Fully operational. Can turn TVs on and off. 
 
 ### Planned Features
 - **CYD 2USB**: This will be added soon, as I ordered some to make Nucleus for friends, and they sent me those.  

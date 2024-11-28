@@ -51,6 +51,8 @@ extern CC1101_PRESET  C1101preset;
 
 #define SD_CS 5 // SD card CS pin
 
+//ir tx = pin 26 rx 34
+
 extern bool teslaSucessFlag;
 extern uint8_t RFstate;
 
@@ -90,6 +92,14 @@ extern uint8_t C1101CurrentState;
 extern bool C1101LoadPreset;
 extern bool receiverEnabled;
 extern float CC1101_MHZ;
+
+enum IR_Mashine {
+  STATE_TV_B_GONE,
+  STATE_IDDLE
+
+};
+
+extern IR_Mashine IRCurrentState;
 
 enum RFStateMashine {
   GENERAL,

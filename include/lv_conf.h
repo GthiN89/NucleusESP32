@@ -61,6 +61,7 @@
 #define LV_INTTYPES_INCLUDE     <inttypes.h>
 #define LV_LIMITS_INCLUDE       <limits.h>
 #define LV_STDARG_INCLUDE       <stdarg.h>
+#define TFT_INVERSION_ON
 
 /* Inertial scrolling sensitivity for drag gestures */
 #define LV_INDEV_DEF_DRAG_THROW    5    /* Default: 10 */

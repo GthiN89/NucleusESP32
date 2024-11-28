@@ -110,11 +110,11 @@
  *             e.g. 39 pulses of duration Te low level
  */
 
-#if defined(ESP8266) || defined(ESP32)
-static const VAR_ISR_ATTR RCSwitch::Protocol proto[] = {
-#else
+// #if defined(ESP8266) || defined(ESP32)
+// static const VAR_ISR_ATTR RCSwitch::Protocol proto[] = {
+// #else
 static const RCSwitch::Protocol PROGMEM proto[] = {
-#endif
+// #endif
   { 350,  0, { 0, 0 }, 1, {  1, 31 }, { 1,  3 }, { 3, 1 }, false,  0 },  // 01 (Princeton, PT-2240)
   { 650,  0, { 0, 0 }, 1, {  1, 10 }, { 1,  2 }, { 2, 1 }, false,  0 },  // 02
   { 100,  0, { 0, 0 }, 1, { 30, 71 }, { 4, 11 }, { 9, 6 }, false,  0 },  // 03
@@ -157,7 +157,7 @@ static const RCSwitch::Protocol PROGMEM proto[] = {
   { 200,  0, { 0, 0 }, 0, {   0,  0 }, { 1,  3 }, { 3, 1} , false, 20},	  // 37 DEWENWILS Power Strip
   
   { 500,  0, { 0, 0 }, 1, {   0,  7 }, { 1,  2 }, { 1, 4},  false,  0 }, // 38 (Nexus weather, 36 bit)
- // { 20,  16, { 14, 30 }, 1, { 510,  30 }, { 14,  30 }, { 30, 14 }, false,  230 }  // 39 (Louvolite) with premable
+//{ 20,  16, { 14, 30 }, 1, { 510,  30 }, { 14,  30 }, { 30, 14 }, false,  230 }  // 39 (Louvolite) with premable
 };
 
 enum {

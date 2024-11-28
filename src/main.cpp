@@ -13,6 +13,9 @@
 
 #include "lv_fs_if.h"
 #include "modules/dataProcessing/SubGHzParser.h"
+#include "modules/ir/TV-B-Gone.h"
+
+
 
 SDcard& SD_CARD = SDcard::getInstance();
 
@@ -20,6 +23,7 @@ SoftSpiDriver<SDCARD_MISO_PIN, SDCARD_MOSI_PIN, SDCARD_SCK_PIN> softSpiLCD;
 
 
 XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
+ScreenManager& screenMgrM = ScreenManager::getInstance();
 
  // Touch handling variables
  static lv_indev_t *indev = nullptr;
@@ -44,7 +48,16 @@ void init_touch(TouchCallback singleTouchCallback) {
      868350000, 868000000, 915000000, 925000000  //  779-928 MHz
  };
 
-
+void xmitCodeElement(uint16_t ontime, uint16_t offtime, uint8_t PWM_code)
+{
+  if(PWM_code)
+    ledcWrite(IR_TX,  50);
+  else
+    ledcWrite(IR_TX,  100);
+  delayMicroseconds(ontime*10);
+  ledcWrite(IR_TX,  0);
+  delayMicroseconds(offtime*10);
+}
 
 void setup() {
   Serial.begin(115200);
@@ -59,7 +72,7 @@ void setup() {
 
   init_touch([]() { Serial.println(F("Single touch detected!")); });
     smartdisplay_init();
-    ScreenManager& screenMgr = ScreenManager::getInstance();
+    
     
 
 
@@ -69,7 +82,7 @@ void setup() {
 
     touchscreen.setCalibration(153, 123, 1915, 1824);
 
-        screenMgr.createmainMenu();
+        screenMgrM.createmainMenu();
     register_touch(disp);
 
     SD_CARD.initializeSD();
@@ -77,7 +90,7 @@ void setup() {
 
         lv_fs_if_init();
 
-
+pinMode(26, OUTPUT);
     
  
 }
@@ -91,17 +104,17 @@ auto previousMillis = millis();
 
 
 void loop() {
-
-
      auto const now = millis();
    lv_tick_inc(now - lv_last_tick);
    lv_last_tick = now;
    lv_timer_handler();
 
   delay(1); 
+
  
      if(C1101CurrentState == STATE_ANALYZER) {
       //   CC1101.fskAnalyze();
+      Serial.println(digitalRead(CC1101_CCGDO0A));
              if (CC1101.CheckReceived())
              {
                 delay(5);
@@ -112,37 +125,56 @@ void loop() {
              }
              delay(1);
      }
-      if(C1101CurrentState == STATE_RCSWITCH) 
- {
-     RCSwitch mySwitch = CC1101.getRCSwitch();
-     if (mySwitch.available())
-     {
-         ScreenManager& screenMgr = ScreenManager::getInstance();
-         lv_obj_t* ta = screenMgr.getTextArea();      
-         lv_textarea_set_text(ta, (String("New Signal Received. \nvalue: ") + String(mySwitch.getReceivedValue()) + String(" (") + String(mySwitch.getReceivedBitlength()) + String("bit)\n Protocol: ") + String(mySwitch.getReceivedProtocol())).c_str());
-         C1101CurrentState = STATE_IDLE;
-     }
- }
 
      if(C1101CurrentState == STATE_PLAYBACK) {
-         CC1101.enableTransmit();
+         CC1101.initrRaw();
          CC1101.sendRaw();
          CC1101.disableTransmit();
        C1101CurrentState = STATE_IDLE;
      };
-     if(BTCurrentState == STATE_SOUR_APPLE) {
-         sourApple sa;
-         sa.loop();
-     } 
-     if(BTCurrentState == STATE_BT_IDDLE) {
-        //  BLESpam spam;
-        //  spam.aj_adv(SpamDevice);
-     }
+
+
+    if(C1101CurrentState == STATE_DETECT)
+    {
+//Serial.println("main");
+
+                                        lv_label_set_text(
+                                                          screenMgrM.detectLabel,
+                                                          (String("Frequency: ") + strongestASKFreqs[0] +
+                                                           " MHz | RSSI: " + strongestASKRSSI[0] +
+                                                           "\nFrequency: " + strongestASKFreqs[1] +
+                                                           " MHz | RSSI: " + strongestASKRSSI[1] +
+                                                           "\nFrequency: " + strongestASKFreqs[2] +
+                                                           " MHz | RSSI: " + strongestASKRSSI[2])
+                                                              .c_str());
+                                                           
+
+        // xTaskCreatePinnedToCore(
+        // CC1101_CLASS::fskAnalyze,  // Function to run
+        // "fskAnalyze",               // Task name
+        // 8192,                              // Stack size in bytes
+        // NULL,                              // Parameter for task
+        // 1,                                 // Priority
+        // NULL,                              // Task handle
+        // 1                                  // Core 1
+        // );
+
+    }
+
      if(C1101CurrentState == STATE_SEND_FLIPPER) {        
         SubGHzParser parser;
         parser.loadFile(EVENTS::fullPath);
         SubGHzData data = parser.parseContent();
      }
+
+    if(IRCurrentState == STATE_TV_B_GONE){
+  const uint8_t num_EUcodes = sizeof(EUpowerCodes) / sizeof(EUpowerCodes[0]);
+  
+  sendAllCodes(EUpowerCodes, num_EUcodes);
+
+  IRCurrentState = STATE_IDDLE;
+    }
+
     if(RFstate == WARM_UP){    
         auto const tedkom = millis();
         
@@ -182,6 +214,7 @@ void loop() {
         // }
     }
     }
+
     if(updatetransmitLabel){
         String text;
         if(!SD_CARD.FlipperFileFlag){
@@ -194,7 +227,7 @@ void loop() {
         lv_label_set_text(label_sub, text.c_str());
     }
 
-    
+    IRCurrentState = STATE_IDDLE;
 }
 
 bool touched() {
