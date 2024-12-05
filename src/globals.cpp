@@ -19,7 +19,6 @@ float CC1101_MHZ;
 
 bool teslaSucessFlag;
 
-IR_Mashine IRCurrentState = STATE_IDDLE;
 
 
 ////////////////////////////////////////
@@ -81,3 +80,6 @@ const uint8_t* presetTobyteArray(CC1101_PRESET preset) {
         default:    return AM650_regs; 
 }
 }
+
+//SPIClass SPI_VSPI(VSPI);
+//const SPISettings spiSettings = SPISettings(4000000, MSBFIRST, SPI_MODE0); 

@@ -14,6 +14,23 @@
 #include "lv_fs_if.h"
 #include "modules/dataProcessing/SubGHzParser.h"
 #include "modules/ir/TV-B-Gone.h"
+#include "modules/IR/ir.h"
+#include "IRrecv.h"
+#include <assert.h>
+#include <IRrecv.h>
+#include <IRremoteESP8266.h>
+#include <IRac.h>
+#include <IRtext.h>
+#include <IRutils.h>
+#include <Wire.h>
+#include "modules/nfc/nfc.h"
+#include "RF24.h"
+#include "modules/RF/rf24.h"
+
+
+IRrecv irrecv(IR_RX);   
+
+decode_results lastResults;
 
 
 
@@ -48,27 +65,15 @@ void init_touch(TouchCallback singleTouchCallback) {
      868350000, 868000000, 915000000, 925000000  //  779-928 MHz
  };
 
-void xmitCodeElement(uint16_t ontime, uint16_t offtime, uint8_t PWM_code)
-{
-  if(PWM_code)
-    ledcWrite(IR_TX,  50);
-  else
-    ledcWrite(IR_TX,  100);
-  delayMicroseconds(ontime*10);
-  ledcWrite(IR_TX,  0);
-  delayMicroseconds(offtime*10);
-}
+
 
 void setup() {
+
+
+
   Serial.begin(115200);
-  // Wait for USB Serial
-    gpio_set_pull_mode(GPIO_NUM_17, GPIO_PULLDOWN_ONLY);
-    gpio_install_isr_service(0);
 
-   // CC1101.init();
 
-   
-  
 
   init_touch([]() { Serial.println(F("Single touch detected!")); });
     smartdisplay_init();
@@ -80,7 +85,13 @@ void setup() {
     auto disp = lv_disp_get_default();
 
 
-    touchscreen.setCalibration(153, 123, 1915, 1824);
+
+#ifdef CYDV2
+        touchscreen.setCalibration(153, 123, 1915, 1824);
+#endif
+#ifdef CYDV3
+    touchscreen.setCalibration(178, 92, 1793, 1830);
+#endif
 
         screenMgrM.createmainMenu();
     register_touch(disp);
@@ -90,8 +101,29 @@ void setup() {
 
         lv_fs_if_init();
 
-pinMode(26, OUTPUT);
-    
+pinMode(IR_TX, OUTPUT);
+pinMode(IR_RX, INPUT);
+
+   SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI);
+
+   CC1101.init();
+
+   pinMode(RFID_CS, OUTPUT);
+   pinMode(NRF24_CS, OUTPUT);
+   pinMode(CC1101_CS, OUTPUT);
+
+
+   digitalWrite(RFID_CS, HIGH);
+   digitalWrite(NRF24_CS, HIGH);
+   digitalWrite(CC1101_CS, HIGH);
+
+   //enableRFID();
+ //   enableRF24();
+  //  delay(50);
+    enableRFID();
+    delay(50);
+    irrecv.enableIRIn();
+
  
 }
 
@@ -104,6 +136,8 @@ auto previousMillis = millis();
 
 
 void loop() {
+  Point touch = touchscreen.getTouch();
+
      auto const now = millis();
    lv_tick_inc(now - lv_last_tick);
    lv_last_tick = now;
@@ -111,10 +145,8 @@ void loop() {
 
   delay(1); 
 
- 
+
      if(C1101CurrentState == STATE_ANALYZER) {
-      //   CC1101.fskAnalyze();
-      Serial.println(digitalRead(CC1101_CCGDO0A));
              if (CC1101.CheckReceived())
              {
                 delay(5);
@@ -136,17 +168,15 @@ void loop() {
 
     if(C1101CurrentState == STATE_DETECT)
     {
-//Serial.println("main");
-
-                                        lv_label_set_text(
-                                                          screenMgrM.detectLabel,
-                                                          (String("Frequency: ") + strongestASKFreqs[0] +
-                                                           " MHz | RSSI: " + strongestASKRSSI[0] +
-                                                           "\nFrequency: " + strongestASKFreqs[1] +
-                                                           " MHz | RSSI: " + strongestASKRSSI[1] +
-                                                           "\nFrequency: " + strongestASKFreqs[2] +
-                                                           " MHz | RSSI: " + strongestASKRSSI[2])
-                                                              .c_str());
+                                        // lv_label_set_text(
+                                        //                   screenMgrM.detectLabel,
+                                        //                   (String("Frequency: ") + strongestASKFreqs[0] +
+                                        //                    " MHz | RSSI: " + strongestASKRSSI[0] +
+                                        //                    "\nFrequency: " + strongestASKFreqs[1] +
+                                        //                    " MHz | RSSI: " + strongestASKRSSI[1] +
+                                        //                    "\nFrequency: " + strongestASKFreqs[2] +
+                                        //                    " MHz | RSSI: " + strongestASKRSSI[2])
+                                        //                       .c_str());
                                                            
 
         // xTaskCreatePinnedToCore(
@@ -174,6 +204,33 @@ void loop() {
 
   IRCurrentState = STATE_IDDLE;
     }
+
+    if(RF24CurrentState == RF24_STATE_TEST){
+    //    testRF24();
+         RF24CurrentState = RF24_STATE_IDLE;
+    };
+
+    if(NFCCurrentState == NFC_READ){
+        readLoop();
+        NFCCurrentState = NFC_IDLE;
+    }
+
+    while(IRCurrentState == STATE_READ) {
+
+       if (irrecv.decode(&results))
+        {
+        IRCurrentState = STATE_IDDLE;
+        Serial.println(results.value, HEX);
+        lv_textarea_set_text(screenMgrM.text_area_IR, "Received\n");
+        lv_textarea_add_text(screenMgrM.text_area_IR, String(results.value, HEX).c_str());
+        lastResults = results; 
+        irrecv.resume();
+        
+    }
+    }
+
+
+
 
     if(RFstate == WARM_UP){    
         auto const tedkom = millis();
@@ -227,8 +284,10 @@ void loop() {
         lv_label_set_text(label_sub, text.c_str());
     }
 
-    IRCurrentState = STATE_IDDLE;
+   // IRCurrentState = STATE_IDDLE;
+
 }
+
 
 bool touched() {
 Point touch = touchscreen.getTouch();

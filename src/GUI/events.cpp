@@ -15,10 +15,14 @@
 using namespace std;
 #include "modules/ETC/SDcard.h"
 #include "modules/IR/TV-B-Gone.h"
+#include "lvgl.h"
+#include "modules/nfc/nfc.h"
+#include "modules/RF/rf24.h"
 
 #define MAX_PATH_LENGTH 256
 
     SDcard& SD_EVN = SDcard::getInstance();  
+
 
 int SpamDevice = 1;
 bool updatetransmitLabel = false;
@@ -36,6 +40,7 @@ const int32_t value_countDrate = sizeof(values) / sizeof(values[0]);
 //CC1101_CLASS CC1101;
 
 ScreenManager& screenMgr = ScreenManager::getInstance();
+ir IR;
 
 
 char EVENTS::frequency_buffer[10];
@@ -135,6 +140,15 @@ void EVENTS::btn_event_IR_menu_run(lv_event_t* e) {
     }
 }
 
+void EVENTS::btn_event_NFC_menu_run(lv_event_t* e) {
+
+     NFCCurrentState = NFC_READ;
+}
+
+void EVENTS::btn_event_RF24_menu_run(lv_event_t* e) {
+  //   enableRF24();
+    RF24CurrentState = RF24_STATE_TEST;
+}
 
 void EVENTS::ta_freq_event_cb(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -295,12 +309,21 @@ void EVENTS::sendCapturedEvent(lv_event_t * e) {
     CC1101.sendRaw();
 }
 
+void EVENTS::sendCapturedIREvent(lv_event_t * e) {
+    IR.sendReceived();
+}
+
 void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
     screenMgr.createRFMenu();
 }
 
 void EVENTS::btn_event_UR_BGONE(lv_event_t * e) {
     IRCurrentState = STATE_TV_B_GONE;
+}
+
+void EVENTS::btn_event_IR_START_READ(lv_event_t * e) {
+    screenMgr.createIRRecScreen();
+    
 }
 
  void EVENTS::btn_event_SourApple(lv_event_t * e){
@@ -389,6 +412,12 @@ void EVENTS::ta_rf_type_event_cb(lv_event_t * e) {
         lv_textarea_add_text(text_area,selected_text);
         lv_textarea_add_text(text_area, "\n");
     }  
+}
+
+void EVENTS::btn_event_IR_run(lv_event_t* e) {
+
+    IRCurrentState = STATE_READ;
+        
 }
 
 

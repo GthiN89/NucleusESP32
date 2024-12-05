@@ -25,20 +25,34 @@ extern CC1101_PRESET  C1101preset;
 #include <vector>
 #include <stdio.h>
 #include <string.h>
+#include "SPI.h"
+#include "Arduino.h"
    //---------------------------------------------------------------------------//
   //-----------------------------SETINGS---------------------------------------//
  //---------------------------------------------------------------------------//
-// Pin configuration for CC1101
-#define CC1101_CS   16  // Chip Select
-#define CC1101_MOSI 4   // Master Out Slave In
+#define CYD_MOSI 21   // Master Out Slave In
+#define CYD_MISO 35  // Master In Slave Out
+#define CYD_SCLK 22  // Serial Clock
+#define RFID_CS 27
+#define NRF24_CS 16
+
+#define IRQ_PIN 26
+#define RFID_RST 17
+#define RF24_CE 17
+
+
+
+// Pin configuration for CC1101 nfc CC-27 NRF24 CC-16
+#define CC1101_CS   04  // Chip Select
+#define CC1101_MOSI 21   // Master Out Slave In
 #define CC1101_MISO 35  // Master In Slave Out
 #define CC1101_SCLK 22  // Serial Clock
 
-#define CCGDO0A 17      // GDO0
-//#define CCGDO2A 16      // GDO2
+#define CCGDO0A 26      // GDO0-NFC IRQ, NF IRQ - input only
+#define CCGDO2A 17      // GDO2 -rst - input output
 
-#define CC1101_CCGDO0A 17      // GDO0
-//#define CC1101_CCGDO2A 16      // GDO2
+#define CC1101_CCGDO0A 26      // GDO0
+#define CC1101_CCGDO2A 17      // GDO2 -rst NF CE
 
 #define CMD_READ_Y  0x90 // Command for XPT2046 to read Y position
 #define CMD_READ_X  0xD0 // Command for XPT2046 to read X position
@@ -55,6 +69,9 @@ extern CC1101_PRESET  C1101preset;
 
 extern bool teslaSucessFlag;
 extern uint8_t RFstate;
+
+//extern SPIClass SPI_VSPI;
+//extern const SPISettings spiSettings; 
 
    //---------------------------------------------------------------------------//
   //-----------------------------ENUMBS----------------------------------------//
@@ -93,13 +110,8 @@ extern bool C1101LoadPreset;
 extern bool receiverEnabled;
 extern float CC1101_MHZ;
 
-enum IR_Mashine {
-  STATE_TV_B_GONE,
-  STATE_IDDLE
 
-};
 
-extern IR_Mashine IRCurrentState;
 
 enum RFStateMashine {
   GENERAL,

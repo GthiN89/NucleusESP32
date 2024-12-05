@@ -10,8 +10,7 @@
 #include "SPI.h"
 #include "modules/ETC/SDcard.h"
 #include "ESPiLight.h"
-#include <rtl_433_ESP.h>
-#include "rtl_433.h"
+
 
 float start_freq = 433;
 float stop_freq = 434;
@@ -148,16 +147,17 @@ void IRAM_ATTR InterruptHandler()
 
 bool CC1101_CLASS::init()
 {
-//    digitalWrite(SDCARD_CS, HIGH);
-
-  //  digitalWrite(CC1101_CS, LOW);
+    digitalWrite(RFID_CS, HIGH);
+    digitalWrite(NRF24_CS, HIGH);
+    digitalWrite(CC1101_CS, LOW);
 
     ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
     ELECHOUSE_cc1101.Init();
 
     if (ELECHOUSE_cc1101.getCC1101())
     {
-        ELECHOUSE_cc1101.setGDO0(CCGDO0A);
+
+        ELECHOUSE_cc1101.setGDO(CCGDO0A, CCGDO2A);
         ELECHOUSE_cc1101.setSidle();
         CC1101_isiddle = true;
         CC1101_is_initialized = true;
@@ -301,7 +301,7 @@ void CC1101_CLASS::enableScanner(float start, float stop)
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
  
     
-    pinMode(CC1101_CCGDO0A, INPUT);
+    pinMode(CCGDO2A, INPUT);
     ELECHOUSE_cc1101.SetRx();
 /////////////////////////////
 }
@@ -343,13 +343,13 @@ void CC1101_CLASS::enableReceiver()
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
  
     
-    pinMode(CC1101_CCGDO0A, INPUT);
-    receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO0A);    
+    pinMode(CCGDO2A, INPUT);
+    receiverGPIO = digitalPinToInterrupt(CCGDO2A);    
     ELECHOUSE_cc1101.SetRx();
 /////////////////////////////
     receiverEnabled = true;
 //////////////////////////////
-   attachInterrupt(CC1101_CCGDO0A, InterruptHandler, CHANGE);
+   attachInterrupt(CCGDO2A, InterruptHandler, CHANGE);
 }
 
 void CC1101_CLASS::setCC1101Preset(CC1101_PRESET preset) {
@@ -1206,9 +1206,9 @@ void CC1101_CLASS::enableRCSwitch()
     ELECHOUSE_cc1101.setDRate(CC1101_DRATE); // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
     
-    pinMode(CC1101_CCGDO0A, INPUT);
-    receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO0A);    
+    pinMode(CCGDO2A, INPUT);
+    receiverGPIO = digitalPinToInterrupt(CCGDO2A);    
 
-    mySwitch.enableReceive(CC1101_CCGDO0A); // Receiver on
+    mySwitch.enableReceive(CCGDO2A); // Receiver on
 
 }

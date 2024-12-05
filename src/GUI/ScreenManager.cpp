@@ -8,6 +8,7 @@
 #include "modules/dataProcessing/dataProcessing.h"
 #include "SDfat.h"
 #include "XPT2046_Bitbang.h"
+#include "modules/nfc/nfc.h"
 
 #define MAX_PATH_LENGTH 256
 
@@ -32,6 +33,7 @@ ScreenManager &ScreenManager::getInstance()
 
 ScreenManager::ScreenManager()
     : ReplayScreen_(nullptr),
+      IRRecScreen_(nullptr),
       SourAppleScreen_(nullptr), 
       BTSpamScreen_(nullptr),
       fileExplorerScreen(nullptr),   
@@ -53,6 +55,8 @@ ScreenManager::ScreenManager()
       text_area_replay(nullptr),
       button_container_RCSwitchMethod2_(nullptr),
       button_container_RCSwitchMethod1_(nullptr),
+      button_container_IR_REC1_(nullptr),
+      button_container_IR_REC2_(nullptr),
       quareLine_container(nullptr),
       detect_dropdown_(nullptr),
       teslaScreen_(nullptr)
@@ -311,6 +315,53 @@ lv_obj_add_flag(mbox_container, LV_OBJ_FLAG_HIDDEN); // Hide the keyboard initia
 
 }
 
+void ScreenManager::createIRRecScreen() {
+    ContainerHelper containerHelper;    
+
+    IRRecScreen_ = lv_obj_create(NULL);
+
+    lv_scr_load(IRRecScreen_);
+
+    lv_obj_delete(previous_screen);
+    
+    previous_screen = IRRecScreen_;
+    lv_obj_set_flex_flow(IRRecScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(IRRecScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+
+    lv_obj_set_style_pad_column(IRRecScreen_, 1, LV_PART_MAIN);
+    lv_obj_set_style_pad_row(IRRecScreen_, 1, LV_PART_MAIN);
+
+    
+    // Create main text area
+    text_area_IR = lv_textarea_create(IRRecScreen_);
+    lv_obj_set_size(text_area_IR, 240, 240);
+    lv_obj_align(text_area_IR, LV_ALIGN_CENTER, 0, -20);
+    lv_textarea_set_text(text_area_IR, "Press listen to start.");
+    lv_obj_set_scrollbar_mode(text_area_IR, LV_SCROLLBAR_MODE_OFF); 
+    lv_textarea_set_cursor_click_pos(text_area_IR, false);
+    containerHelper.createContainer(&button_container_IR_REC1_, IRRecScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+
+
+    lv_obj_t *listenButton = ButtonHelper::createButton(button_container_IR_REC1_, "Listen");
+    lv_obj_add_event_cb(listenButton, EVENTS::btn_event_IR_run, LV_EVENT_CLICKED, NULL); 
+
+    lv_obj_t *saveButton = ButtonHelper::createButton(button_container_IR_REC1_, "Save");
+    lv_obj_add_event_cb(saveButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL); 
+
+
+    containerHelper.createContainer(&button_container_IR_REC2_, IRRecScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+
+
+    lv_obj_t *playButton = ButtonHelper::createButton(button_container_IR_REC2_, "Play");
+    lv_obj_t *exitButton = ButtonHelper::createButton(button_container_IR_REC2_, "Exit");
+
+
+    lv_obj_add_event_cb(playButton, EVENTS::sendCapturedIREvent, LV_EVENT_CLICKED, NULL); 
+    lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
+
+}
+
 void ScreenManager::createRFdetectScreen() {
     ContainerHelper containerHelper;
 
@@ -494,6 +545,15 @@ void ScreenManager::createIRMenuScreen() {
     lv_obj_t *label_IR_BGONE = lv_label_create(btn_IR_BGONE);
     lv_label_set_text(label_IR_BGONE, "Turn the TV's OFF!!!");       
     lv_obj_center(label_IR_BGONE);
+
+    lv_obj_t *btn_IR_READ = lv_btn_create(IRMenu);                                
+    lv_obj_set_pos(btn_IR_READ, 25, 70);                                             
+    lv_obj_set_size(btn_IR_READ, 200, 50);                                           
+    lv_obj_add_event_cb(btn_IR_READ, EVENTS::btn_event_IR_START_READ, LV_EVENT_CLICKED, NULL); 
+
+    lv_obj_t *label_IR_READ = lv_label_create(btn_IR_READ);
+    lv_label_set_text(label_IR_READ, "Read IR signals");       
+    lv_obj_center(label_IR_READ);
 }
 
 void ScreenManager::createmainMenu()
@@ -536,6 +596,24 @@ void ScreenManager::createmainMenu()
     lv_obj_t *label_IR_menu = lv_label_create(btn_IR_menu);
     lv_label_set_text(label_IR_menu, "IR Tools");
     lv_obj_center(label_IR_menu);
+
+    lv_obj_t *btn_NFC_menu = lv_btn_create(mainMenu);
+    lv_obj_set_pos(btn_NFC_menu, 25, 190);
+    lv_obj_set_size(btn_NFC_menu, 200, 50);
+    lv_obj_add_event_cb(btn_NFC_menu, EVENTS::btn_event_NFC_menu_run, LV_EVENT_ALL, NULL);
+
+    lv_obj_t *label_NFC_menu = lv_label_create(btn_NFC_menu);
+    lv_label_set_text(label_NFC_menu, "TEST NFC");
+    lv_obj_center(label_NFC_menu);
+
+        lv_obj_t *btn_RF24_menu = lv_btn_create(mainMenu);
+    lv_obj_set_pos(btn_RF24_menu, 25, 260);
+    lv_obj_set_size(btn_RF24_menu, 200, 50);
+    lv_obj_add_event_cb(btn_RF24_menu, EVENTS::btn_event_RF24_menu_run, LV_EVENT_ALL, NULL);
+
+    lv_obj_t *label_RF24_menu = lv_label_create(btn_RF24_menu);
+    lv_label_set_text(label_RF24_menu, "TEST RF24");
+    lv_obj_center(label_RF24_menu);
 
 }
 

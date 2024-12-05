@@ -58,7 +58,11 @@ static void ok_button_event_cb(lv_event_t *e);
 static void sendTesla(lv_event_t *e);
 static void btn_event_IR_menu_run(lv_event_t *e);
 static void btn_event_UR_BGONE(lv_event_t *e);
-
+static void btn_event_IR_START_READ(lv_event_t * e);
+static void btn_event_IR_run(lv_event_t* e);
+static void sendCapturedIREvent(lv_event_t* e);
+static void btn_event_NFC_menu_run(lv_event_t* e);
+static void btn_event_RF24_menu_run(lv_event_t* e);
 
 
 static void ta_freq_event_cb(lv_event_t * e);

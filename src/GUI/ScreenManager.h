@@ -12,6 +12,7 @@ public:
     lv_obj_t* C1101type_dropdown_;
     lv_obj_t*  detect_dropdown_;
     lv_obj_t* ReplayScreen_;
+    lv_obj_t* IRRecScreen_;
     lv_obj_t* topLabel_container_;
     lv_obj_t *mbox_container;
     lv_obj_t* teslaScreen_;
@@ -29,6 +30,7 @@ public:
     void createFileExplorerScreen();
     void createTeslaScreen();
     void createIRMenuScreen();
+    void createIRRecScreen();
 
 
     lv_obj_t* customPreset;
@@ -36,6 +38,7 @@ public:
     lv_obj_t *input_bandwidth;
     lv_obj_t *input_deviation;
     lv_obj_t *dropdown_modulation;
+    lv_obj_t *text_area_IR;
 
     lv_obj_t* getFreqInput();  
     lv_obj_t* getTextArea();  
@@ -96,6 +99,8 @@ private:
     lv_obj_t* topLabel_RCSwitchMethod_container_;
     lv_obj_t* button_container_RCSwitchMethod1_;
     lv_obj_t* button_container_RCSwitchMethod2_; 
+    lv_obj_t* button_container_IR_REC1_;
+    lv_obj_t* button_container_IR_REC2_; 
     lv_obj_t* quareLine_container;
     lv_obj_t* button_container_detectForce1_;
     lv_obj_t* button_container_detectForce2_;
@@ -105,6 +110,7 @@ private:
     lv_obj_t* secondLabel_detectForce_container_;
 
     lv_obj_t* file_explorer_;
+
 };
 
 #endif 

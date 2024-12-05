@@ -5,11 +5,9 @@
 #include "RCSwitch.h"
 #include "SPI.h"
 #define SAMPLE_SIZE 512
-#include "pulse_demod.h"
-#include "r_api.h"
 
 
- int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device);
+
    //---------------------------------------------------------------------------//
   //-----------------------------Presets-Variables-----------------------------//
  //---------------------------------------------------------------------------//
@@ -70,7 +68,6 @@ public:
     void enableScanner(float start, float stop);
 
 private:
-    SPIClass  CC1101SPI;;
     int smoothcount;
     unsigned long samplesmooth[SAMPLE_SIZE];
     String rawString = "";
