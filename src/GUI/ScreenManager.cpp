@@ -9,6 +9,7 @@
 #include "SDfat.h"
 #include "XPT2046_Bitbang.h"
 #include "modules/nfc/nfc.h"
+#include "modules/IR/ir.h"
 
 #define MAX_PATH_LENGTH 256
 
@@ -343,24 +344,25 @@ void ScreenManager::createIRRecScreen() {
     containerHelper.createContainer(&button_container_IR_REC1_, IRRecScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
 
-    lv_obj_t *listenButton = ButtonHelper::createButton(button_container_IR_REC1_, "Listen");
-    lv_obj_add_event_cb(listenButton, EVENTS::btn_event_IR_run, LV_EVENT_CLICKED, NULL); 
+     // Listen Button
+    lv_obj_t* listenButton = ButtonHelper::createButton(button_container_IR_REC1_, "Listen");
+    lv_obj_add_event_cb(listenButton, IrRead::btn_event_IR_run, LV_EVENT_CLICKED, nullptr);
 
-    lv_obj_t *saveButton = ButtonHelper::createButton(button_container_IR_REC1_, "Save");
-    lv_obj_add_event_cb(saveButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL); 
-
+    // Save Button
+    lv_obj_t* saveButton = ButtonHelper::createButton(button_container_IR_REC1_, "Save");
+    lv_obj_add_event_cb(saveButton, IrRead::save_signal_event, LV_EVENT_CLICKED, nullptr);
 
     containerHelper.createContainer(&button_container_IR_REC2_, IRRecScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
+    // Play Button
+    lv_obj_t* playButton = ButtonHelper::createButton(button_container_IR_REC2_, "Play");
+    lv_obj_add_event_cb(playButton, IrRead::play_signal_event, LV_EVENT_CLICKED, nullptr);
 
-    lv_obj_t *playButton = ButtonHelper::createButton(button_container_IR_REC2_, "Play");
-    lv_obj_t *exitButton = ButtonHelper::createButton(button_container_IR_REC2_, "Exit");
-
-
-    lv_obj_add_event_cb(playButton, EVENTS::sendCapturedIREvent, LV_EVENT_CLICKED, NULL); 
-    lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
-
+    // Exit Button
+    lv_obj_t* exitButton = ButtonHelper::createButton(button_container_IR_REC2_, "Exit");
+    lv_obj_add_event_cb(exitButton, IrRead::exit_event, LV_EVENT_CLICKED, nullptr);
 }
+
 
 void ScreenManager::createRFdetectScreen() {
     ContainerHelper containerHelper;

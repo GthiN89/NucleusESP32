@@ -1,92 +1,128 @@
-#include "WORLD_IR_CODES.h"
-
-#include "ir.h"
 #include "TV-B-Gone.h"
-#include "Arduino.h"
+#include "WORLD_IR_CODES.h"
+#include "core/globals.h"
+#include "ScreenManager.h"
+#include "SDcard.h"
+#include <IRutils.h>
+#include <IRrecv.h>
+#include <IRsend.h>
 
-// Define number of codes for each region
-uint8_t num_NAcodes = NUM_ELEM(NApowerCodes);
-uint8_t num_EUcodes = NUM_ELEM(EUpowerCodes);
+// Globals
+static uint8_t region;
+static uint8_t num_NAcodes = NUM_ELEM(NApowerCodes);
+static uint8_t num_EUcodes = NUM_ELEM(EUpowerCodes);
+static IRsend irsend(IR_TX);
+static ScreenManager& screenMgr = ScreenManager::getInstance();
+static SDcard& sdCard = SDcard::getInstance();
 
-// IR code reading variables
-uint8_t bitsleft_r = 0;
-uint8_t bits_r = 0;
-uint8_t code_ptr;
-volatile const IrCode * powerCode;
+// Forward Declarations
+void sendAllPowerCodes();
+void displayMessage(const char* message);
 
-// Function to read bits from IR code
-uint8_t read_bits(uint8_t count) {
-  uint8_t i;
-  uint8_t tmp = 0;
+void startTvBGone() {
+    irsend.begin();
 
-  for (i = 0; i < count; i++) {
-    if (bitsleft_r == 0) {
-      bits_r = powerCode->codes[code_ptr++];
-      bitsleft_r = 8;
-    }
-    bitsleft_r--;
-    tmp |= (((bits_r >> (bitsleft_r)) & 1) << (count - 1 - i));
-  }
-  return tmp;
+    // Display menu for region selection
+    lv_obj_t* textArea = screenMgr.getTextArea();
+    lv_textarea_set_text(textArea, "Select Region:\n1. North America\n2. Europe");
+    
+    // Simple selection logic (can replace with UI callbacks)
+    int selectedRegion = NA; // Replace with actual selection logic
+    region = (selectedRegion == NA) ? NA : EU;
+
+    // Display message and send power codes
+    const char* regionMsg = (region == NA) ? "Sending NA codes..." : "Sending EU codes...";
+    displayMessage(regionMsg);
+    sendAllPowerCodes();
+    displayMessage("All codes sent!");
 }
 
-// Function to send raw IR signal
-void sendRawSignal(const uint16_t* times, uint16_t length, uint16_t frequency) {
-  uint32_t period = 1000000 / frequency; // Period in microseconds
-  uint32_t pulseWidth = period / 2;      // 50% duty cycle
+void sendAllPowerCodes() {
+    const IrCode* const* codes = (region == NA) ? NApowerCodes : EUpowerCodes;
+    uint8_t numCodes = (region == NA) ? num_NAcodes : num_EUcodes;
 
-  for (uint16_t i = 0; i < length; i++) {
-    if (i % 2 == 0) {
-      uint32_t endTime = micros() + times[i];
-      while (micros() < endTime) {
-        digitalWrite(26, HIGH);
-        delayMicroseconds(pulseWidth);
-        digitalWrite(26, LOW);
-        delayMicroseconds(pulseWidth);
-      }
-    } else {
-      delayMicroseconds(times[i]);
-    }
-  }
-}
+    for (uint8_t i = 0; i < numCodes; i++) {
+        const IrCode* code = codes[i];
+        const uint8_t freq = code->timer_val;
+        const uint8_t numpairs = code->numpairs;
+        const uint8_t bitcompression = code->bitcompression;
 
-// Function to send all IR codes
-void sendAllCodes(const IrCode* const* codesArray, uint8_t numCodes) {
-  for (uint8_t i = 0; i < numCodes; i++) {
-    const IrCode* code = codesArray[i];
-    const uint8_t numpairs = code->numpairs;
-    const uint8_t bitcompression = code->bitcompression;
-    const uint16_t* times = code->times;
-    const uint8_t* codes = code->codes;
-    uint8_t code_ptr = 0;
-    uint8_t bitsleft = 0;
-    uint8_t bits = 0;
+        std::vector<uint16_t> rawData;
+        rawData.reserve(numpairs * 2);
 
-    uint16_t rawData[numpairs * 2];
+        uint8_t code_ptr = 0;
+        uint8_t bitsleft = 0;
+        uint8_t bits = 0;
 
-    for (uint8_t k = 0; k < numpairs; k++) {
-      uint16_t ti = 0;
+        for (uint8_t k = 0; k < numpairs; k++) {
+            uint16_t ti = 0;
 
-      for (uint8_t b = 0; b < bitcompression; b++) {
-        if (bitsleft == 0) {
-          bits = codes[code_ptr++];
-          bitsleft = 8;
+            for (uint8_t b = 0; b < bitcompression; b++) {
+                if (bitsleft == 0) {
+                    bits = code->codes[code_ptr++];
+                    bitsleft = 8;
+                }
+                bitsleft--;
+                ti |= ((bits >> bitsleft) & 1) << (bitcompression - 1 - b);
+            }
+            ti *= 2;
+
+            rawData.push_back(code->times[ti] * 10);
+            rawData.push_back(code->times[ti + 1] * 10);
         }
-        bitsleft--;
-        ti |= ((bits >> bitsleft) & 1) << (bitcompression - 1 - b);
-      }
-      ti *= 2;
 
-      rawData[k * 2] = times[ti] * 10;       // OnTime
-      rawData[k * 2 + 1] = times[ti + 1] * 10; // OffTime
+        // Send the IR signal
+        irsend.sendRaw(rawData.data(), rawData.size(), 1000000 / freq);
+        delay(50); // Delay between transmissions
     }
-
-    sendRawSignal(rawData, numpairs * 2, 1000000 / code->timer_val);
-    delay(50);  
-  }
 }
 
-// Delay function for microseconds
-void delay_ten_us(uint16_t us) {
-  delayMicroseconds(us * 10);
+void sendCustomIRCodes() {
+    // Retrieve file path from the SD card using the file explorer
+    const char* filePath = "/IR_Custom_Codes.txt"; // Replace with actual file selection logic
+
+    if (!sdCard.fileExists(filePath)) {
+        displayMessage("File not found!");
+        return;
+    }
+
+    File32* file = sdCard.createOrOpenFile(filePath, FILE_READ);
+    if (!file) {
+        displayMessage("Failed to open file!");
+        return;
+    }
+
+    std::vector<uint16_t> rawData;
+    while (file->available()) {
+        String line = file->readStringUntil('\n');
+        line.trim();
+
+        if (line.startsWith("frequency:")) {
+            uint16_t frequency = line.substring(10).toInt();
+            // Handle frequency
+        } else if (line.startsWith("data:")) {
+            String rawDataStr = line.substring(5);
+            rawData.clear();
+
+            while (!rawDataStr.isEmpty()) {
+                int spaceIndex = rawDataStr.indexOf(' ');
+                if (spaceIndex == -1) {
+                    spaceIndex = rawDataStr.length();
+                }
+                rawData.push_back(rawDataStr.substring(0, spaceIndex).toInt());
+                rawDataStr.remove(0, spaceIndex + 1);
+            }
+
+            irsend.sendRaw(rawData.data(), rawData.size(), 38000); // Example frequency
+            delay(50);
+        }
+    }
+
+    sdCard.closeFile(file);
+    displayMessage("Custom codes sent!");
+}
+
+void displayMessage(const char* message) {
+    lv_obj_t* textArea = screenMgr.getTextArea();
+    lv_textarea_set_text(textArea, message);
 }

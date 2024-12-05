@@ -310,7 +310,7 @@ void EVENTS::sendCapturedEvent(lv_event_t * e) {
 }
 
 void EVENTS::sendCapturedIREvent(lv_event_t * e) {
-    IR.sendReceived();
+ //   IR.sendReceived();
 }
 
 void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
@@ -318,7 +318,7 @@ void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
 }
 
 void EVENTS::btn_event_UR_BGONE(lv_event_t * e) {
-    IRCurrentState = STATE_TV_B_GONE;
+  //  IRCurrentState = STATE_TV_B_GONE;
 }
 
 void EVENTS::btn_event_IR_START_READ(lv_event_t * e) {
@@ -416,7 +416,7 @@ void EVENTS::ta_rf_type_event_cb(lv_event_t * e) {
 
 void EVENTS::btn_event_IR_run(lv_event_t* e) {
 
-    IRCurrentState = STATE_READ;
+ //   IRCurrentState = STATE_READ;
         
 }
 

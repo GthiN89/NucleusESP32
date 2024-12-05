@@ -14,11 +14,22 @@ TV-B-Gone Firmware version 1.2
 
 */
 
+// Makes the codes more readable. the OCRA is actually
+// programmed in terms of 'periods' not 'freqs' - that
+// is, the inverse!
+// #define freq_to_timerval(x) (F_CPU / 8 / x - 1)
+#define freq_to_timerval(x) (x / 1000)
 //Codes captured from Generation 3 TV-B-Gone by Limor Fried & Mitch Altman
 //table of POWER codes
-#ifndef CODES
-#define CODES
-#include "ir.h"
+
+// The structure of compressed code entries
+struct IrCode {
+  uint8_t timer_val;
+  uint8_t numpairs;
+  uint8_t bitcompression;
+  uint16_t const *times;
+  uint8_t const *codes;
+};
 
 const uint16_t code_na000Times[] = {
   60, 60,
@@ -8546,7 +8557,7 @@ const struct IrCode code_eu140Code = {
 
 //const array (called "NApowerCodes") of const pointers to IrCode structs
 //-otherwise stated: "declare NApowerCodes as array of const pointers to const IrCode structs"
-//-to confirm this, go to http://cdecl.org/ and paste "const int* const NApowerCodes[]", and you'll 
+//-to confirm this, go to http://cdecl.org/ and paste "const int* const NApowerCodes[]", and you'll
 // see it means "declare NApowerCodes as array of const pointer to const int"
 const IrCode* const NApowerCodes[] = {
   &code_na000Code,
@@ -8831,7 +8842,3 @@ const IrCode* const EUpowerCodes[] = {
   &code_eu138Code,
   &code_eu139Code,
 };
-
-
-
-#endif
