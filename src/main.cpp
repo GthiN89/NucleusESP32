@@ -210,9 +210,9 @@ void loop() {
          RF24CurrentState = RF24_STATE_IDLE;
     };
 
-    if(NFCCurrentState == NFC_READ){
+    while(NFCCurrentState == NFC_READ){
         readLoop();
-        NFCCurrentState = NFC_IDLE;
+      //  NFCCurrentState = NFC_IDLE;
     }
 
     while(IRCurrentState == STATE_READ) {

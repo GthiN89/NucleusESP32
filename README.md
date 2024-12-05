@@ -65,6 +65,10 @@ The timing tolerance is around 1-5 microseconds. Transmission quality from `.sub
 ### The device
 ![Device](https://github.com/GthiN89/NucleusESP32/blob/main/images/IMG_20240924_193407_DRO.jpg)
 
+### Partial instruction on build
+
+[![how to Build](https://github.com/GthiN89/NucleusESP32/blob/main/images/Untitled.png)](![https://github.com/GthiN89/NucleusESP32/blob/main/images/VID_20241204_013226.mp4]
+
 ## Hardware
 - Cheap Yellow Display (CYD)  
 - ESP32-2432S028R  
