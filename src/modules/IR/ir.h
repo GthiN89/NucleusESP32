@@ -1,68 +1,33 @@
-#ifndef IR_READ_H
-#define IR_READ_H
+#ifndef IR_H
+#define IR_H
 
-#include <IRrecv.h>
-//#include "modules/IR/TV-B-Gone.h"  // Adjust as necessary
-#include "globals.h"
-#include "GUI/ScreenManager.h"
-#include "GUI/events.h"
-#include "modules/ETC/SDcard.h"
-#include <vector>
+#include <stdint.h>
 
 // IR TX and RX Pins
-#define IR_TX 26
-#define IR_RX 34
+#define IR_TX 4        // The IR sender LED
+#define IR_RX 34       // The IR receiver (if used)
 
-// IR States
-enum IRState {
-    IDLE,
-    LISTENING,
-    SIGNAL_RECEIVED,
-    SIGNAL_SAVED,
-    SIGNAL_PLAYBACK
+// EU/NA region settings
+#define EU 1  // Set by a HIGH on REGIONSWITCH pin
+#define NA 0  // Set by a LOW on REGIONSWITCH pin
+
+// Macro to calculate the size of the NA/EU databases
+#define NUM_ELEM(x) (sizeof(x) / sizeof(*(x)))
+
+// Debugging
+#define DEBUG 0
+#define DEBUGP(x) if (DEBUG == 1) { x ; }
+
+// Frequency to timer value conversion (in milliseconds)
+#define freq_to_timerval(x) (x / 1000)
+
+// IR code structure definition
+struct IrCode {
+  uint8_t timer_val;
+  uint8_t numpairs;
+  uint8_t bitcompression;
+  uint16_t const *times;
+  uint8_t const *codes;
 };
 
-class IrRead {
-public:
-    IrRead();
-
-    // Arduino lifecycle
-    void setup();
-    void loop();
-
-    // Static UI event handlers
-    static void btn_event_IR_run(lv_event_t* e);
-    static void save_signal_event(lv_event_t* e);
-    static void play_signal_event(lv_event_t* e);
-    static void exit_event(lv_event_t* e);
-
-private:
-    // IR receiver
-    IRrecv irrecv;
-    decode_results results;
-
-    // State machine
-    IRState currentState;
-
-    // Signal storage
-    std::vector<uint16_t> signalBuffer;
-    String signalData;
-
-    // UI Components
-    lv_obj_t* text_area;
-
-    // SD card interface
-    SDcard& sdCard;
-
-    // Core functions
-    void begin();
-    void read_signal();
-    void save_signal();
-    void play_signal();
-    void reset();
-
-    // UI helper functions
-    void setTextToTextarea(const char* message);
-};
-
-#endif // IR_READ_H
+#endif // IR_H
