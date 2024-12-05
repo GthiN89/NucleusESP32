@@ -40,8 +40,6 @@ With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol f
 - **`.sub` Files Player**: Supports RAW files, tested with AM270 and AM650, should send FM too, but timing files only. Sending is stable.  
 - **Tesla Charger Opener**: Operational.  
 - **Large `.sub` File Support**: Handles virtually unlimited file sizes, tested with a 3MB "Came_top_brute.sub" file.  
-- **CYD micro USB "bad SPI" Rv2**: Works despite version variability.  
-- **CYD 2USB Support**: Fully integrated and functional.  
 - **TV-B-Gone**: Fully operational. Can turn TVs on and off.
 
 ### Planned Features
