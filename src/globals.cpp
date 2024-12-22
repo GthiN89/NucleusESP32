@@ -2,7 +2,7 @@
 
 #include "globals.h"
 
-
+#include "SPI.h"
 char* current_dir;
 //char* selected_file;
 
@@ -28,12 +28,11 @@ bool CC1101_init  = false;
 bool CC1101_RCSwitch_init  = false;
 bool CC1101_RCSwitch_listen = false;
 bool CC1101_RCSwitch_play    = false;
-extern bool bruteIsRunning = false;
 
-extern uint16_t bruteCounter = 0;
 
 CC1101_PRESET  C1101preset = AM650;
 
+SPI_STATE SPICurrentState = SPI_STATE_NC;
 
 CC1101_PRESET convert_str_to_enum(const char * selected_str) {
     if (strcmp(selected_str, "AM650") == 0) return AM650;
@@ -81,5 +80,37 @@ const uint8_t* presetTobyteArray(CC1101_PRESET preset) {
 }
 }
 
-//SPIClass SPI_VSPI(VSPI);
-//const SPISettings spiSettings = SPISettings(4000000, MSBFIRST, SPI_MODE0); 
+
+bool SpiShareIntegrity(){
+    switch(SPICurrentState) {
+         case SPI_STATE_NC: 
+                            if(digitalRead(CC1101_CS)   ==HIGH) return false;
+                            if(digitalRead(RF24_CS)    ==HIGH) return false;
+                            if(digitalRead(RFID_CS)     ==HIGH) return false; 
+        
+        case SPI_STATE_INIT: 
+                            if(digitalRead(CC1101_CS)   ==LOW)  return false;
+                            if(digitalRead(RF24_CS)    ==LOW)  return false;
+                            if(digitalRead(RFID_CS)     ==LOW)  return false;
+        case SPI_STATE_FREE: 
+                            if(digitalRead(CC1101_CS)   ==LOW)  return false;
+                            if(digitalRead(RF24_CS)    ==LOW)  return false;
+                            if(digitalRead(RFID_CS)     ==LOW)  return false;
+
+        case SPI_STATE_CC1101:
+                            if(digitalRead(CC1101_CS)   ==HIGH) return false;
+                            if(digitalRead(RF24_CS)    ==LOW)  return false;
+                            if(digitalRead(RFID_CS)     ==LOW)  return false; 
+        
+        case SPI_STATE_NRF24: 
+                            if(digitalRead(CC1101_CS)   ==LOW)  return false;
+                            if(digitalRead(RF24_CS)    ==HIGH) return false;
+                            if(digitalRead(RFID_CS)     ==LOW)  return false;
+        case SPI_STATE_RC522: 
+                            if(digitalRead(CC1101_CS)   ==LOW)  return false;
+                            if(digitalRead(RF24_CS)    ==LOW)  return false;
+                            if(digitalRead(RFID_CS)     ==HIGH) return false;                                                     
+    }
+
+return true;
+};

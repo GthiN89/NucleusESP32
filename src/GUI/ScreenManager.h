@@ -31,7 +31,9 @@ public:
     void createTeslaScreen();
     void createIRMenuScreen();
     void createIRRecScreen();
-
+    void init_neon_theme(void);
+    void create_neon_theme(void);
+    static void apply_neon_theme(lv_obj_t * obj);
 
     lv_obj_t* customPreset;
     lv_obj_t *input_datarate;

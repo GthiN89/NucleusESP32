@@ -1,8 +1,9 @@
 #ifndef SEND_TESLA_H
 #define SEND_TESLA_H
 
-#include <lvgl.h>              
-#include <SDfat.h>               
+#include <lvgl.h> 
+#include "Arduino.h"             
+        
 //#include "modules/RF/subGhz.h" 
 
 // External declarations for global variables

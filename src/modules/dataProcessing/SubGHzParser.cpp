@@ -1,11 +1,11 @@
 #include "SubGHzParser.h"
-#include <SDfat.h>
 #include <SPI.h>
 #include <map>
 #include <string>
 #include "modules/RF/CC1101.h"
 #include "GUI/events.h"
 #include "modules/ETC/SDcard.h"
+#include "SD.h"
 
 SubGHzParser::SubGHzParser() {}
 CC1101_CLASS CC1101;
@@ -262,11 +262,11 @@ bool SubGHzParser::loadFile(const char* filename) {
 
 
 
-void SubGHzParser::clearData() {
- //   data = SubGHzData();  // Reset data to a new instance (clears all fields)
-   // SD_SUB.tempFreq = 0;
-//    SD_SUB.tempSampleCount = 0;
-  //  C1101CurrentState = STATE_IDLE;
- //   codesSend = 0;
-    SD_SUB.FlipperFileFlag = false;
-}
+// void SubGHzParser::clearData() {
+//  //   data = SubGHzData();  // Reset data to a new instance (clears all fields)
+//    // SD_SUB.tempFreq = 0;
+// //    SD_SUB.tempSampleCount = 0;
+//   //  C1101CurrentState = STATE_IDLE;
+//  //   codesSend = 0;
+//     SD_SUB.FlipperFileFlag = false;
+// }

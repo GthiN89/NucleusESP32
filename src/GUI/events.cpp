@@ -15,6 +15,7 @@
 using namespace std;
 #include "modules/ETC/SDcard.h"
 #include "modules/IR/TV-B-Gone.h"
+#include "modules/IR/ir.h"
 #include "lvgl.h"
 #include "modules/nfc/nfc.h"
 #include "modules/RF/rf24.h"
@@ -40,7 +41,7 @@ const int32_t value_countDrate = sizeof(values) / sizeof(values[0]);
 //CC1101_CLASS CC1101;
 
 ScreenManager& screenMgr = ScreenManager::getInstance();
-ir IR;
+
 
 
 char EVENTS::frequency_buffer[10];
@@ -56,7 +57,14 @@ static char buffer[256];
 
 bool isWarmupStarted;
 
+TaskHandle_t taskHandle = NULL; 
+
 void EVENTS::btn_event_playZero_run(lv_event_t* e) {
+    digitalWrite(SDCARD_CS_PIN, LOW);
+    delay(10); // Allow SD card to stabilize
+    if (!SD_EVN.initializeSD()) {
+        Serial.println(F("Failed to initialize SD card!"));
+    }
     lv_event_code_t code = lv_event_get_code(e);    
     if (code == LV_EVENT_CLICKED) {
         screenMgr.createFileExplorerScreen();
@@ -141,12 +149,12 @@ void EVENTS::btn_event_IR_menu_run(lv_event_t* e) {
 }
 
 void EVENTS::btn_event_NFC_menu_run(lv_event_t* e) {
-
-     NFCCurrentState = NFC_READ;
+    // enableRFID();
+ //    NFCCurrentState = NFC_READ;
 }
 
 void EVENTS::btn_event_RF24_menu_run(lv_event_t* e) {
-  //   enableRF24();
+   // testRF24();
     RF24CurrentState = RF24_STATE_TEST;
 }
 
@@ -220,13 +228,86 @@ void EVENTS::dropdown_modulation_event_cb(lv_event_t *e) {
     }
 }
 
-void EVENTS::ok_button_event_cb(lv_event_t *e) {
-    lv_obj_t *container = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
-    if (container) {
-        lv_obj_add_flag(container, LV_OBJ_FLAG_HIDDEN); // Hide the container
-        Serial.println("Custom settings container hidden.");
+enum InputType {
+    DATARATE,
+    BANDWIDTH,
+    DEVIATION,
+    INVALID
+};
+
+// Helper function to identify the input type
+InputType get_input_type(lv_obj_t *textarea) {
+    if (textarea == screenMgr.input_datarate) {
+        return DATARATE;
+    } else if (textarea == screenMgr.input_bandwidth) {
+        return BANDWIDTH;
+    } else if (textarea == screenMgr.input_deviation) {
+        return DEVIATION;
+    } else {
+        return INVALID;
     }
 }
+
+void EVENTS::ok_button_event_cb(lv_event_t *e) {
+    lv_obj_t *container = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+    lv_obj_t *textareas[] = { screenMgr.input_datarate, screenMgr.input_bandwidth, screenMgr.input_deviation };
+    const char *messages[] = {
+        "Data rate must be between 1-500 kbps and cannot be empty.",
+        "Bandwidth must be between 50-600 kHz and cannot be empty.",
+        "Deviation must be between 1-200 kHz and cannot be empty."
+    };
+
+    bool valid = true;
+    char message[128];
+
+    // Validate each input
+    for (lv_obj_t *textarea : textareas) {
+        const char *input = lv_textarea_get_text(textarea);
+        int value = atoi(input);
+
+        switch (get_input_type(textarea)) {
+            case DATARATE:
+                if (strlen(input) == 0 || value < 1 || value > 500) {
+                    valid = false;
+                    snprintf(message, sizeof(message), "%s", messages[DATARATE]);
+                }
+                break;
+            case BANDWIDTH:
+                if (strlen(input) == 0 || value < 50 || value > 600) {
+                    valid = false;
+                    snprintf(message, sizeof(message), "%s", messages[BANDWIDTH]);
+                }
+                break;
+            case DEVIATION:
+                if (strlen(input) == 0 || value < 1 || value > 200) {
+                    valid = false;
+                    snprintf(message, sizeof(message), "%s", messages[DEVIATION]);
+                }
+                break;
+            default:
+                valid = false;
+                snprintf(message, sizeof(message), "Unknown input field.");
+                break;
+        }
+
+        if (!valid) {
+            lv_obj_t *msgbox = lv_msgbox_create(NULL);
+            lv_obj_center(msgbox);
+            return; // Prevent hiding the container
+        }
+    }
+
+    if (container) {
+        lv_obj_add_flag(container, LV_OBJ_FLAG_HIDDEN); // Hide the container
+        Serial.printf("Saving values: Data Rate = %s kbps, Bandwidth = %s kHz, Deviation = %s kHz\n",
+                      lv_textarea_get_text(screenMgr.input_datarate),
+                      lv_textarea_get_text(screenMgr.input_bandwidth),
+                      lv_textarea_get_text(screenMgr.input_deviation));
+        lv_msgbox_create(NULL);
+    }
+}
+
+
 
 void EVENTS::ta_filename_event_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -416,7 +497,7 @@ void EVENTS::ta_rf_type_event_cb(lv_event_t * e) {
 
 void EVENTS::btn_event_IR_run(lv_event_t* e) {
 
- //   IRCurrentState = STATE_READ;
+    IRCurrentState = IR_STATE_LISTENING;
         
 }
 
@@ -647,6 +728,7 @@ lv_obj_add_event_cb(no_btn, EVENTS::confirm__explorer_play_sub_cb, LV_EVENT_CLIC
 void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
 {
 
+
     lv_obj_t * msgbox = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
     lv_obj_t * yes_btn = static_cast<lv_obj_t *>(lv_obj_get_user_data(msgbox));
     lv_obj_t * clicked_btn = static_cast<lv_obj_t *>(lv_event_get_target(e));
@@ -676,23 +758,20 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
     Serial.println("Load button clicked.");
     if (strlen(EVENTS::fullPath) > 0) {
         detachInterrupt(CC1101_CCGDO0A);
+        detachInterrupt(CC1101_CCGDO2A);
         char* taskFullPath = strdup(EVENTS::fullPath);
           xTaskCreatePinnedToCore(
             EVENTS::CC1101TransmitTask, // Function to run 
             "Sub transmit",       // Name of the task
-            10000,           // Stack size (in bytes)
+            30000,           // Stack size (in bytes)
             taskFullPath,            // Task input parameter
             5,               // Priority
-            NULL,            // Task handle
+            &taskHandle,
             1                // Core
         );
     
 
-    }
-
-
-        // Signal transmitted, so let's refresh the screen
-                   
+    }                   
         } else {
             RFstate = WARM_UP;
             updatetransmitLabel = false;
@@ -724,18 +803,28 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
     char* fullPath = static_cast<char*>(pvParameters);
 
     detachInterrupt(CC1101_CCGDO0A);
+    detachInterrupt(CC1101_CCGDO2A);
+    digitalWrite(CC1101_CS, LOW);
     CC1101.initrRaw();
     ELECHOUSE_cc1101.setCCMode(0); 
     ELECHOUSE_cc1101.setPktFormat(3);
     ELECHOUSE_cc1101.SetTx();
     pinMode(CC1101_CCGDO0A, OUTPUT);
+    digitalWrite(CC1101_CS, HIGH);
     
     Serial.print("Loading file: ");
     Serial.println(fullPath);
-
+      if (SD_EVN.fileExists(fullPath)) {
+      SD_EVN.read_sd_card_flipper_file(fullPath);
+      delay(1);
+  } else {
+      Serial.println("File does not exist.");
+  }
     SubGHzParser parser;
     parser.loadFile(fullPath);
     SubGHzData data = parser.parseContent();
+
+    vTaskDelete(taskHandle);
 
    //disconnectSD();
 
@@ -749,9 +838,9 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
 //       Serial.println("File does not exist.");
 //   }
     
-   free(fullPath);
+//    free(fullPath);
 
-    vTaskDelete(NULL);
+//     vTaskDelete(NULL);
 }
 
 

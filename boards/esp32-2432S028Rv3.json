@@ -11,7 +11,7 @@
       "'-D DISPLAY_HEIGHT=320'",
       "'-D LVGL_BUFFER_PIXELS=(DISPLAY_WIDTH*DISPLAY_HEIGHT/4)'",
       "'-D LVGL_BUFFER_MALLOC_FLAGS=(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT)'",
-      "'-D GPIO_BCKL=21'",
+     
       "'-D DISPLAY_ST7789_SPI'",
       "'-D ST7789_SPI_HOST=SPI2_HOST'",
       "'-D ST7789_SPI_DMA_CHANNEL=SPI_DMA_CH_AUTO'",
@@ -42,10 +42,6 @@
       "'-D DISPLAY_SWAP_XY=false'",
       "'-D DISPLAY_MIRROR_X=false'",
       "'-D DISPLAY_MIRROR_Y=false'",
-      "'-D BOARD_HAS_TOUCH'",
-      "'-D CONFIG_ESP_LCD_TOUCH_MAX_POINTS=1'",
-      "'-D CONFIG_ESP_LCD_TOUCH_MAX_BUTTONS=0'",
-      "'-D TOUCH_XPT2046_SPI'",
       "'-D XPT2046_Z_THRESHOLD=600'",
       "'-D XPT2046_SPI_HOST=SPI3_HOST'",
       "'-D XPT2046_SPI_DMA_CHANNEL=SPI_DMA_CH_AUTO'",      
@@ -72,7 +68,7 @@
       "'-D XPT2046_TOUCH_CONFIG_LEVELS_RESET=0'",
       "'-D XPT2046_TOUCH_CONFIG_LEVELS_INTERRUPT=0'",
       "'-D TOUCH_SWAP_XY=false'",
-      "'-D TOUCH_MIRROR_X=true'",
+      "'-D TOUCH_MIRROR_X=false'",
       "'-D TOUCH_MIRROR_Y=false'",
       "'-D BOARD_HAS_TF'",
       "'-D TF_CS=5'",
@@ -80,8 +76,7 @@
       "'-D TF_SPI_SCLK=18'",
       "'-D TF_SPI_MISO=19'",
       
-      "'-D BOARD_HAS_CDS'",
-      "'-D CDS=34'",
+     
       "'-D BOARD_HAS_SPEAK'",
       "'-D SPEAK=26'"
     ],

@@ -110,6 +110,8 @@ cc1101 Driver for RC Switch. Mod by Little Satan. With permission to modify and 
 #define CC1101_TXFIFO       0x3F
 #define CC1101_RXFIFO       0x3F
 
+
+
 //************************************* class **************************************************//
 class ELECHOUSE_CC1101
 {

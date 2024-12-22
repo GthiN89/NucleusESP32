@@ -6,7 +6,6 @@
 //#include "FS.h"
 #include "modules/dataProcessing/SubGHzParser.h"
 #include "modules/dataProcessing/dataProcessing.h"
-#include "SDfat.h"
 #include "XPT2046_Bitbang.h"
 #include "modules/nfc/nfc.h"
 #include "modules/IR/ir.h"
@@ -346,21 +345,21 @@ void ScreenManager::createIRRecScreen() {
 
      // Listen Button
     lv_obj_t* listenButton = ButtonHelper::createButton(button_container_IR_REC1_, "Listen");
-    lv_obj_add_event_cb(listenButton, IrRead::btn_event_IR_run, LV_EVENT_CLICKED, nullptr);
+    lv_obj_add_event_cb(listenButton, EVENTS::btn_event_IR_run, LV_EVENT_CLICKED, nullptr);
 
     // Save Button
     lv_obj_t* saveButton = ButtonHelper::createButton(button_container_IR_REC1_, "Save");
-    lv_obj_add_event_cb(saveButton, IrRead::save_signal_event, LV_EVENT_CLICKED, nullptr);
+   // lv_obj_add_event_cb(saveButton, EVENTS::save_signal_event, LV_EVENT_CLICKED, nullptr);
 
     containerHelper.createContainer(&button_container_IR_REC2_, IRRecScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
     // Play Button
     lv_obj_t* playButton = ButtonHelper::createButton(button_container_IR_REC2_, "Play");
-    lv_obj_add_event_cb(playButton, IrRead::play_signal_event, LV_EVENT_CLICKED, nullptr);
+//lv_obj_add_event_cb(playButton, EVENTS::play_signal_event, LV_EVENT_CLICKED, nullptr);
 
     // Exit Button
     lv_obj_t* exitButton = ButtonHelper::createButton(button_container_IR_REC2_, "Exit");
-    lv_obj_add_event_cb(exitButton, IrRead::exit_event, LV_EVENT_CLICKED, nullptr);
+//lv_obj_add_event_cb(exitButton, EVENTS::exit_event, LV_EVENT_CLICKED, nullptr);
 }
 
 
@@ -560,7 +559,8 @@ void ScreenManager::createIRMenuScreen() {
 
 void ScreenManager::createmainMenu()
 {
-    lv_obj_t *mainMenu = lv_obj_create(NULL);                                        
+    lv_obj_t *mainMenu = lv_obj_create(NULL); 
+    ScreenManager::apply_neon_theme(mainMenu);                                       
     lv_scr_load(mainMenu);    
     previous_screen = mainMenu;                                                        
     lv_obj_t *btn_subGhz_main = lv_btn_create(mainMenu);                                
@@ -708,7 +708,7 @@ void ScreenManager::createFileExplorerScreen()
     lv_scr_load(fileExplorerScreen);
 
     lv_obj_t *file_explorer = lv_file_explorer_create(fileExplorerScreen);
-     lv_obj_t *header = lv_file_explorer_get_header(file_explorer);
+    // lv_obj_t *header = lv_file_explorer_get_header(file_explorer);
     // Open the root directory (drive letter 'S')
     lv_file_explorer_open_dir(file_explorer, "S:/");
     
@@ -746,4 +746,35 @@ void ScreenManager::createFileExplorerScreen()
     lv_obj_add_event_cb(file_explorer, EVENTS::file_explorer_event_handler,  LV_EVENT_VALUE_CHANGED, NULL);
 }
 
+lv_style_t style_bg;
+lv_style_t style_text;
+lv_theme_t * neon_theme;
 
+void ScreenManager::apply_neon_theme(lv_obj_t * obj) {
+   if (!obj) return;
+
+    // Apply the styles to the object
+    lv_obj_add_style(obj, &style_bg, LV_PART_MAIN);  // Main part background
+    lv_obj_add_style(obj, &style_text, LV_PART_MAIN);  // Main part text
+}
+
+void ScreenManager::create_neon_theme(void) {
+    // Initialize background style
+    lv_style_init(&style_bg);
+    lv_style_set_bg_color(&style_bg, lv_color_black());
+    lv_style_set_bg_opa(&style_bg, LV_OPA_COVER);
+
+    // Initialize text style
+    lv_style_init(&style_text);
+    lv_style_set_text_color(&style_text, lv_color_hex(0x39FF14)); // Neon green color
+    lv_style_set_text_font(&style_text, &lv_font_montserrat_14);  // Example font
+}
+
+
+void ScreenManager::init_neon_theme(void) {
+        create_neon_theme();
+
+    // Get the active screen and apply the theme
+    lv_obj_t * screen = lv_scr_act();
+    apply_neon_theme(screen);
+}

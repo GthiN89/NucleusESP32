@@ -1,6 +1,14 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#include "SPI.h"
+#include "Arduino.h"
+
+#include <map>
+#include <string>
+
+
+
  enum CC1101_PRESET {
      AM650,
      AM270,
@@ -19,6 +27,19 @@
 
 extern CC1101_PRESET  C1101preset;
 
+enum SPI_STATE
+ {
+  SPI_STATE_NC,
+  SPI_STATE_INIT,
+  SPI_STATE_FREE,
+  SPI_STATE_CC1101,
+  SPI_STATE_NRF24,
+  SPI_STATE_RC522
+};
+
+extern SPI_STATE SPICurrentState;
+
+const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0); // May have to be set if hardware is not fully compatible to Arduino specifications.
 
 
 #include <lvgl.h>
@@ -33,26 +54,33 @@ extern CC1101_PRESET  C1101preset;
 #define CYD_MOSI 21   // Master Out Slave In
 #define CYD_MISO 35  // Master In Slave Out
 #define CYD_SCLK 22  // Serial Clock
-#define RFID_CS 27
-#define NRF24_CS 16
+#define RFID_CS -1
+#define RF24_CS 16
 
-#define IRQ_PIN 26
-#define RFID_RST 17
-#define RF24_CE 17
+// gd0 17
+// sck 22
+// miso 35
+// CKN 27
+// mosi 21
+// GD2 - 4
+
+#define IRQ_PIN CCGDO2A
+#define RFID_RST -1
+#define RF24_CE  CCGDO0A
 
 
 
 // Pin configuration for CC1101 nfc CC-27 NRF24 CC-16
-#define CC1101_CS   04  // Chip Select
-#define CC1101_MOSI 21   // Master Out Slave In
-#define CC1101_MISO 35  // Master In Slave Out
-#define CC1101_SCLK 22  // Serial Clock
+#define CC1101_CS 27    // Chip Select
+#define CC1101_MOSI CYD_MOSI   // Master Out Slave In
+#define CC1101_MISO CYD_MISO  // Master In Slave Out
+#define CC1101_SCLK CYD_SCLK  // Serial Clock
 
-#define CCGDO0A 26      // GDO0-NFC IRQ, NF IRQ - input only
-#define CCGDO2A 17      // GDO2 -rst - input output
+#define CCGDO0A 17      // GDO0-NFC IRQ, NF IRQ - input only
+#define CCGDO2A 04      // GDO2 -rst - input output
 
-#define CC1101_CCGDO0A 26      // GDO0
-#define CC1101_CCGDO2A 17      // GDO2 -rst NF CE
+#define CC1101_CCGDO0A CCGDO0A      // GDO0
+#define CC1101_CCGDO2A CCGDO2A      // GDO2 -rst NF CE
 
 #define CMD_READ_Y  0x90 // Command for XPT2046 to read Y position
 #define CMD_READ_X  0xD0 // Command for XPT2046 to read X position
@@ -65,18 +93,27 @@ extern CC1101_PRESET  C1101preset;
 
 #define SD_CS 5 // SD card CS pin
 
+
 //ir tx = pin 26 rx 34
 
 extern bool teslaSucessFlag;
 extern uint8_t RFstate;
 
-//extern SPIClass SPI_VSPI;
+//extern SoftSpiDriver<CYD_MISO, CYD_MOSI, CYD_SCLK> vspi;
+
+
+
 //extern const SPISettings spiSettings; 
 
    //---------------------------------------------------------------------------//
   //-----------------------------ENUMBS----------------------------------------//
  //---------------------------------------------------------------------------//
-// C1101 Presets
+// SPI STATE!
+
+
+
+
+
 
 
 

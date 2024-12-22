@@ -2,7 +2,7 @@
 #define FILE_EXPLORER_H
 
 #include "lvgl.h"
-#include <SDfat.h>
+#include <SDFAT.h>
 #include <SPI.h>
 
 // Function declarations

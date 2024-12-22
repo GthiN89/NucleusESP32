@@ -703,7 +703,7 @@
 #if LV_USE_THEME_DEFAULT
 
     /*0: Light mode; 1: Dark mode*/
-    #define LV_THEME_DEFAULT_DARK 0
+    #define LV_THEME_DEFAULT_DARK 1
 
     /*1: Enable grow on press*/
     #define LV_THEME_DEFAULT_GROW 1
@@ -789,7 +789,7 @@
 /*API for Arduino Sd. */
 #define LV_USE_FS_ARDUINO_SD 0
 #if LV_USE_FS_ARDUINO_SD
-    #define LV_FS_ARDUINO_SD_LETTER '\0'     /*Set an upper cased letter on which the drive will accessible (e.g. 'A')*/
+    #define LV_FS_ARDUINO_SD_LETTER 'S'     /*Set an upper cased letter on which the drive will accessible (e.g. 'A')*/
 #endif
 
 /*LODEPNG decoder library*/

@@ -59,7 +59,12 @@
         "typeinfo": "cpp",
         "ui.h": "c",
         "ui_helpers.h": "c",
-        "list.h": "c"
+        "list.h": "c",
+        "esp_lcd_panel_io.h": "c",
+        "esp_lcd_panel_ops.h": "c",
+        "esp_panel_ili9341.h": "c",
+        "spi_master.h": "c",
+        "esp32_smartdisplay.h": "c"
     },
     "idf.portWin": "COM5",
     "C_Cpp.errorSquiggles": "disabled"
