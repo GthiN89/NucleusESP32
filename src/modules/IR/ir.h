@@ -5,7 +5,7 @@
 #include "IRrecv.h"
 
 // IR TX and RX Pins
-#define IR_TX 22      // The IR sender LED
+#define IR_TX 26      // The IR sender LED
 #define IR_RX 34       // The IR receiver (if used)
 
 // EU/NA region settings

@@ -34,6 +34,7 @@ IRrecv irrecv(IR_RX);
 
 decode_results lastResults;
 
+
 //RF24Class RF24(RF24_CE, RF24_CS);
 
 //SPIClass SPI(2);
@@ -154,7 +155,10 @@ void setup() {
 
     // IR receiver setup
     pinMode(IR_RX, INPUT_PULLUP);
+        pinMode(IR_TX, OUTPUT);
+
     irrecv.enableIRIn();
+
 
  
 }
@@ -177,16 +181,16 @@ void loop() {
 
 
      if(C1101CurrentState == STATE_ANALYZER) {
-        Serial.println(digitalRead(CC1101_CCGDO2A));
+       // Serial.println(digitalRead(CCGDO2A));
              if (CC1101.CheckReceived())
              {
-                delay(5);
+                delay(10);
                CC1101.signalanalyse();
                CC1101.disableReceiver();
                delay(10);
                C1101CurrentState = STATE_IDLE;
              }
-             delay(1);
+             delay(10);
      }
 
      if(C1101CurrentState == STATE_PLAYBACK) {
@@ -228,16 +232,20 @@ void loop() {
         SubGHzData data = parser.parseContent();
      }
 
+     if(IRCurrentState == IR_STATE_PLAYBACK){
+        sendReceived();
+     }
+
     if(IRCurrentState == IR_STATE_BGONE){
   const uint8_t num_EUcodes = sizeof(EUpowerCodes) / sizeof(EUpowerCodes[0]);
   
-  //sendAllCodes(EUpowerCodes, num_EUcodes);
+  sendAllCodes(EUpowerCodes, num_EUcodes);
 
   IRCurrentState = IR_STATE_IDLE;
     }
 
     while(IRCurrentState == IR_STATE_LISTENING) {
-     //   Serial.println(digitalRead(IR_RX));
+        Serial.println(digitalRead(IR_RX));
        if (irrecv.decode(&results))
         {
         IRCurrentState = IR_STATE_IDLE;
@@ -250,10 +258,10 @@ void loop() {
     }
     }
 
-    if(RF24CurrentState == RF24_STATE_TEST){
-         //testRF24();
-         RF24CurrentState = RF24_STATE_IDLE;
-    };
+    // if(RF24CurrentState == RF24_STATE_TEST){
+    //      //testRF24();
+    //      RF24CurrentState = RF24_STATE_IDLE;
+    // };
 
     //  while(NFCCurrentState == NFC_READ){
     //   //   readLoop();
@@ -318,6 +326,30 @@ void loop() {
     }
 
    // IRCurrentState = STATE_IDDLE;
+
+   switch (currentState) {
+        case IDLE:
+            // Do nothing or handle idle tasks
+            break;
+        case BLUETOOTH_JAM:
+            jammer.bluetooth_jam();
+            break;
+        case DRONE_JAM:
+            jammer.drone_jam();
+            break;
+        case BLE_JAM:
+            jammer.ble_jam();
+            break;
+        case WIFI_JAM:
+            jammer.wifi_jam();
+            break;
+        case ZIGBEE_JAM:
+            jammer.zigbee_jam();
+            break;
+        case MISC_JAM:
+            jammer.misc_jam(10, 20); // Example channels
+            break;
+    }
 
 }
 

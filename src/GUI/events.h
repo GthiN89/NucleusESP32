@@ -63,7 +63,7 @@ static void btn_event_IR_run(lv_event_t* e);
 static void sendCapturedIREvent(lv_event_t* e);
 static void btn_event_NFC_menu_run(lv_event_t* e);
 static void btn_event_RF24_menu_run(lv_event_t* e);
-
+static void btn_event_IR_replay(lv_event_t* e);
 
 static void ta_freq_event_cb(lv_event_t * e);
 static void ta_filename_event_cb(lv_event_t * e);

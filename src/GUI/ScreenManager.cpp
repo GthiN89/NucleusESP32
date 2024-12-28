@@ -9,6 +9,7 @@
 #include "XPT2046_Bitbang.h"
 #include "modules/nfc/nfc.h"
 #include "modules/IR/ir.h"
+#include "modules/RF/rf24.h"
 
 #define MAX_PATH_LENGTH 256
 
@@ -355,7 +356,7 @@ void ScreenManager::createIRRecScreen() {
 
     // Play Button
     lv_obj_t* playButton = ButtonHelper::createButton(button_container_IR_REC2_, "Play");
-//lv_obj_add_event_cb(playButton, EVENTS::play_signal_event, LV_EVENT_CLICKED, nullptr);
+    lv_obj_add_event_cb(playButton, EVENTS::btn_event_IR_run, LV_EVENT_CLICKED, nullptr);
 
     // Exit Button
     lv_obj_t* exitButton = ButtonHelper::createButton(button_container_IR_REC2_, "Exit");
@@ -611,13 +612,114 @@ void ScreenManager::createmainMenu()
         lv_obj_t *btn_RF24_menu = lv_btn_create(mainMenu);
     lv_obj_set_pos(btn_RF24_menu, 25, 260);
     lv_obj_set_size(btn_RF24_menu, 200, 50);
-    lv_obj_add_event_cb(btn_RF24_menu, EVENTS::btn_event_RF24_menu_run, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(btn_RF24_menu, EVENTS::btn_event_RF24_menu_run, LV_EVENT_CLICKED, NULL);
+
+
 
     lv_obj_t *label_RF24_menu = lv_label_create(btn_RF24_menu);
-    lv_label_set_text(label_RF24_menu, "TEST RF24");
+    lv_label_set_text(label_RF24_menu, "2.4 Ghz Jammer");
     lv_obj_center(label_RF24_menu);
 
 }
+void ScreenManager::createJammerMenu()
+{
+    lv_obj_t *jammerMenu = lv_obj_create(NULL);
+    ScreenManager::apply_neon_theme(jammerMenu);
+    lv_scr_load(jammerMenu);
+    previous_screen = jammerMenu;
+
+    // Bluetooth Jam Button
+    lv_obj_t *btn_BT_main = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_BT_main, 25, 10);
+    lv_obj_set_size(btn_BT_main, 200, 50);
+    lv_obj_add_event_cb(btn_BT_main, [](lv_event_t *e) {
+        setState(BLUETOOTH_JAM);
+    }, LV_EVENT_CLICKED, NULL);
+
+    lv_obj_t *label_BTJAM_main = lv_label_create(btn_BT_main);
+    lv_label_set_text(label_BTJAM_main, "BT Jam");
+    lv_obj_center(label_BTJAM_main);
+
+    // Drone Jam Button
+    lv_obj_t *btn_DroneJam_menu = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_DroneJam_menu, 25, 70);
+    lv_obj_set_size(btn_DroneJam_menu, 200, 50);
+    lv_obj_add_event_cb(btn_DroneJam_menu, [](lv_event_t *e) {
+        setState(DRONE_JAM);
+    }, LV_EVENT_CLICKED, NULL);
+
+    lv_obj_t *label_DroneJam_menu = lv_label_create(btn_DroneJam_menu);
+    lv_label_set_text(label_DroneJam_menu, "Drone Jam");
+    lv_obj_center(label_DroneJam_menu);
+
+    // BLE Jam Button
+    lv_obj_t *btn_BLE_menu = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_BLE_menu, 25, 130);
+    lv_obj_set_size(btn_BLE_menu, 200, 50);
+    lv_obj_add_event_cb(btn_BLE_menu, [](lv_event_t *e) {
+        setState(BLE_JAM);
+    }, LV_EVENT_CLICKED, NULL);
+
+    lv_obj_t *label_BLEJAM_menu = lv_label_create(btn_BLE_menu);
+    lv_label_set_text(label_BLEJAM_menu, "BLE Jam");
+    lv_obj_center(label_BLEJAM_menu);
+
+    // WiFi Jam Button
+    lv_obj_t *btn_WiFi_menu = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_WiFi_menu, 25, 190);
+    lv_obj_set_size(btn_WiFi_menu, 200, 50);
+    lv_obj_add_event_cb(btn_WiFi_menu, [](lv_event_t *e) {
+        setState(WIFI_JAM);
+    }, LV_EVENT_CLICKED, NULL);
+
+    lv_obj_t *label_WiFi_menu = lv_label_create(btn_WiFi_menu);
+    lv_label_set_text(label_WiFi_menu, "WiFi Jam");
+    lv_obj_center(label_WiFi_menu);
+
+    // ZigBee Jam Button
+    lv_obj_t *btn_ZigBee_menu = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_ZigBee_menu, 25, 250);
+    lv_obj_set_size(btn_ZigBee_menu, 200, 50);
+    lv_obj_add_event_cb(btn_ZigBee_menu, [](lv_event_t *e) {
+        setState(ZIGBEE_JAM);
+    }, LV_EVENT_CLICKED, NULL);
+
+    lv_obj_t *label_ZigBee_menu = lv_label_create(btn_ZigBee_menu);
+    lv_label_set_text(label_ZigBee_menu, "ZigBee Jam");
+    lv_obj_center(label_ZigBee_menu);
+
+    // Misc Jam Button
+    lv_obj_t *btn_Misc_menu = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_Misc_menu, 25, 310);
+    lv_obj_set_size(btn_Misc_menu, 200, 50);
+    lv_obj_add_event_cb(btn_Misc_menu, [](lv_event_t *e) {
+        setState(MISC_JAM);
+    }, LV_EVENT_CLICKED, NULL);
+
+    lv_obj_t *label_Misc_menu = lv_label_create(btn_Misc_menu);
+    lv_label_set_text(label_Misc_menu, "Misc Jam");
+    lv_obj_center(label_Misc_menu);
+
+    // Stop Button
+    lv_obj_t *btn_Stop_menu = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_Stop_menu, 25, 370);
+    lv_obj_set_size(btn_Stop_menu, 200, 50);
+    lv_obj_add_event_cb(btn_Stop_menu, [](lv_event_t *e) {
+        setState(IDLE);
+        lv_obj_t *parent = lv_obj_get_parent((lv_obj_t *)lv_event_get_target(e));
+        lv_obj_t *child = lv_obj_get_child(parent, NULL);
+        while (child) {
+            lv_obj_set_style_bg_color(child, lv_color_hex(0x00FF00), 0); // Reset all button colors to green
+          //  child = lv_obj_get_child(parent, child);
+        }
+    }, LV_EVENT_CLICKED, NULL);
+
+    lv_obj_t *label_Stop_menu = lv_label_create(btn_Stop_menu);
+    lv_label_set_text(label_Stop_menu, "Stop");
+    lv_obj_center(label_Stop_menu);
+}
+
+
 
 void ScreenManager::createBTMenu()
 {

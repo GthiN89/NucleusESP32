@@ -4,8 +4,11 @@
 #include "../../globals.h"
 #include "RCSwitch.h"
 #include "SPI.h"
+#include <algorithm>  
+#include <array>      
 #define SAMPLE_SIZE 512
 
+#include <driver/rmt.h>
 
 
    //---------------------------------------------------------------------------//
@@ -66,6 +69,9 @@ public:
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
    
     void enableScanner(float start, float stop);
+    void receiveSignal();
+    static void decodeSignal(rmt_item32_t* items, size_t length);
+      static  void processItem(void* item, size_t size);
 
 private:
     int smoothcount;
@@ -76,8 +82,8 @@ private:
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
     void decodeWithESPiLight(uint16_t *timings, size_t length);
-
-
+    void configRegisters(const uint8_t *byteArray, int length);
+    void processRMT();
     
 };
 

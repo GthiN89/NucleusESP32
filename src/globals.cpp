@@ -34,6 +34,15 @@ CC1101_PRESET  C1101preset = AM650;
 
 SPI_STATE SPICurrentState = SPI_STATE_NC;
 
+    State currentState = IDLE;
+
+
+Jammer jammer;
+
+void setState(State newState) {
+    currentState = newState;
+}
+
 CC1101_PRESET convert_str_to_enum(const char * selected_str) {
     if (strcmp(selected_str, "AM650") == 0) return AM650;
     else if (strcmp(selected_str, "AM270") == 0) return AM270;

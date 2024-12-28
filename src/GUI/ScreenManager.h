@@ -34,6 +34,7 @@ public:
     void init_neon_theme(void);
     void create_neon_theme(void);
     static void apply_neon_theme(lv_obj_t * obj);
+    void createJammerMenu();
 
     lv_obj_t* customPreset;
     lv_obj_t *input_datarate;

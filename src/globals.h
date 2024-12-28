@@ -7,6 +7,22 @@
 #include <map>
 #include <string>
 
+#include "modules/RF/rf24.h"
+    enum State {
+        IDLE,
+        BLUETOOTH_JAM,
+        DRONE_JAM,
+        BLE_JAM,
+        WIFI_JAM,
+        ZIGBEE_JAM,
+        MISC_JAM
+    };
+
+   void setState(State newState);
+
+
+
+extern State currentState;
 
 
  enum CC1101_PRESET {
@@ -76,8 +92,8 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 #define CC1101_MISO CYD_MISO  // Master In Slave Out
 #define CC1101_SCLK CYD_SCLK  // Serial Clock
 
-#define CCGDO0A 17      // GDO0-NFC IRQ, NF IRQ - input only
-#define CCGDO2A 04      // GDO2 -rst - input output
+#define CCGDO0A GPIO_NUM_17      // GDO0-NFC IRQ, NF IRQ - input only
+#define CCGDO2A GPIO_NUM_4      // GDO2 -rst - input output
 
 #define CC1101_CCGDO0A CCGDO0A      // GDO0
 #define CC1101_CCGDO2A CCGDO2A      // GDO2 -rst NF CE
@@ -96,8 +112,12 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 
 //ir tx = pin 26 rx 34
 
+class Jammer; // Forward declaration if needed
+
 extern bool teslaSucessFlag;
 extern uint8_t RFstate;
+
+extern Jammer jammer;
 
 //extern SoftSpiDriver<CYD_MISO, CYD_MOSI, CYD_SCLK> vspi;
 

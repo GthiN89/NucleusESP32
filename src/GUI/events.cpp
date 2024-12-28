@@ -154,8 +154,10 @@ void EVENTS::btn_event_NFC_menu_run(lv_event_t* e) {
 }
 
 void EVENTS::btn_event_RF24_menu_run(lv_event_t* e) {
-   // testRF24();
-    RF24CurrentState = RF24_STATE_TEST;
+            screenMgr.createJammerMenu();
+    Jammer jammer;
+    jammer.setup();
+    jammer.loadSettings();
 }
 
 void EVENTS::ta_freq_event_cb(lv_event_t *e) {
@@ -399,7 +401,7 @@ void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
 }
 
 void EVENTS::btn_event_UR_BGONE(lv_event_t * e) {
-  //  IRCurrentState = STATE_TV_B_GONE;
+    IRCurrentState = IR_STATE_BGONE;
 }
 
 void EVENTS::btn_event_IR_START_READ(lv_event_t * e) {
@@ -501,6 +503,11 @@ void EVENTS::btn_event_IR_run(lv_event_t* e) {
         
 }
 
+void EVENTS::btn_event_IR_replay(lv_event_t* e) {
+
+    IRCurrentState = IR_STATE_PLAYBACK;
+        
+}
 
 void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 {
