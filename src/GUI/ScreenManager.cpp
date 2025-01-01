@@ -299,6 +299,7 @@ lv_obj_add_flag(mbox_container, LV_OBJ_FLAG_HIDDEN); // Hide the keyboard initia
 
     lv_obj_t *listenButton = ButtonHelper::createButton(button_container_RCSwitchMethod1_, "Listen");
     lv_obj_add_event_cb(listenButton, EVENTS::btn_event_RAW_REC_run, LV_EVENT_CLICKED, NULL); 
+    
 
     lv_obj_t *saveButton = ButtonHelper::createButton(button_container_RCSwitchMethod1_, "Save");
     lv_obj_add_event_cb(saveButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL); 
@@ -378,28 +379,24 @@ void ScreenManager::createRFdetectScreen() {
    lv_obj_set_flex_flow(detectScreen_, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(detectScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-    // Top label container for dropdowns
-   // containerHelper.createContainer(&topLabel_detectForce_container_, detectScreen_, LV_FLEX_FLOW_COLUMN, 35, 240);
 
     lv_obj_t * topLabel_container_;
     containerHelper.createContainer(&topLabel_container_, teslaScreen_, LV_FLEX_FLOW_ROW, 125, 240);
     lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
 
-    // Dropdown for signal presets
     detect_dropdown_ = lv_dropdown_create(topLabel_container_);
     lv_dropdown_set_options(detect_dropdown_, "AM650\nAM270\nFM238\nFM476\nFM95\nFM15k\nPAGER\nHND1\nHND2\n");
 
-    // Custom frequency preset dropdown
+
     customPreset = lv_dropdown_create(topLabel_container_);
     lv_dropdown_set_options(customPreset, "FRQ1\nFRQ2\nFRQ3\nFRQ4\nFRQ5\n");
     //lv_obj_set_size(customPreset, 70, 30);
 
-    // Second container for additional elements
+
     containerHelper.createContainer(&secondLabel_detectForce_container_, detectScreen_, LV_FLEX_FLOW_COLUMN, 240, 240);
     lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
 
 
-    // Label for displaying detected signals
     detectLabel = lv_label_create(secondLabel_detectForce_container_);
     lv_obj_set_size(detectLabel, 210, 140);
     lv_obj_align(detectLabel, LV_ALIGN_LEFT_MID, 0, 0);
@@ -508,6 +505,194 @@ void ScreenManager::createBTSPamScreen() {
     // lv_obj_add_event_cb(saveButton, EVENTS::btn_event_SourApple_Stop, LV_EVENT_CLICKED, NULL); 
 }
 
+
+
+void ScreenManager::createIRMenuScreen() {
+    lv_obj_t *IRMenu = lv_obj_create(NULL);                                        
+    lv_scr_load(IRMenu);
+    ScreenManager::apply_neon_theme(IRMenu);
+    previous_screen = IRMenu;                                                        
+    
+    lv_obj_t *btn_IR_BGONE = lv_btn_create(IRMenu);                                
+    lv_obj_set_pos(btn_IR_BGONE, 25, 10);                                             
+    lv_obj_set_size(btn_IR_BGONE, 200, 50);                                           
+    lv_obj_add_event_cb(btn_IR_BGONE, EVENTS::btn_event_UR_BGONE, LV_EVENT_CLICKED, NULL); 
+    apply_neon_theme_button(btn_IR_BGONE); 
+
+    lv_obj_t *label_IR_BGONE = lv_label_create(btn_IR_BGONE);
+    lv_label_set_text(label_IR_BGONE, "Turn the TV's OFF!!!");       
+    lv_obj_center(label_IR_BGONE);
+
+    lv_obj_t *btn_IR_READ = lv_btn_create(IRMenu);                                
+    lv_obj_set_pos(btn_IR_READ, 25, 70);                                             
+    lv_obj_set_size(btn_IR_READ, 200, 50);                                           
+    lv_obj_add_event_cb(btn_IR_READ, EVENTS::btn_event_IR_START_READ, LV_EVENT_CLICKED, NULL); 
+    apply_neon_theme_button(btn_IR_READ); 
+
+    lv_obj_t *label_IR_READ = lv_label_create(btn_IR_READ);
+    lv_label_set_text(label_IR_READ, "Read IR signals");       
+    lv_obj_center(label_IR_READ);
+}
+
+
+void ScreenManager::createmainMenu()
+{
+    lv_obj_t *mainMenu = lv_obj_create(NULL); 
+    ScreenManager::apply_neon_theme(mainMenu);                                       
+    lv_scr_load(mainMenu);    
+    previous_screen = mainMenu;                                                        
+
+ 
+    lv_obj_t *btn_subGhz_main = lv_btn_create(mainMenu);                                
+    lv_obj_set_pos(btn_subGhz_main, 25, 10);                                             
+    lv_obj_set_size(btn_subGhz_main, 200, 50);                                           
+    lv_obj_add_event_cb(btn_subGhz_main, EVENTS::btn_event_subGhzTools, LV_EVENT_CLICKED, NULL); 
+    ScreenManager::apply_neon_theme_button(btn_subGhz_main); 
+
+    lv_obj_t *label_subGhz_main = lv_label_create(btn_subGhz_main);
+    lv_label_set_text(label_subGhz_main, "RF SubGhz Tools");       
+    lv_obj_center(label_subGhz_main);
+
+
+    lv_obj_t *btn_teslaCharger_menu = lv_btn_create(mainMenu);
+    lv_obj_set_pos(btn_teslaCharger_menu, 25, 70);
+    lv_obj_set_size(btn_teslaCharger_menu, 200, 50);
+    lv_obj_add_event_cb(btn_teslaCharger_menu, EVENTS::btn_event_teslaCharger_run, LV_EVENT_ALL, NULL);
+    ScreenManager::apply_neon_theme_button(btn_teslaCharger_menu); 
+
+    lv_obj_t *label_teslaCharger_menu = lv_label_create(btn_teslaCharger_menu);
+    lv_label_set_text(label_teslaCharger_menu, "Transmit tesla charger code");
+    lv_obj_center(label_teslaCharger_menu);
+
+    lv_obj_t *btn_IR_menu = lv_btn_create(mainMenu);
+    lv_obj_set_pos(btn_IR_menu, 25, 130);
+    lv_obj_set_size(btn_IR_menu, 200, 50);
+    lv_obj_add_event_cb(btn_IR_menu, EVENTS::btn_event_IR_menu_run, LV_EVENT_ALL, NULL);
+    ScreenManager::apply_neon_theme_button(btn_IR_menu); 
+
+    lv_obj_t *label_IR_menu = lv_label_create(btn_IR_menu);
+    lv_label_set_text(label_IR_menu, "IR Tools");
+    lv_obj_center(label_IR_menu);
+
+    lv_obj_t *btn_NFC_menu = lv_btn_create(mainMenu);
+    lv_obj_set_pos(btn_NFC_menu, 25, 190);
+    lv_obj_set_size(btn_NFC_menu, 200, 50);
+    lv_obj_add_event_cb(btn_NFC_menu, EVENTS::btn_event_NFC_menu_run, LV_EVENT_ALL, NULL);
+    ScreenManager::apply_neon_theme_button(btn_NFC_menu); 
+
+    lv_obj_t *label_NFC_menu = lv_label_create(btn_NFC_menu);
+    lv_label_set_text(label_NFC_menu, "TEST NFC");
+    lv_obj_center(label_NFC_menu);
+
+    lv_obj_t *btn_RF24_menu = lv_btn_create(mainMenu);
+    lv_obj_set_pos(btn_RF24_menu, 25, 260);
+    lv_obj_set_size(btn_RF24_menu, 200, 50);
+    lv_obj_add_event_cb(btn_RF24_menu, EVENTS::btn_event_RF24_menu_run, LV_EVENT_CLICKED, NULL);
+    ScreenManager::apply_neon_theme_button(btn_RF24_menu); 
+
+    lv_obj_t *label_RF24_menu = lv_label_create(btn_RF24_menu);
+    lv_label_set_text(label_RF24_menu, "2.4 Ghz Jammer");
+    lv_obj_center(label_RF24_menu);
+}
+
+
+void ScreenManager::createJammerMenu() {
+    lv_obj_t *jammerMenu = lv_obj_create(NULL);
+    ScreenManager::apply_neon_theme(jammerMenu);
+    lv_scr_load(jammerMenu);
+    previous_screen = jammerMenu;
+
+    // Bluetooth Jam Button
+    lv_obj_t *btn_BT_main = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_BT_main, 25, 10);
+    lv_obj_set_size(btn_BT_main, 200, 50);
+    lv_obj_add_event_cb(btn_BT_main, [](lv_event_t *e) {
+        setState(BLUETOOTH_JAM);
+    }, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *label_BTJAM_main = lv_label_create(btn_BT_main);
+    lv_label_set_text(label_BTJAM_main, "BT Jam");
+    lv_obj_center(label_BTJAM_main);
+    apply_neon_theme_button(btn_BT_main); 
+
+    // Drone Jam Button
+    lv_obj_t *btn_DroneJam_menu = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_DroneJam_menu, 25, 70);
+    lv_obj_set_size(btn_DroneJam_menu, 200, 50);
+    lv_obj_add_event_cb(btn_DroneJam_menu, [](lv_event_t *e) {
+        setState(DRONE_JAM);
+    }, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *label_DroneJam_menu = lv_label_create(btn_DroneJam_menu);
+    lv_label_set_text(label_DroneJam_menu, "Drone Jam");
+    lv_obj_center(label_DroneJam_menu);
+    apply_neon_theme_button(btn_DroneJam_menu); 
+
+    // BLE Jam Button
+    lv_obj_t *btn_BLE_menu = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_BLE_menu, 25, 130);
+    lv_obj_set_size(btn_BLE_menu, 200, 50);
+    lv_obj_add_event_cb(btn_BLE_menu, [](lv_event_t *e) {
+        setState(BLE_JAM);
+    }, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *label_BLEJAM_menu = lv_label_create(btn_BLE_menu);
+    lv_label_set_text(label_BLEJAM_menu, "BLE Jam");
+    lv_obj_center(label_BLEJAM_menu);
+    apply_neon_theme_button(btn_BLE_menu); 
+
+    // WiFi Jam Button
+    lv_obj_t *btn_WiFi_menu = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_WiFi_menu, 25, 190);
+    lv_obj_set_size(btn_WiFi_menu, 200, 50);
+    lv_obj_add_event_cb(btn_WiFi_menu, [](lv_event_t *e) {
+        setState(WIFI_JAM);
+    }, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *label_WiFi_menu = lv_label_create(btn_WiFi_menu);
+    lv_label_set_text(label_WiFi_menu, "WiFi Jam");
+    lv_obj_center(label_WiFi_menu);
+    apply_neon_theme_button(btn_WiFi_menu); 
+
+    // ZigBee Jam Button
+    lv_obj_t *btn_ZigBee_menu = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_ZigBee_menu, 25, 250);
+    lv_obj_set_size(btn_ZigBee_menu, 200, 50);
+    lv_obj_add_event_cb(btn_ZigBee_menu, [](lv_event_t *e) {
+        setState(ZIGBEE_JAM);
+    }, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *label_ZigBee_menu = lv_label_create(btn_ZigBee_menu);
+    lv_label_set_text(label_ZigBee_menu, "ZigBee Jam");
+    lv_obj_center(label_ZigBee_menu);
+    apply_neon_theme_button(btn_ZigBee_menu); 
+
+    // Misc Jam Button
+    lv_obj_t *btn_Misc_menu = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_Misc_menu, 25, 310);
+    lv_obj_set_size(btn_Misc_menu, 200, 50);
+    lv_obj_add_event_cb(btn_Misc_menu, [](lv_event_t *e) {
+        setState(MISC_JAM);
+    }, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *label_Misc_menu = lv_label_create(btn_Misc_menu);
+    lv_label_set_text(label_Misc_menu, "Misc Jam");
+    lv_obj_center(label_Misc_menu);
+    apply_neon_theme_button(btn_Misc_menu); 
+
+    // Stop Button
+    lv_obj_t *btn_Stop_menu = lv_btn_create(jammerMenu);
+    lv_obj_set_pos(btn_Stop_menu, 25, 370);
+    lv_obj_set_size(btn_Stop_menu, 200, 50);
+    lv_obj_add_event_cb(btn_Stop_menu, [](lv_event_t *e) {
+        setState(IDLE);
+        lv_obj_t *parent = lv_obj_get_parent((lv_obj_t *)lv_event_get_target(e));
+        lv_obj_t *child = lv_obj_get_child(parent, NULL);
+        while (child) {
+            lv_obj_set_style_bg_color(child, lv_color_hex(0x00FF00), 0); // Reset all button colors to green
+
+        }
+    }, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *label_Stop_menu = lv_label_create(btn_Stop_menu);
+    lv_label_set_text(label_Stop_menu, "Stop");
+    lv_obj_center(label_Stop_menu);
+    apply_neon_theme_button(btn_Stop_menu); 
+}
+
 void ScreenManager::createTeslaScreen() {
     ContainerHelper containerHelper;
     teslaScreen_ = lv_obj_create(NULL);
@@ -533,290 +718,106 @@ void ScreenManager::createTeslaScreen() {
     lv_obj_set_size(sendButton, 120, 60);
 
     lv_obj_add_event_cb(sendButton, EVENTS::sendTesla, LV_EVENT_CLICKED, NULL);
-}
-
-void ScreenManager::createIRMenuScreen() {
-    lv_obj_t *IRMenu = lv_obj_create(NULL);                                        
-    lv_scr_load(IRMenu);    
-    previous_screen = IRMenu;                                                        
-    lv_obj_t *btn_IR_BGONE = lv_btn_create(IRMenu);                                
-    lv_obj_set_pos(btn_IR_BGONE, 25, 10);                                             
-    lv_obj_set_size(btn_IR_BGONE, 200, 50);                                           
-    lv_obj_add_event_cb(btn_IR_BGONE, EVENTS::btn_event_UR_BGONE, LV_EVENT_CLICKED, NULL); 
-
-    lv_obj_t *label_IR_BGONE = lv_label_create(btn_IR_BGONE);
-    lv_label_set_text(label_IR_BGONE, "Turn the TV's OFF!!!");       
-    lv_obj_center(label_IR_BGONE);
-
-    lv_obj_t *btn_IR_READ = lv_btn_create(IRMenu);                                
-    lv_obj_set_pos(btn_IR_READ, 25, 70);                                             
-    lv_obj_set_size(btn_IR_READ, 200, 50);                                           
-    lv_obj_add_event_cb(btn_IR_READ, EVENTS::btn_event_IR_START_READ, LV_EVENT_CLICKED, NULL); 
-
-    lv_obj_t *label_IR_READ = lv_label_create(btn_IR_READ);
-    lv_label_set_text(label_IR_READ, "Read IR signals");       
-    lv_obj_center(label_IR_READ);
-}
-
-void ScreenManager::createmainMenu()
-{
-    lv_obj_t *mainMenu = lv_obj_create(NULL); 
-    ScreenManager::apply_neon_theme(mainMenu);                                       
-    lv_scr_load(mainMenu);    
-    previous_screen = mainMenu;                                                        
-    lv_obj_t *btn_subGhz_main = lv_btn_create(mainMenu);                                
-    lv_obj_set_pos(btn_subGhz_main, 25, 10);                                             
-    lv_obj_set_size(btn_subGhz_main, 200, 50);                                           
-    lv_obj_add_event_cb(btn_subGhz_main, EVENTS::btn_event_subGhzTools, LV_EVENT_CLICKED, NULL); 
-
-    lv_obj_t *label_subGhz_main = lv_label_create(btn_subGhz_main);
-    lv_label_set_text(label_subGhz_main, "RF SubGhz Tools");       
-    lv_obj_center(label_subGhz_main);
-
-    // lv_obj_t *btn_BT_main = lv_btn_create(mainMenu);                                
-    // lv_obj_set_pos(btn_BT_main, 25, 70);                                            
-    // lv_obj_set_size(btn_BT_main, 200, 50);                                          
-    // lv_obj_add_event_cb(btn_BT_main, EVENTS::btn_event_BTTools, LV_EVENT_CLICKED, NULL); 
-
-    // lv_obj_t *label_BT_main = lv_label_create(btn_BT_main);
-    // lv_label_set_text(label_BT_main, "BlueTooth");       
-    // lv_obj_center(label_BT_main);
-
-    lv_obj_t *btn_teslaCharger_menu = lv_btn_create(mainMenu);
-    lv_obj_set_pos(btn_teslaCharger_menu, 25, 70);
-    lv_obj_set_size(btn_teslaCharger_menu, 200, 50);
-    lv_obj_add_event_cb(btn_teslaCharger_menu, EVENTS::btn_event_teslaCharger_run, LV_EVENT_ALL, NULL);
-
-    lv_obj_t *label_teslaCharger_menu = lv_label_create(btn_teslaCharger_menu);
-    lv_label_set_text(label_teslaCharger_menu, "Transmit tesla charger code");
-    lv_obj_center(label_teslaCharger_menu);
-
-    lv_obj_t *btn_IR_menu = lv_btn_create(mainMenu);
-    lv_obj_set_pos(btn_IR_menu, 25, 130);
-    lv_obj_set_size(btn_IR_menu, 200, 50);
-    lv_obj_add_event_cb(btn_IR_menu, EVENTS::btn_event_IR_menu_run, LV_EVENT_ALL, NULL);
-
-    lv_obj_t *label_IR_menu = lv_label_create(btn_IR_menu);
-    lv_label_set_text(label_IR_menu, "IR Tools");
-    lv_obj_center(label_IR_menu);
-
-    lv_obj_t *btn_NFC_menu = lv_btn_create(mainMenu);
-    lv_obj_set_pos(btn_NFC_menu, 25, 190);
-    lv_obj_set_size(btn_NFC_menu, 200, 50);
-    lv_obj_add_event_cb(btn_NFC_menu, EVENTS::btn_event_NFC_menu_run, LV_EVENT_ALL, NULL);
-
-    lv_obj_t *label_NFC_menu = lv_label_create(btn_NFC_menu);
-    lv_label_set_text(label_NFC_menu, "TEST NFC");
-    lv_obj_center(label_NFC_menu);
-
-        lv_obj_t *btn_RF24_menu = lv_btn_create(mainMenu);
-    lv_obj_set_pos(btn_RF24_menu, 25, 260);
-    lv_obj_set_size(btn_RF24_menu, 200, 50);
-    lv_obj_add_event_cb(btn_RF24_menu, EVENTS::btn_event_RF24_menu_run, LV_EVENT_CLICKED, NULL);
-
-
-
-    lv_obj_t *label_RF24_menu = lv_label_create(btn_RF24_menu);
-    lv_label_set_text(label_RF24_menu, "2.4 Ghz Jammer");
-    lv_obj_center(label_RF24_menu);
-
-}
-void ScreenManager::createJammerMenu()
-{
-    lv_obj_t *jammerMenu = lv_obj_create(NULL);
-    ScreenManager::apply_neon_theme(jammerMenu);
-    lv_scr_load(jammerMenu);
-    previous_screen = jammerMenu;
-
-    // Bluetooth Jam Button
-    lv_obj_t *btn_BT_main = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_BT_main, 25, 10);
-    lv_obj_set_size(btn_BT_main, 200, 50);
-    lv_obj_add_event_cb(btn_BT_main, [](lv_event_t *e) {
-        setState(BLUETOOTH_JAM);
-    }, LV_EVENT_CLICKED, NULL);
-
-    lv_obj_t *label_BTJAM_main = lv_label_create(btn_BT_main);
-    lv_label_set_text(label_BTJAM_main, "BT Jam");
-    lv_obj_center(label_BTJAM_main);
-
-    // Drone Jam Button
-    lv_obj_t *btn_DroneJam_menu = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_DroneJam_menu, 25, 70);
-    lv_obj_set_size(btn_DroneJam_menu, 200, 50);
-    lv_obj_add_event_cb(btn_DroneJam_menu, [](lv_event_t *e) {
-        setState(DRONE_JAM);
-    }, LV_EVENT_CLICKED, NULL);
-
-    lv_obj_t *label_DroneJam_menu = lv_label_create(btn_DroneJam_menu);
-    lv_label_set_text(label_DroneJam_menu, "Drone Jam");
-    lv_obj_center(label_DroneJam_menu);
-
-    // BLE Jam Button
-    lv_obj_t *btn_BLE_menu = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_BLE_menu, 25, 130);
-    lv_obj_set_size(btn_BLE_menu, 200, 50);
-    lv_obj_add_event_cb(btn_BLE_menu, [](lv_event_t *e) {
-        setState(BLE_JAM);
-    }, LV_EVENT_CLICKED, NULL);
-
-    lv_obj_t *label_BLEJAM_menu = lv_label_create(btn_BLE_menu);
-    lv_label_set_text(label_BLEJAM_menu, "BLE Jam");
-    lv_obj_center(label_BLEJAM_menu);
-
-    // WiFi Jam Button
-    lv_obj_t *btn_WiFi_menu = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_WiFi_menu, 25, 190);
-    lv_obj_set_size(btn_WiFi_menu, 200, 50);
-    lv_obj_add_event_cb(btn_WiFi_menu, [](lv_event_t *e) {
-        setState(WIFI_JAM);
-    }, LV_EVENT_CLICKED, NULL);
-
-    lv_obj_t *label_WiFi_menu = lv_label_create(btn_WiFi_menu);
-    lv_label_set_text(label_WiFi_menu, "WiFi Jam");
-    lv_obj_center(label_WiFi_menu);
-
-    // ZigBee Jam Button
-    lv_obj_t *btn_ZigBee_menu = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_ZigBee_menu, 25, 250);
-    lv_obj_set_size(btn_ZigBee_menu, 200, 50);
-    lv_obj_add_event_cb(btn_ZigBee_menu, [](lv_event_t *e) {
-        setState(ZIGBEE_JAM);
-    }, LV_EVENT_CLICKED, NULL);
-
-    lv_obj_t *label_ZigBee_menu = lv_label_create(btn_ZigBee_menu);
-    lv_label_set_text(label_ZigBee_menu, "ZigBee Jam");
-    lv_obj_center(label_ZigBee_menu);
-
-    // Misc Jam Button
-    lv_obj_t *btn_Misc_menu = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_Misc_menu, 25, 310);
-    lv_obj_set_size(btn_Misc_menu, 200, 50);
-    lv_obj_add_event_cb(btn_Misc_menu, [](lv_event_t *e) {
-        setState(MISC_JAM);
-    }, LV_EVENT_CLICKED, NULL);
-
-    lv_obj_t *label_Misc_menu = lv_label_create(btn_Misc_menu);
-    lv_label_set_text(label_Misc_menu, "Misc Jam");
-    lv_obj_center(label_Misc_menu);
-
-    // Stop Button
-    lv_obj_t *btn_Stop_menu = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_Stop_menu, 25, 370);
-    lv_obj_set_size(btn_Stop_menu, 200, 50);
-    lv_obj_add_event_cb(btn_Stop_menu, [](lv_event_t *e) {
-        setState(IDLE);
-        lv_obj_t *parent = lv_obj_get_parent((lv_obj_t *)lv_event_get_target(e));
-        lv_obj_t *child = lv_obj_get_child(parent, NULL);
-        while (child) {
-            lv_obj_set_style_bg_color(child, lv_color_hex(0x00FF00), 0); // Reset all button colors to green
-          //  child = lv_obj_get_child(parent, child);
-        }
-    }, LV_EVENT_CLICKED, NULL);
-
-    lv_obj_t *label_Stop_menu = lv_label_create(btn_Stop_menu);
-    lv_label_set_text(label_Stop_menu, "Stop");
-    lv_obj_center(label_Stop_menu);
+    apply_neon_theme_button(sendButton);  
 }
 
 
-
-void ScreenManager::createBTMenu()
-{
-    lv_obj_t *BTMenu = lv_obj_create(NULL);                                            // Create a new screen
+void ScreenManager::createBTMenu() {
+    lv_obj_t *BTMenu = lv_obj_create(NULL);
+    ScreenManager::apply_neon_theme(BTMenu);
     lv_scr_load(BTMenu);    
     lv_obj_delete(previous_screen);
-    previous_screen = BTMenu;                                                           // Load the new screen, make it active
-    lv_obj_t *btn_BT_main = lv_btn_create(BTMenu);                                 /*Add a button the current screen*/
-    lv_obj_set_pos(btn_BT_main, 25, 10);                                             /*Set its position*/
-    lv_obj_set_size(btn_BT_main, 150, 50);                                           /*Set its size*/
-    lv_obj_add_event_cb(btn_BT_main, EVENTS::btn_event_SourApple, LV_EVENT_CLICKED, NULL); /*Assign a callback to the button*/
+    previous_screen = BTMenu;
 
-    lv_obj_t *label_BLESPAM_main = lv_label_create(btn_BT_main); /*Add a label to the button*/
-    lv_label_set_text(label_BLESPAM_main, "Sour Apple");        /*Set the labels text*/
+    lv_obj_t *btn_BT_main = lv_btn_create(BTMenu);
+    lv_obj_set_pos(btn_BT_main, 25, 10);
+    lv_obj_set_size(btn_BT_main, 150, 50);
+    lv_obj_add_event_cb(btn_BT_main, EVENTS::btn_event_SourApple, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *label_BLESPAM_main = lv_label_create(btn_BT_main);
+    lv_label_set_text(label_BLESPAM_main, "Sour Apple");
     lv_obj_center(label_BLESPAM_main);
+    apply_neon_theme_button(btn_BT_main); 
 
-    lv_obj_t *btn_BT_maspam = lv_btn_create(BTMenu);                                 /*Add a button the current screen*/
-    lv_obj_set_pos(btn_BT_maspam, 25, 70);                                             /*Set its position*/
+    lv_obj_t *btn_BT_maspam = lv_btn_create(BTMenu);
+    lv_obj_set_pos(btn_BT_maspam, 25, 70);
     lv_obj_set_size(btn_BT_maspam, 150, 50);
-    lv_obj_add_event_cb(btn_BT_maspam, EVENTS::btn_event_BTSpam, LV_EVENT_CLICKED, NULL); /*Assign a callback to the button*/
-
-    lv_obj_t *label_SourApple_main = lv_label_create(btn_BT_maspam); /*Add a label to the button*/
-    lv_label_set_text(label_SourApple_main, "BLE spam");        /*Set the labels text*/
+    lv_obj_add_event_cb(btn_BT_maspam, EVENTS::btn_event_BTSpam, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *label_SourApple_main = lv_label_create(btn_BT_maspam);
+    lv_label_set_text(label_SourApple_main, "BLE spam");
     lv_obj_center(label_SourApple_main);
-
-
-
+    apply_neon_theme_button(btn_BT_maspam); 
 
     lv_obj_t *btn_c1101Others_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_c1101Others_menu, 25, 250);
     lv_obj_set_size(btn_c1101Others_menu, 200, 50);
-
     lv_obj_t *label_c1101Others_menu = lv_label_create(btn_c1101Others_menu);
     lv_label_set_text(label_c1101Others_menu, "Back");
     lv_obj_center(label_c1101Others_menu);
     lv_obj_add_event_cb(btn_c1101Others_menu, EVENTS::btn_event_mainMenu_run, LV_EVENT_CLICKED, NULL);
-
+    apply_neon_theme_button(btn_c1101Others_menu); 
 }
 
-void ScreenManager::createRFMenu()
-{
+void ScreenManager::createRFMenu() {
     lv_obj_t *rfMenu = lv_obj_create(NULL);
+    ScreenManager::apply_neon_theme(rfMenu);
     lv_scr_load(rfMenu);                   
     lv_obj_delete(previous_screen);
     previous_screen = rfMenu;
+
     lv_obj_t *btn_playZero_menu = lv_btn_create(rfMenu);
     lv_obj_set_pos(btn_playZero_menu, 25, 10);
     lv_obj_set_size(btn_playZero_menu, 200, 50);
     lv_obj_add_event_cb(btn_playZero_menu, EVENTS::btn_event_playZero_run, LV_EVENT_ALL, NULL);
-
     lv_obj_t *label_playZero_menu = lv_label_create(btn_playZero_menu);
     lv_label_set_text(label_playZero_menu, "Transmit saved codes");
     lv_obj_center(label_playZero_menu);
+    apply_neon_theme_button(btn_playZero_menu); 
 
     lv_obj_t *btn_c1101Alanalyzer_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_c1101Alanalyzer_menu, 25, 130);
     lv_obj_set_size(btn_c1101Alanalyzer_menu, 200, 50);
     lv_obj_add_event_cb(btn_c1101Alanalyzer_menu, EVENTS::btn_event_Replay_run, LV_EVENT_ALL, NULL);
-
     lv_obj_t *label_c1101Alanalyzer_menu = lv_label_create(btn_c1101Alanalyzer_menu);
     lv_label_set_text(label_c1101Alanalyzer_menu, "rec/play");
     lv_obj_center(label_c1101Alanalyzer_menu);
+    apply_neon_theme_button(btn_c1101Alanalyzer_menu); 
 
-        lv_obj_t *btn_SubGhzdetectForce_menu = lv_btn_create(lv_scr_act());
+    lv_obj_t *btn_SubGhzdetectForce_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_SubGhzdetectForce_menu, 25, 190);
     lv_obj_set_size(btn_SubGhzdetectForce_menu, 200, 50);
     lv_obj_add_event_cb(btn_SubGhzdetectForce_menu, EVENTS::btn_event_detectForce_run, LV_EVENT_ALL, NULL);
-
     lv_obj_t *label_SubGhzdetectForce_menu = lv_label_create(btn_SubGhzdetectForce_menu);
     lv_label_set_text(label_SubGhzdetectForce_menu, "detect signal");
     lv_obj_center(label_SubGhzdetectForce_menu);
+    apply_neon_theme_button(btn_SubGhzdetectForce_menu); 
 
     lv_obj_t *btn_c1101Others_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_c1101Others_menu, 25, 250);
     lv_obj_set_size(btn_c1101Others_menu, 200, 50);
-
     lv_obj_t *label_c1101Others_menu = lv_label_create(btn_c1101Others_menu);
     lv_label_set_text(label_c1101Others_menu, "Back");
     lv_obj_center(label_c1101Others_menu);
     lv_obj_add_event_cb(btn_c1101Others_menu, EVENTS::btn_event_mainMenu_run, LV_EVENT_CLICKED, NULL);
-
+    apply_neon_theme_button(btn_c1101Others_menu); 
 }
 
 void ScreenManager::createFileExplorerScreen()
 {
     ContainerHelper containerHelper;
     fileExplorerScreen = lv_obj_create(NULL);
+    ScreenManager::apply_neon_theme(fileExplorerScreen);
     lv_scr_load(fileExplorerScreen);
 
+    lv_obj_set_style_bg_color(fileExplorerScreen, lv_color_black(), 0);
+
     lv_obj_t *file_explorer = lv_file_explorer_create(fileExplorerScreen);
-    // lv_obj_t *header = lv_file_explorer_get_header(file_explorer);
-    // Open the root directory (drive letter 'S')
     lv_file_explorer_open_dir(file_explorer, "S:/");
-    
-    
+
+    lv_obj_set_style_bg_color(file_explorer, lv_color_black(), 0);
+
     lv_obj_t *footer;
     containerHelper.createContainer(&footer, fileExplorerScreen, LV_FLEX_FLOW_ROW, 35, 240);
+    
     lv_obj_t *explorerDelelete_btn = lv_btn_create(footer);
     lv_obj_t *explorerRename_btn = lv_btn_create(footer);
     lv_obj_t *explorerMove_btn = lv_btn_create(footer);
@@ -828,6 +829,10 @@ void ScreenManager::createFileExplorerScreen()
     lv_obj_set_align(explorerDelelete_btn, LV_ALIGN_BOTTOM_LEFT);
     lv_obj_set_align(explorerRename_btn, LV_ALIGN_BOTTOM_MID);
     lv_obj_set_align(explorerMove_btn, LV_ALIGN_BOTTOM_RIGHT);
+    
+    ScreenManager::apply_neon_theme_button(explorerDelelete_btn);
+    ScreenManager::apply_neon_theme_button(explorerRename_btn);
+    ScreenManager::apply_neon_theme_button(explorerMove_btn);
 
     lv_obj_t * explorerDelelete_lbl = lv_label_create(explorerDelelete_btn);
     lv_obj_t * explorerRename_lbl = lv_label_create(explorerRename_btn);
@@ -842,41 +847,54 @@ void ScreenManager::createFileExplorerScreen()
     lv_label_set_text(explorerMove_lbl, "MOV");
 
     lv_obj_add_event_cb(explorerDelelete_btn, EVENTS::file_explorer_event_delete_cb, LV_EVENT_CLICKED, NULL);
-  //  lv_obj_add_event_cb(explorerRename_btn, file_explorer_event_rename_cb, LV_EVENT_CLICKED);
-  //  lv_obj_add_event_cb(explorerMove_btn, file_explorer_event_move_cb, LV_EVENT_CLICKED);
-
-    lv_obj_add_event_cb(file_explorer, EVENTS::file_explorer_event_handler,  LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(file_explorer, EVENTS::file_explorer_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 }
+
 
 lv_style_t style_bg;
 lv_style_t style_text;
 lv_theme_t * neon_theme;
+lv_style_t style_button_bg;
 
 void ScreenManager::apply_neon_theme(lv_obj_t * obj) {
    if (!obj) return;
-
-    // Apply the styles to the object
-    lv_obj_add_style(obj, &style_bg, LV_PART_MAIN);  // Main part background
-    lv_obj_add_style(obj, &style_text, LV_PART_MAIN);  // Main part text
+    lv_obj_add_style(obj, &style_bg, LV_PART_MAIN);  
+    lv_obj_add_style(obj, &style_text, LV_PART_MAIN); 
+    lv_obj_set_style_bg_color(obj, lv_color_hex(0x000000), LV_PART_MAIN); 
+    lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, LV_PART_MAIN); 
+    lv_obj_set_style_text_color(obj, lv_color_hex(0x000000), LV_PART_MAIN); 
+    lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN); 
+    lv_style_init(&style_button_bg);
+    lv_style_set_bg_color(&style_button_bg, lv_color_hex(0x39FF14)); 
+    lv_style_set_bg_opa(&style_button_bg, LV_OPA_COVER);
+    lv_obj_add_style(obj, &style_button_bg, LV_PART_MAIN);  
 }
 
+void ScreenManager::apply_neon_theme_button(lv_obj_t * obj) {
+   if (!obj) return;
+    lv_obj_add_style(obj, &style_bg, LV_PART_MAIN);  
+    lv_obj_add_style(obj, &style_text, LV_PART_MAIN); 
+    lv_obj_set_style_bg_color(obj, lv_color_hex(0x39FF14), LV_PART_MAIN); 
+    lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, LV_PART_MAIN); 
+    lv_obj_set_style_text_color(obj, lv_color_hex(0x000000), LV_PART_MAIN); 
+    lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN); 
+    lv_style_init(&style_button_bg); 
+}
+
+
+
 void ScreenManager::create_neon_theme(void) {
-    // Initialize background style
     lv_style_init(&style_bg);
     lv_style_set_bg_color(&style_bg, lv_color_black());
     lv_style_set_bg_opa(&style_bg, LV_OPA_COVER);
-
-    // Initialize text style
     lv_style_init(&style_text);
-    lv_style_set_text_color(&style_text, lv_color_hex(0x39FF14)); // Neon green color
-    lv_style_set_text_font(&style_text, &lv_font_montserrat_14);  // Example font
+    lv_style_set_text_color(&style_text, lv_color_black()); 
+    lv_style_set_text_font(&style_text, &lv_font_montserrat_14);  
 }
 
 
 void ScreenManager::init_neon_theme(void) {
-        create_neon_theme();
-
-    // Get the active screen and apply the theme
+    create_neon_theme();
     lv_obj_t * screen = lv_scr_act();
     apply_neon_theme(screen);
 }

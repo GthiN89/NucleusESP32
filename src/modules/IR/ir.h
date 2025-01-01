@@ -2,10 +2,12 @@
 #define IR_H
 
 #include <stdint.h>
-#include "IRrecv.h"
+#include <IRremoteESP8266.h>
+#include <IRsend.h>
+#include <IRrecv.h>
 
 // IR TX and RX Pins
-#define IR_TX 26      // The IR sender LED
+#define IR_TX 26        // The IR sender LED
 #define IR_RX 34       // The IR receiver (if used)
 
 // EU/NA region settings
@@ -23,6 +25,13 @@
 #define freq_to_timerval(x) (x / 1000)
 
 // IR code structure definition
+struct IrCode {
+  uint8_t timer_val;
+  uint8_t numpairs;
+  uint8_t bitcompression;
+  uint16_t const *times;
+  uint8_t const *codes;
+};
 
 
 enum IRState {
@@ -33,9 +42,8 @@ enum IRState {
     IR_STATE_PLAYBACK,
     IR_STATE_BGONE
 };
-void sendReceived();
-
 extern IRState IRCurrentState;
-extern decode_results results;  
+extern decode_results results;   
+void sendReceived();
 
 #endif // IR_H

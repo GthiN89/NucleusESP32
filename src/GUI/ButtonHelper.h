@@ -6,8 +6,7 @@
 
 class ButtonHelper {
 public:
-    // Vytvoří tlačítko s nastavitelným textem a callback funkcí
     static lv_obj_t* createButton(lv_obj_t* parent, const char* text);
 };
 
-#endif // BUTTON_HELPER_H
+#endif 

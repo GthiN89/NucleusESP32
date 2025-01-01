@@ -7,8 +7,7 @@ char* current_dir;
 //char* selected_file;
 
 uint8_t C1101CurrentState = STATE_IDLE;
-uint8_t BTCurrentState = STATE_IDLE;
-uint8_t RFstate = GENERAL;
+
 
 
 bool C1101LoadPreset = true;
@@ -19,7 +18,7 @@ float CC1101_MHZ;
 
 bool teslaSucessFlag;
 
-
+uint8_t runningModule = MODULE_NONE;
 
 ////////////////////////////////////////
 //FLAGS

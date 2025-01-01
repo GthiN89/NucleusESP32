@@ -19,6 +19,7 @@ using namespace std;
 #include "lvgl.h"
 #include "modules/nfc/nfc.h"
 #include "modules/RF/rf24.h"
+#include "modules/RF/Radio.h"
 
 #define MAX_PATH_LENGTH 256
 
@@ -68,7 +69,6 @@ void EVENTS::btn_event_playZero_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);    
     if (code == LV_EVENT_CLICKED) {
         screenMgr.createFileExplorerScreen();
-        RFstate = WARM_UP;   
     }
 }
 
@@ -149,15 +149,18 @@ void EVENTS::btn_event_IR_menu_run(lv_event_t* e) {
 }
 
 void EVENTS::btn_event_NFC_menu_run(lv_event_t* e) {
-    // enableRFID();
- //    NFCCurrentState = NFC_READ;
+    //  lv_event_code_t code = lv_event_get_code(e);
+    // if (code == LV_EVENT_CLICKED) {
+    // RadioReceiver radio;
+    // Serial.println("Test");
+    // radio.setup();
+    // radio.loop();
+    // }
 }
 
 void EVENTS::btn_event_RF24_menu_run(lv_event_t* e) {
-            screenMgr.createJammerMenu();
-    Jammer jammer;
-    jammer.setup();
-    jammer.loadSettings();
+   // testRF24();
+ //   RF24CurrentState = RF24_STATE_TEST;
 }
 
 void EVENTS::ta_freq_event_cb(lv_event_t *e) {
@@ -376,6 +379,7 @@ void EVENTS::replayEvent(lv_event_t * e) {
     CC1101.setFrequency(freq);
 
     C1101CurrentState = STATE_PLAYBACK;
+    runningModule = MODULE_CC1101;
   }
   else
   {
@@ -393,7 +397,7 @@ void EVENTS::sendCapturedEvent(lv_event_t * e) {
 }
 
 void EVENTS::sendCapturedIREvent(lv_event_t * e) {
- //   IR.sendReceived();
+    sendReceived();
 }
 
 void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
@@ -402,6 +406,7 @@ void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
 
 void EVENTS::btn_event_UR_BGONE(lv_event_t * e) {
     IRCurrentState = IR_STATE_BGONE;
+    runningModule = MODULE_IR;
 }
 
 void EVENTS::btn_event_IR_START_READ(lv_event_t * e) {
@@ -410,25 +415,25 @@ void EVENTS::btn_event_IR_START_READ(lv_event_t * e) {
 }
 
  void EVENTS::btn_event_SourApple(lv_event_t * e){
-    screenMgr.createSourAppleScreen();
-    sourApple sa;
-    sa.setup();
+    // screenMgr.createSourAppleScreen();
+    // sourApple sa;
+    // sa.setup();
  }
 
   void EVENTS::btn_event_BTSpam(lv_event_t * e){
-    screenMgr.createBTSPamScreen();
+ //   screenMgr.createBTSPamScreen();
  }
 
   void EVENTS::btn_event_SourApple_Start(lv_event_t * e){
-    lv_obj_t * ta = screenMgr.getTextAreaSourAple();
-    lv_textarea_set_text(ta, "Running");
-    BTCurrentState = STATE_SOUR_APPLE;
+  //  lv_obj_t * ta = screenMgr.getTextAreaSourAple();
+  //  lv_textarea_set_text(ta, "Running");
+   // BTCurrentState = STATE_SOUR_APPLE;
  }
 
   void EVENTS::btn_event_SourApple_Stop(lv_event_t * e){
-    lv_obj_t * ta = screenMgr.getTextAreaSourAple();
-    lv_textarea_set_text(ta, "Not running");
-    BTCurrentState = STATE_SOUR_APPLE_IDLE;
+ //   lv_obj_t * ta = screenMgr.getTextAreaSourAple();
+  //  lv_textarea_set_text(ta, "Not running");
+  //  BTCurrentState = STATE_SOUR_APPLE_IDLE;
  }
 
    void EVENTS::btn_event_BTSpam_Start(lv_event_t * e){
@@ -483,6 +488,8 @@ void EVENTS::ta_preset_event_cb(lv_event_t * e) {
 
 
 void EVENTS::ta_rf_type_event_cb(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+     if (code == LV_EVENT_CLICKED) {
      char selected_text[32];
      lv_event_code_t code = lv_event_get_code(e);
      lv_obj_t* text_area = screenMgr.getTextArea();
@@ -495,22 +502,24 @@ void EVENTS::ta_rf_type_event_cb(lv_event_t * e) {
         lv_textarea_add_text(text_area,selected_text);
         lv_textarea_add_text(text_area, "\n");
     }  
+     }
 }
 
 void EVENTS::btn_event_IR_run(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+     if (code == LV_EVENT_CLICKED) {
 
     IRCurrentState = IR_STATE_LISTENING;
-        
+        runningModule = MODULE_IR;
+
+     }
 }
 
-void EVENTS::btn_event_IR_replay(lv_event_t* e) {
-
-    IRCurrentState = IR_STATE_PLAYBACK;
-        
-}
 
 void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 {
+    lv_event_code_t code = lv_event_get_code(e);
+     if (code == LV_EVENT_CLICKED) {
     char selected_text[32];
     char selected_text_type[32];
     char frequency_buffer[10];
@@ -525,21 +534,25 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     lv_textarea_set_text(text_area, "Waiting for signal.\n");
 
      CC1101.setCC1101Preset(convert_str_to_enum(selected_text));
-   //  CC1101.loadPreset();
+     CC1101.loadPreset();
      if(strcmp(selected_text_type, "Raw") == 0){
      CC1101.enableReceiver();
      } else {
 
-        CC1101.enableRCSwitch();
+      //  CC1101.enableRCSwitch();
         lv_textarea_add_text(text_area, "Decoder active.\n");
      }
      CC1101.setFrequency(CC1101_MHZ);
      delay(20);
     
     C1101CurrentState = STATE_ANALYZER;
+    runningModule = MODULE_CC1101;
+     }
 }
 
 void EVENTS::sendTesla(lv_event_t* e) {   
+    lv_event_code_t code = lv_event_get_code(e);
+     if (code == LV_EVENT_CLICKED) {
     const uint16_t pulseWidth = 400;
     const uint8_t messageLength = 43;
     const uint8_t sequence[messageLength] = {
@@ -551,22 +564,27 @@ void EVENTS::sendTesla(lv_event_t* e) {
     
     CC1101.sendByteSequence(sequence, pulseWidth, messageLength);
     digitalWrite(CC1101_CCGDO0A, LOW);
+     }
 }
 
 
 void EVENTS::btn_event_detect_run(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+     if (code == LV_EVENT_CLICKED) {
    // char string[32]; 
    Serial.println("Scanner");
     CC1101.setCC1101Preset(AM650);
   //  lv_obj_t * detectLabe = screenMgr.getdetectLabel();
    // lv_dropdown_get_selected_str(screenMgr.detect_dropdown_, string, sizeof(string));    
-    CC1101.enableScanner(432, 435);
+    CC1101.enableScanner(430, 440);
     Serial.println("Scanner2");
     CC1101.startSignalanalyseTask();
     delay(15);
     C1101CurrentState = STATE_DETECT;
+    runningModule = MODULE_CC1101;
 
       Serial.println("Scanner3");  
+     }
 
 }
 
@@ -579,7 +597,8 @@ void EVENTS::confirm_delete_event_handler(lv_event_t * e)
     lv_obj_t * clicked_btn = static_cast<lv_obj_t *>(lv_event_get_target(e));
 
 
-
+    lv_event_code_t code = lv_event_get_code(e);
+     if (code == LV_EVENT_CLICKED) {
 
     if (clicked_btn == yes_btn) {
         if(deleteFile(cur_path.c_str())) {
@@ -592,6 +611,8 @@ void EVENTS::confirm_delete_event_handler(lv_event_t * e)
     } else {
         lv_obj_del(msgbox);
     }
+
+     }
 
 }
 
@@ -735,7 +756,8 @@ lv_obj_add_event_cb(no_btn, EVENTS::confirm__explorer_play_sub_cb, LV_EVENT_CLIC
 void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
 {
 
-
+     lv_event_code_t code = lv_event_get_code(e);
+     if (code == LV_EVENT_CLICKED) {
     lv_obj_t * msgbox = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
     lv_obj_t * yes_btn = static_cast<lv_obj_t *>(lv_obj_get_user_data(msgbox));
     lv_obj_t * clicked_btn = static_cast<lv_obj_t *>(lv_event_get_target(e));
@@ -780,16 +802,17 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
 
     }                   
         } else {
-            RFstate = WARM_UP;
             updatetransmitLabel = false;
         lv_obj_del(msgbox);
     }
+     }
     
 }
 
 
 void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
-    RFstate == WARM_UP;
+    lv_event_code_t code = lv_event_get_code(e);
+     if (code == LV_EVENT_CLICKED) {
     updatetransmitLabel = false;
     stopTransmit = true;
     codesSend = 0;
@@ -799,6 +822,7 @@ void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
    CC1101.disableTransmit();
    digitalWrite(CC1101_CS, HIGH);
    C1101CurrentState = STATE_IDLE;
+}
 }
 
 

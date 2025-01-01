@@ -21,6 +21,7 @@ public:
 
     ScreenManager(const ScreenManager&) = delete;
     ScreenManager& operator=(const ScreenManager&) = delete;
+    void apply_neon_theme_button(lv_obj_t * obj);
     void createReplayScreen();
     void createmainMenu();
     void createRFMenu();

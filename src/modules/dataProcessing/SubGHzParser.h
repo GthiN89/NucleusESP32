@@ -6,14 +6,13 @@
 #include <string>
 #include <cstdint>
 
-// Define types for clarity and potential future flexibility
-using Frequency = uint32_t;  // Typically in Hz, unlikely to exceed 4.29 GHz
-using PresetString = String; // Arduino String for preset
-using ProtocolString = String; // Arduino String for protocol
-using RawDataElement = int16_t; // For raw data, allowing negative values
+using Frequency = uint32_t;  
+using PresetString = String; 
+using ProtocolString = String; 
+using RawDataElement = int16_t; 
 extern int codesSend;
 
-// Custom preset data is typically small values, often representing register settings
+
 using CustomPresetElement = uint8_t;
 
 struct SubGHzData {
@@ -30,6 +29,14 @@ struct SubGHzData {
 };
 
 
+struct RFDetect {
+    uint32_t frequencyIN;
+    uint32_t PAIn;
+    uint32_t frequencyOUT;
+    uint32_t PAOut;
+    uint32_t Preset;
+};
+
 class SubGHzParser {
 public:
     SubGHzParser();
@@ -44,6 +51,6 @@ private:
     std::vector<CustomPresetElement> parseCustomPresetData(const String& line);
     // Helper method to parse a line of raw data
     std::vector<RawDataElement> parseRawData(const String& line);
+    void clearData();
 };
-
 #endif // SUBGHZ_PARSER_H

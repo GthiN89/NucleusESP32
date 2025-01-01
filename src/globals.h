@@ -115,7 +115,6 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 class Jammer; // Forward declaration if needed
 
 extern bool teslaSucessFlag;
-extern uint8_t RFstate;
 
 extern Jammer jammer;
 
@@ -160,8 +159,19 @@ enum C1101State
   STATE_DETECT,
 };
 
-// Current State
 extern uint8_t C1101CurrentState;
+
+enum RunnigModule
+{
+  MODULE_NONE,
+  MODULE_CC1101,
+  MODULE_IR
+};
+
+// Current State
+ extern uint8_t runningModule;
+
+
 
 extern bool C1101LoadPreset;
 extern bool receiverEnabled;
@@ -170,10 +180,7 @@ extern float CC1101_MHZ;
 
 
 
-enum RFStateMashine {
-  GENERAL,
-  WARM_UP
-};
+
 
 
 

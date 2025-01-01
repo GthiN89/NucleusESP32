@@ -5,7 +5,7 @@
 
 #include <lvgl.h>
 
-// Definice typů vstupů
+
 enum InputType {
     TEXT_AREA,
     NUMBER,
@@ -15,12 +15,12 @@ enum InputType {
 
 
 
-// Typ callbacku pro dropdown menu
+
 typedef void (*DropdownCallback)(lv_event_t* e);
 
 class ContainerHelper {
 public:
-    // Metoda pro vytvoření kontejneru s flexibilním rozložením a rozměry
+
     static void createContainer(lv_obj_t** containerRef, lv_obj_t* parent, lv_flex_flow_t flex_flow, lv_coord_t height, lv_coord_t width);
   void fillTopContainer(lv_obj_t* parent, const char* labelText, InputType inputType,
                                        lv_obj_t** input, const char* placeholder, const char* initialText,
@@ -30,4 +30,4 @@ public:
 
 };
 
-#endif // CONTAINER_HELPER_H
+#endif 

@@ -263,26 +263,6 @@ void CC1101_CLASS::fskAnalyze() {
     }
 }
 
-void CC1101_CLASS::configRegisters(const uint8_t *byteArray, int length)
-{
-    int index = 0;
-
-    while (index < length) {
-        uint8_t addr = byteArray[index++];
-        uint8_t value = byteArray[index++];
-
-        if (addr == 0x00 && value == 0x00) {
-            break;
-        }
-        ELECHOUSE_cc1101.SpiWriteReg(addr, value);
-    }
-
-    std::array<uint8_t, 8> paValue;
-    std::copy(byteArray + index, byteArray + index + paValue.size(), paValue.begin());
-    ELECHOUSE_cc1101.SpiWriteBurstReg(CC1101_PATABLE, paValue.data(), paValue.size());
-}
-
-
 void CC1101_CLASS::enableScanner(float start, float stop)
 {
     start_freq = start;
@@ -320,7 +300,7 @@ void CC1101_CLASS::enableScanner(float start, float stop)
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
  
     
-    pinMode(CC1101_CCGDO2A, INPUT);
+    pinMode(CC1101_CCGDO0A, INPUT);
     ELECHOUSE_cc1101.SetRx();
 /////////////////////////////
 }
@@ -360,17 +340,15 @@ void CC1101_CLASS::enableReceiver()
     ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
     ELECHOUSE_cc1101.setDRate(CC1101_DRATE); // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
-
-
  
     
-    pinMode(CCGDO0A, INPUT);
-    receiverGPIO = digitalPinToInterrupt(CCGDO0A);    
+    pinMode(CC1101_CCGDO2A, INPUT_PULLDOWN);
+    receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO2A);    
     ELECHOUSE_cc1101.SetRx();
 /////////////////////////////
     receiverEnabled = true;
 //////////////////////////////
-   attachInterrupt(CCGDO0A, InterruptHandler, CHANGE);
+   attachInterrupt(CC1101_CCGDO2A, InterruptHandler, CHANGE);
 }
 
 void CC1101_CLASS::setCC1101Preset(CC1101_PRESET preset) {
@@ -383,16 +361,25 @@ void CC1101_CLASS::decodeWithESPiLight(uint16_t *pulseTrain, size_t length) {
         return;
     }
 
-    lv_obj_t *ta = screenMgr1.getTextArea();
+    bool foundSeparator = false;
+size_t startIndex = 0, endIndex = 0;
 
-    // Try decoding with ESPiLight first
+
+
+
+    // Decode the pulse train using ESPiLight
     size_t result = espilight.parsePulseTrain(pulseTrain, length);
+    lv_obj_t * ta = screenMgr1.getTextArea();
+
     if (result > 0) {
         Serial.println("Signal successfully decoded by ESPiLight:");
 
+        // Replace with actual ESPiLight API calls for protocol name and data
         String protocolName = ""; // Placeholder for protocol name
-        String decodedData = "";  // Placeholder for decoded data
+        String decodedData = "";           // Placeholder for decoded data
 
+        
+        // Print protocol and decoded data
         lv_textarea_set_text(ta, "\nProtocol: ");
         lv_textarea_add_text(ta, protocolName.c_str());
         lv_textarea_add_text(ta, "\nDecoded Data: ");
@@ -402,128 +389,181 @@ void CC1101_CLASS::decodeWithESPiLight(uint16_t *pulseTrain, size_t length) {
         Serial.println(protocolName);
         Serial.print("\nDecoded Data: ");
         Serial.println(decodedData);
-        return;
+        return; // If ESPiLight succeeds, stop further processing
     }
 
     Serial.println("Failed to decode signal with ESPiLight. Trying RC Switch...");
-
-    // Iterate through all potential sequences in the pulse train
-    size_t currentStartIndex = 0;
-
-    while (currentStartIndex < length) {
-        size_t startIndex = 0;
-        size_t endIndex = 0;
-        bool foundSeparator = false;
-
-        // Find the next sequence
-        for (size_t i = currentStartIndex; i < length; i++) {
-            if (pulseTrain[i] > 1000) {
-                if (!foundSeparator) {
-                    foundSeparator = true;
-                    startIndex = i + 1;  // Sequence starts after this separator
-                } else {
-                    endIndex = i;       // Sequence ends before the next separator
-                    break;
-                }
-            }
-        }
-
-        // Validate if a sequence was found
-        if (!foundSeparator || endIndex <= startIndex) {
-            Serial.println("No more valid sequences found.");
+// Find the first sequence between numbers > 1000
+for (size_t i = 0; i < length; i++) {
+    if (pulseTrain[i] > 1000) {
+        if (!foundSeparator) {
+            foundSeparator = true;
+            startIndex = i + 1;  // Sequence starts after this separator
+        } else {
+            endIndex = i;       // Sequence ends before the next separator
             break;
         }
+    }
+}
 
-        // Extract the sequence into a new variable
-        size_t sequenceLength = endIndex - startIndex;
-        std::vector<uint16_t> currentSequence(sequenceLength);
-        for (size_t i = 0; i < sequenceLength; i++) {
-            currentSequence[i] = pulseTrain[startIndex + i];
-        }
+// Modify the train to include only the extracted sequence
+if (foundSeparator && endIndex > startIndex) {
+    size_t newLength = endIndex - startIndex;
+    for (size_t i = 0; i < newLength; i++) {
+        pulseTrain[i] = pulseTrain[startIndex + i];
+    }
+    length = newLength;  // Update the length of the train
+} else {
+    // No valid sequence found
+    length = 0;
+}
 
-        // Ensure the sequence length is within RC Switch's limits
-        if (sequenceLength > RCSWITCH_MAX_CHANGES) {
-            Serial.println("Error: Pulse train too long for RC Switch.");
-            currentStartIndex = endIndex + 1;  // Move to the next potential sequence
-            continue;
-        }
+    // Enable RC Switch decoding
+    mySwitch.enableReceive();
 
-        // Enable RC Switch decoding
-        mySwitch.enableReceive();
-
-        // Populate RC Switch's timings array
-        for (size_t i = 0; i < sequenceLength; i++) {
-            mySwitch.timings[i] = currentSequence[i];
-        }
-
-        // Attempt decoding with RC Switch
-        for (int protocol = 1; protocol <= mySwitch.getNumProtos(); protocol++) {
-            if (mySwitch.receiveProtocol(protocol, sequenceLength)) {
-                unsigned long long receivedValue = mySwitch.getReceivedValue();
-
-                Serial.println("Decoded Signal using RC Switch:");
-                Serial.print("Protocol: ");
-                Serial.println(protDecode[protocol]);
-                Serial.print("Value: ");
-                Serial.println(receivedValue);
-                Serial.print("Bit Length: ");
-                Serial.println(mySwitch.getReceivedBitlength());
-                Serial.print("Pulse Length: ");
-                Serial.println(mySwitch.getReceivedDelay());
-
-                lv_textarea_add_text(ta, "\nDecoded Signal:");
-                lv_textarea_add_text(ta, "\nProtocol: ");
-                lv_textarea_add_text(ta, protDecode[protocol].c_str());
-                lv_textarea_add_text(ta, "\nValue: ");
-                lv_textarea_add_text(ta, std::to_string(receivedValue).c_str());
-                lv_textarea_add_text(ta, "\nBit Length: ");
-                lv_textarea_add_text(ta, std::to_string(mySwitch.getReceivedBitlength()).c_str());
-                lv_textarea_add_text(ta, "\nPulse Length: ");
-                lv_textarea_add_text(ta, std::to_string(mySwitch.getReceivedDelay()).c_str());
-
-                if (receivedValue == 0) {
-                    Serial.println("Unknown encoding.");
-                } else {
-                    // Print the value in binary and other formats
-                    Serial.print("Binary: ");
-                    lv_textarea_add_text(ta, "\nBinary: ");
-                    for (int i = mySwitch.getReceivedBitlength() - 1; i >= 0; i--) {
-                        Serial.print((receivedValue >> i) & 1);
-                        lv_textarea_add_text(ta, std::to_string((receivedValue >> i) & 1).c_str());
-                    }
-                    Serial.println();
-
-                    char hexBuffer[20];
-                    snprintf(hexBuffer, sizeof(hexBuffer), "0x%lX", receivedValue);
-                    lv_textarea_add_text(ta, "\nHex: ");
-                    lv_textarea_add_text(ta, hexBuffer);
-
-                    if (receivedValue <= 0x7F) {
-                        char asciiBuffer[2] = {0};
-                        asciiBuffer[0] = static_cast<char>(receivedValue);
-                        Serial.print("ASCII: '");
-                        Serial.write(asciiBuffer[0]);
-                        Serial.println("'");
-
-                        lv_textarea_add_text(ta, "\nASCII: '");
-                        lv_textarea_add_text(ta, asciiBuffer);
-                        lv_textarea_add_text(ta, "'");
-                    } else {
-                        lv_textarea_add_text(ta, "\nASCII: (non-printable)");
-                    }
-                }
-
-                mySwitch.resetAvailable();
-                return;  // Exit after successful decoding
-            }
-        }
-
-        // Move to the next potential sequence
-        currentStartIndex = endIndex + 1;
+    // Ensure the pulse train length is within RC Switch's limits
+    if (length > RCSWITCH_MAX_CHANGES) {
+        Serial.println("Error: Pulse train too long for RC Switch.");
+        return;
     }
 
-    Serial.println("Failed to decode signal with RC Switch.");
+    // Populate RC Switch's static timings array
+    for (size_t i = 0; i < length; i++) {
+        mySwitch.timings[i] = pulseTrain[i];
+    }
+
+    // Attempt to decode with RC Switch
+    for (int protocol = 1; protocol <= mySwitch.getNumProtos(); protocol++) {
+        if (mySwitch.receiveProtocol(protocol, length)) {
+            
+           unsigned long long receivedValue = mySwitch.getReceivedValue();
+            Serial.println("Decoded Signal using RC Switch:");
+            Serial.print("Protocol: ");
+            Serial.println(protDecode[protocol]);
+            Serial.print("Value: ");
+            Serial.println(receivedValue);
+            Serial.print("Bit Length: ");
+            Serial.println(mySwitch.getReceivedBitlength());
+            Serial.print("Pulse Length: ");
+            Serial.println(mySwitch.getReceivedDelay());
+
+            lv_textarea_add_text(ta, "\nDecoded Signal:");
+
+            lv_textarea_add_text(ta, "\nProtocol: ");
+            lv_textarea_add_text(ta, protDecode[protocol].c_str());
+            lv_textarea_add_text(ta, "\nValue: ");
+            lv_textarea_add_text(ta, std::to_string(receivedValue).c_str());
+            lv_textarea_add_text(ta, "\nBit Length: ");
+            lv_textarea_add_text(ta, std::to_string(mySwitch.getReceivedBitlength()).c_str());
+            lv_textarea_add_text(ta, "\nPulse Length: ");
+            lv_textarea_add_text(ta, std::to_string(mySwitch.getReceivedDelay()).c_str());
+    
+            
+
+    if (receivedValue == 0) {
+        Serial.println("Unknown encoding.");
+    } else {
+        // Print the value in binary
+        Serial.print("Binary: ");
+        lv_textarea_add_text(ta, "\nBinary: ");
+        for (int i = mySwitch.getReceivedBitlength() - 1; i >= 0; i--) {
+            Serial.print((receivedValue >> i) & 1);
+            lv_textarea_add_text(ta, std::to_string((receivedValue >> i) & 1).c_str());
+        }
+        Serial.println();
+            
+            
+        char hexBuffer[20];
+snprintf(hexBuffer, sizeof(hexBuffer), "0x%lX", receivedValue); // Convert to hex
+lv_textarea_add_text(ta, "\nHex: ");
+lv_textarea_add_text(ta, hexBuffer);
+
+
+if (receivedValue <= 0x7F) { 
+    char asciiBuffer[2] = {0}; 
+    asciiBuffer[0] = static_cast<char>(receivedValue); // Convert to character
+    Serial.print("ASCII: '");
+    Serial.write(asciiBuffer[0]); // Debug in Serial
+    Serial.println("'");
+    
+    lv_textarea_add_text(ta, "\nASCII: '");
+    lv_textarea_add_text(ta, asciiBuffer); // Add ASCII character
+    lv_textarea_add_text(ta, "'");
+} else {
+    lv_textarea_add_text(ta, "\nASCII: (non-printable)");
 }
+
+
+    // Reset for the next signal
+    mySwitch.resetAvailable();
+            return;
+        }
+    }
+
+    // If neither ESPiLight nor RC Switch could decode the signal
+    Serial.println("Failed to decode signal with RC Switch as well.");
+    // Serial.println("Attempting RTL433 decoding...");
+
+    // // Check if the pulse train is within reasonable limits
+    // if (length > 0 && length < 750) {  // Using MAXPULSESTREAMLENGTH from header
+    //     // Allocate a pulse_data_t structure
+    //     pulse_data_t *pulse_data = (pulse_data_t*)malloc(sizeof(pulse_data_t));
+    //     if (!pulse_data) {
+    //         Serial.println("Memory allocation failed");
+    //         return;
+    //     }
+
+    //     // Clear the structure
+    //     memset(pulse_data, 0, sizeof(pulse_data_t));
+
+    //     // Copy pulse train to pulse_data
+    //     pulse_data->num_pulses = length;
+    //     for (size_t i = 0; i < length; i++) {
+    //         pulse_data->pulse[i] = pulseTrain[i];
+    //     }
+
+    //     // Create a callback function to handle the output
+    //     auto rtl433Callback = [](char *message) {
+    //         lv_obj_t * ta = screenMgr1.getTextArea();
+            
+    //         Serial.println("RTL433 Decoded Message:");
+    //         Serial.println(message);
+            
+    //         lv_textarea_add_text(ta, "\nRTL433 Decoded Message:");
+    //         lv_textarea_add_text(ta, message);
+    //     };
+
+    //     // Allocate a message buffer
+    //     char messageBuffer[256];  // Adjust size as needed
+    //     rtl_433_ESP rtl433(ONBOARD_LED);  // Using the onboard LED pin
+        
+    //     // Set the callback
+    //     rtl433.setCallback(rtl433Callback, messageBuffer, sizeof(messageBuffer));
+
+    //     // Attempt to process the pulse data
+    //     // Note: This is speculative and may require modification
+    //     r_cfg_t cfg;
+    //     rtl_433_ESP::rtlSetup(&cfg);
+
+    //     // Dispatch the pulse data (method to be confirmed)
+    //     // You'll need to replace this with the actual method from the library
+    //     // This is a placeholder
+    //  //   int result = process_pulse_data(&cfg, pulse_data);
+
+    //     // Free the allocated memory
+    //     free(pulse_data);
+
+    //     // if (result == 0) {
+    //     //     Serial.println("RTL433 processing completed");
+    //     //     return;
+    //     // }
+   // }
+
+    // If all decoding methods fail
+    Serial.println("Failed to decode signal with all methods.");
+}
+}
+
 
 void CC1101_CLASS::disableReceiver()
 {
@@ -1133,41 +1173,3 @@ void CC1101_CLASS::saveSignal() {
 //;
 }
 
-void CC1101_CLASS::enableRCSwitch()
-{
-    if (!CC1101_is_initialized) {
-        CC1101_CLASS::init();
-    }
-    CC1101_CLASS::loadPreset();
-
-   // ELECHOUSE_cc1101.Init();
-
-    // if (CC1101_MODULATION == 2)
-    // {
-    //     ELECHOUSE_cc1101.setDcFilterOff(0);
-    // }
-
-    // if (CC1101_MODULATION == 0)
-    // {
-    //     ELECHOUSE_cc1101.setDcFilterOff(1);
-    // }
-
-     ELECHOUSE_cc1101.setDcFilterOff(1);
-    ELECHOUSE_cc1101.setSyncMode(CC1101_SYNC);  // Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.
-    ELECHOUSE_cc1101.setPktFormat(CC1101_PKT_FORMAT); // Format of RX and TX data. 0 = Normal mode, use FIFOs for RX and TX.
-                                                      // 1 = Synchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
-                                                      // 2 = Random TX mode; sends random data using PN9 generator. Used for test. Works as normal mode, setting 0 (00), in RX.
-                                                      // 3 = Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
-                                                      // ELECHOUSE_cc1101.setSyncMode(3);       
-    ELECHOUSE_cc1101.setModulation(CC1101_MODULATION); // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
-    ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);               // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
-    ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
-    ELECHOUSE_cc1101.setDRate(CC1101_DRATE); // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
-    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
-    
-    pinMode(CC1101_CCGDO0A, INPUT);
-    receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO0A);    
-
-    mySwitch.enableReceive(CC1101_CCGDO0A); // Receiver on
-
-}

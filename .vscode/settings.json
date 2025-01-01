@@ -64,7 +64,8 @@
         "esp_lcd_panel_ops.h": "c",
         "esp_panel_ili9341.h": "c",
         "spi_master.h": "c",
-        "esp32_smartdisplay.h": "c"
+        "esp32_smartdisplay.h": "c",
+        "rtl_433_devices.h": "c"
     },
     "idf.portWin": "COM5",
     "C_Cpp.errorSquiggles": "disabled"

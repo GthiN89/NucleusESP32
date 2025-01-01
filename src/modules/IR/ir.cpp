@@ -7,8 +7,9 @@
 #define IR_TX_PIN IR_TX
 IRsend irsend(IR_TX_PIN); // IRsend object for transmitting IR signals
 IRState IRCurrentState;
+decode_results results;  
 
-decode_results results;   
+
    
 
 void sendReceived() {
