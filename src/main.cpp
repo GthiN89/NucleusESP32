@@ -20,6 +20,7 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <IRsend.h>
+#include "GUI/logo.h"
 
 IRrecv irrecv(IR_RX);   
 
@@ -56,13 +57,16 @@ void setup() {
   init_touch([]() { Serial.println(F("Single touch detected!")); });
   smartdisplay_init();
   auto disp = lv_disp_get_default();
-  
+
   #ifdef CYDV2
     touchscreen.setCalibration(153, 123, 1915, 1824);
   #endif
   #ifdef CYDV3
     touchscreen.setCalibration(180, 197, 1807, 1848);
   #endif
+    screenMgrM.draw_image();
+    lv_task_handler();
+    delay(3000);
     screenMgrM.createmainMenu();
     register_touch(disp);
     SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI);
@@ -81,6 +85,7 @@ void setup() {
     pinMode(IR_RX, INPUT_PULLUP);
     irrecv.enableIRIn();
     pinMode(IR_TX, OUTPUT);
+
 }
  
  void CC1101Loop() {
@@ -106,14 +111,12 @@ void setup() {
         break;
 
     case STATE_DETECT:
-        lv_label_set_text(
-            screenMgrM.detectLabel,
-            (String("Frequency: ") + strongestASKFreqs[0] +
-             " MHz | RSSI: " + strongestASKRSSI[0] +
-             "\nFrequency: " + strongestASKFreqs[1] +
-             " MHz | RSSI: " + strongestASKRSSI[1] +
-             "\nFrequency: " + strongestASKFreqs[2] +
-             " MHz | RSSI: " + strongestASKRSSI[2])
+        lv_label_set_text(screenMgrM.detectLabel, 
+            (String("Frequencies:\n") +
+            "Frequency: " + strongestASKFreqs[0] + " MHz | RSSI: " + strongestASKRSSI[0] + "\n" +
+            "Frequency: " + strongestASKFreqs[1] + " MHz | RSSI: " + strongestASKRSSI[1] + "\n" +
+            "Frequency: " + strongestASKFreqs[2] + " MHz | RSSI: " + strongestASKRSSI[2] + "\n" +
+            "Frequency: " + strongestASKFreqs[3] + " MHz | RSSI: " + strongestASKRSSI[3] + "\n\n")
             .c_str());
         break;
 
@@ -122,23 +125,11 @@ void setup() {
             SubGHzParser parser;
             parser.loadFile(EVENTS::fullPath);
             SubGHzData data = parser.parseContent();
-            updatetransmitLabel = true;
         }
         break;
 
     default:
         break;
-    }
-
-    if (updatetransmitLabel) {
-        String text;
-        if (!SD_CARD.FlipperFileFlag) {
-            text = "Transmitting\n Count: " + String(codesSend);
-        } else {
-            text = "Transmission complete";
-            SD_CARD.FlipperFileFlag = false;
-        }
-        lv_label_set_text(label_sub, text.c_str());
     }
 }
  

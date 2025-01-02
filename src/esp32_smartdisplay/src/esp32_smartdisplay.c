@@ -1,9 +1,11 @@
 #include "esp32_smartdisplay.h"
 #include <esp_lcd_panel_ops.h>
+#include "lvgl.h"
 
 #ifdef BOARD_HAS_TOUCH
 #include <esp_lcd_touch.h>
 #endif
+#include "GUI/logo.h"
 
 // Defines for adaptive brightness adjustment
 #define BRIGHTNESS_SMOOTHING_MEASUREMENTS 100
@@ -49,17 +51,17 @@ void lvgl_log(lv_log_level_t level, const char *buf)
 // Set backlight intensity
 void smartdisplay_lcd_set_backlight(float duty)
 {
-  log_v("duty:%2f", duty);
+//   log_v("duty:%2f", duty);
 
-  if (duty > 1.0f)
-    duty = 1.0f;
-  if (duty < 0.0f)
-    duty = 0.0f;
-#if ESP_ARDUINO_VERSION_MAJOR >= 3
-  ledcWrite(GPIO_BCKL, duty * PWM_MAX_BCKL);
-#else
-  ledcWrite(PWM_CHANNEL_BCKL, duty * PWM_MAX_BCKL);
-#endif
+//   if (duty > 1.0f)
+//     duty = 1.0f;
+//   if (duty < 0.0f)
+//     duty = 0.0f;
+// #if ESP_ARDUINO_VERSION_MAJOR >= 3
+//   ledcWrite(GPIO_BCKL, duty * PWM_MAX_BCKL);
+// #else
+//   ledcWrite(PWM_CHANNEL_BCKL, duty * PWM_MAX_BCKL);
+// #endif
 }
 
 #ifdef BOARD_HAS_CDS
@@ -83,25 +85,25 @@ float smartdisplay_lcd_adaptive_brightness_cds()
 
 void adaptive_brightness(lv_timer_t *timer)
 {
-  log_v("timer:0x%08x", timer);
+  // log_v("timer:0x%08x", timer);
 
-  const smartdisplay_lcd_adaptive_brightness_cb_t callback = timer->user_data;
-  smartdisplay_lcd_set_backlight(callback());
+  // const smartdisplay_lcd_adaptive_brightness_cb_t callback = timer->user_data;
+  // smartdisplay_lcd_set_backlight(callback());
 }
 
 void smartdisplay_lcd_set_brightness_cb(smartdisplay_lcd_adaptive_brightness_cb_t cb, uint interval)
 {
-  log_v("adaptive_brightness_cb:0x%08x, interval:%u", cb, interval);
+  // log_v("adaptive_brightness_cb:0x%08x, interval:%u", cb, interval);
 
-  // Delete current timer if any
-  if (update_brightness_timer)
-    lv_timer_del(update_brightness_timer);
+  // // Delete current timer if any
+  // if (update_brightness_timer)
+  //   lv_timer_del(update_brightness_timer);
 
-  // Use callback for intensity or 50% default
-  if (cb && interval > 0)
-    update_brightness_timer = lv_timer_create(adaptive_brightness, interval, cb);
-  else
-    smartdisplay_lcd_set_backlight(0.5f);
+  // // Use callback for intensity or 50% default
+  // if (cb && interval > 0)
+  //   update_brightness_timer = lv_timer_create(adaptive_brightness, interval, cb);
+  // else
+  //   smartdisplay_lcd_set_backlight(0.5f);
 }
 
 #ifdef BOARD_HAS_RGB_LED
@@ -154,6 +156,7 @@ touch_calibration_data_t smartdisplay_compute_touch_calibration(const lv_point_t
 };
 #endif
 
+
 void smartdisplay_init()
 {
   log_d("smartdisplay_init");
@@ -187,7 +190,7 @@ void smartdisplay_init()
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
   ledcAttach(GPIO_BCKL, PWM_FREQ_BCKL, PWM_BITS_BCKL);
 #else
-  ledcSetup(PWM_CHANNEL_BCKL, PWM_FREQ_BCKL, PWM_BITS_BCKL);
+ // ledcSetup(PWM_CHANNEL_BCKL, PWM_FREQ_BCKL, PWM_BITS_BCKL);
 #endif
   // Setup TFT display
   display = lvgl_lcd_init();

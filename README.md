@@ -23,7 +23,7 @@ With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol f
 - **Updated to new LVGL**: This was challenging.  
 - **Touch drivers**: Moving to the new LVGL reminded me why I use bitbang drivers - drivers are included and should compile from source.  
 - **New file browser**: Unlike the previous version, this one is usable, even with bare hands.  
-- **SubGhz file transmission**: When the system starts transmitting, if the `.sub` file contains more codes (e.g., brute-force files), sending completes when the counter stops increasing. You need to copy warmup `.sub` files to the root of your SD card to make it work. (This is due to the classic SPI issues; I’ll find a better solution).  
+- **SubGhz file transmission**: When the system starts transmitting, if the `.sub` file contains more codes (e.g., brute-force files), sending completes when the counter stops increasing.
 - **CYD Smart Display Library Compatibility**: The compiler may have issues with `display->sw_rotate` and `LED_RGB`. You can comment out or delete these sections; they would only cause problems anyway.  
 - **RFID Module Support**: Added initialization and testing; works as expected.  
 - **RF24L01 Module Support**: Successfully initialized.  

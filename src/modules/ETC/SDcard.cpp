@@ -8,7 +8,7 @@
 
 // SoftSPI configuration
 SoftSpiDriver<SDCARD_MISO_PIN, SDCARD_MOSI_PIN, SDCARD_SCK_PIN> softSpi;
-#define SD_CONFIG SdSpiConfig(SDCARD_CS_PIN, DEDICATED_SPI, SPI_HALF_SPEED, &softSpi)
+#define SD_CONFIG SdSpiConfig(SDCARD_CS_PIN, DEDICATED_SPI, SPI_FULL_SPEED, &softSpi)
 
 SdFat32 SD;  
 
@@ -93,7 +93,6 @@ File32* SDcard::createOrOpenFile(const char* filePath, oflag_t mode) {
     Serial.println(filePath);
     return file;
 }
-
 
 bool SDcard::closeFile(File32* file) {
     if (file) {

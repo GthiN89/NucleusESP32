@@ -5,6 +5,8 @@
 #include <esp_lcd_panel_io.h>
 #include <esp_lcd_panel_vendor.h>
 #include <esp_lcd_panel_ops.h>
+#include "GUI/logo.h"
+
 
 bool st7789_color_trans_done(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
 {
@@ -26,6 +28,9 @@ void st7789_lv_flush(lv_display_t *display, const lv_area_t *area, uint8_t *px_m
 
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, px_map));
 };
+
+
+
 
 lv_display_t *lvgl_lcd_init(uint32_t hor_res, uint32_t ver_res)
 {

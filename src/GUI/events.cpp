@@ -56,13 +56,11 @@ char* EVENTS::fullPath;
 lv_obj_t* label_sub;
 static char buffer[256];
 
-bool isWarmupStarted;
-
 TaskHandle_t taskHandle = NULL; 
 
 void EVENTS::btn_event_playZero_run(lv_event_t* e) {
     digitalWrite(SDCARD_CS_PIN, LOW);
-    delay(10); // Allow SD card to stabilize
+   // delay(10); // Allow SD card to stabilize
     if (!SD_EVN.initializeSD()) {
         Serial.println(F("Failed to initialize SD card!"));
     }
@@ -71,47 +69,6 @@ void EVENTS::btn_event_playZero_run(lv_event_t* e) {
         screenMgr.createFileExplorerScreen();
     }
 }
-
-void EVENTS::warmup() {
-    // Serial.println(millis());
-
-    // if (millis() - previousMillis >= 500) {
-    //     previousMillis = millis();
-    //     isWarmupStarted = false;
-
-    //     SDInit();
-    //     if (SD.exists("/warmpup1.sub")) {
-    //         read_sd_card_flipper_file("/warmpup1.sub");
-    //         detachInterrupt(CC1101_CCGDO0A);
-    //         CC1101.initrRaw();
-    //         ELECHOUSE_cc1101.setCCMode(0); 
-    //         ELECHOUSE_cc1101.setPktFormat(3);
-    //         ELECHOUSE_cc1101.SetTx();
-    //         pinMode(CC1101_CCGDO0A, OUTPUT);
-    //         SubGHzParser parser;
-    //         parser.loadFile("/warmpup1.sub");
-    //         SubGHzData data = parser.parseContent();
-    //     } else {
-    //         Serial.println("File does not exist.");
-    //     }
-    //      SDInit();
-    //     if (SD.exists("/warmpup1.sub")) {
-    //         read_sd_card_flipper_file("/warmpup1.sub");
-    //         detachInterrupt(CC1101_CCGDO0A);
-    //         CC1101.initrRaw();
-    //         ELECHOUSE_cc1101.setCCMode(0); 
-    //         ELECHOUSE_cc1101.setPktFormat(3);
-    //         ELECHOUSE_cc1101.SetTx();
-    //         pinMode(CC1101_CCGDO0A, OUTPUT);
-    //         SubGHzParser parser;
-    //         parser.loadFile("/warmpup1.sub");
-    //         SubGHzData data = parser.parseContent();
-    //     } else {
-    //         Serial.println("File does not exist.");
-    //     }
-    // }
-}
-
 
 void EVENTS::btn_event_Replay_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -132,7 +89,7 @@ void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
         screenMgr.createTeslaScreen();
-        delay(10);
+     //   delay(10);
         detachInterrupt(CC1101_CCGDO0A);
         CC1101_MODULATION = 2;
         CC1101.CC1101_FREQ = 433.92;
@@ -365,6 +322,15 @@ void EVENTS::saveSignal(lv_event_t * e) {
     CC1101.saveSignal();
 }
 
+void EVENTS::closeCC1101scanner(lv_event_t * e){    
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        CC1101.disableReceiver();
+        C1101CurrentState = STATE_IDLE;
+        runningModule = MODULE_NONE;
+        screenMgr.createRFMenu();
+    }
+}
 
 void EVENTS::replayEvent(lv_event_t * e) {
     lv_obj_t * text_area = screenMgr.getTextArea();
@@ -543,7 +509,7 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
         lv_textarea_add_text(text_area, "Decoder active.\n");
      }
      CC1101.setFrequency(CC1101_MHZ);
-     delay(20);
+   //  delay(20);
     
     C1101CurrentState = STATE_ANALYZER;
     runningModule = MODULE_CC1101;
@@ -573,13 +539,15 @@ void EVENTS::btn_event_detect_run(lv_event_t* e) {
      if (code == LV_EVENT_CLICKED) {
    // char string[32]; 
    Serial.println("Scanner");
-    CC1101.setCC1101Preset(AM650);
+   
   //  lv_obj_t * detectLabe = screenMgr.getdetectLabel();
    // lv_dropdown_get_selected_str(screenMgr.detect_dropdown_, string, sizeof(string));    
-    CC1101.enableScanner(430, 440);
+    CC1101.setCC1101Preset(AM650);
+    CC1101.loadPreset();
+    CC1101.enableScanner(300, 925);
     Serial.println("Scanner2");
     CC1101.startSignalanalyseTask();
-    delay(15);
+ //   delay(5);
     C1101CurrentState = STATE_DETECT;
     runningModule = MODULE_CC1101;
 
@@ -768,7 +736,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
             Serial.println(EVENTS::fullPath);
             String text = "Transmitting\n Codes send: " + String(codesSend);
             lv_label_set_text(label_sub, text.c_str());
-            updatetransmitLabel = true;
+         //   updatetransmitLabel = true;
             lv_obj_clean(button_container);
             lv_obj_set_size(button_container, LV_PCT(100), LV_SIZE_CONTENT);
             lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW);
@@ -778,10 +746,6 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
             lv_obj_t *close_btn_lbl = lv_label_create(close_btn);
             lv_label_set_text(close_btn_lbl, "Close");
             lv_obj_add_event_cb(close_btn, EVENTS::close_explorer_play_sub_cb, LV_EVENT_CLICKED, msgbox);
-
-  
-        //warm up of CC1101
-  
 
 
     Serial.println("Load button clicked.");
@@ -812,16 +776,15 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
 
 void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
-     if (code == LV_EVENT_CLICKED) {
-    updatetransmitLabel = false;
+    if (code == LV_EVENT_CLICKED) {
     stopTransmit = true;
     codesSend = 0;
     lv_obj_t * msgbox = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
     lv_obj_del(msgbox);
-    isWarmupStarted = true;
-   CC1101.disableTransmit();
-   digitalWrite(CC1101_CS, HIGH);
-   C1101CurrentState = STATE_IDLE;
+    CC1101.disableTransmit();
+    digitalWrite(CC1101_CS, HIGH);
+    C1101CurrentState = STATE_IDLE;
+    runningModule = MODULE_NONE;
 }
 }
 
@@ -846,32 +809,17 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
     Serial.print("Loading file: ");
     Serial.println(fullPath);
       if (SD_EVN.fileExists(fullPath)) {
-      SD_EVN.read_sd_card_flipper_file(fullPath);
-      delay(1);
+     SD_EVN.read_sd_card_flipper_file(fullPath);
+        SubGHzParser parser;
+    parser.loadFile(fullPath);
+    SubGHzData data = parser.parseContent();
+   //   delay(1);
   } else {
       Serial.println("File does not exist.");
   }
-    SubGHzParser parser;
-    parser.loadFile(fullPath);
-    SubGHzData data = parser.parseContent();
+
 
     vTaskDelete(taskHandle);
-
-   //disconnectSD();
-
- 
-
-
-//   if (SD.exists(fullPath)) {
-//       read_sd_card_flipper_file(fullPath);
-//       delay(1);
-//   } else {
-//       Serial.println("File does not exist.");
-//   }
-    
-//    free(fullPath);
-
-//     vTaskDelete(NULL);
 }
 
 

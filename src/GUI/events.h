@@ -13,7 +13,6 @@ extern bool stopTransmit;
 
 extern int SpamDevice;
 extern lv_obj_t* label_sub;
-extern bool isWarmupStarted;
 extern bool stopTransmiting;
 class EVENTS {
 
@@ -51,8 +50,8 @@ static void btn_event_BTSpam_Start(lv_event_t * e);
 static void btn_event_BTSpam_Stop(lv_event_t * e);
 static void btn_event_detectForce_run(lv_event_t* e);
 static void btn_event_detect_run(lv_event_t* e);
+static void closeCC1101scanner(lv_event_t * e);
 static void ta_rf_type_event_cb(lv_event_t * e);
-static void warmup();
 static void dropdown_modulation_event_cb(lv_event_t *e);
 static void ok_button_event_cb(lv_event_t *e);
 static void sendTesla(lv_event_t *e);

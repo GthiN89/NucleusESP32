@@ -87,6 +87,8 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
         }
         start = end + 1;
     }
+    String text = "Transmitting\n Codes send: " + String(codesSend);
+    lv_label_set_text(label_sub, text.c_str());
     return result;
 }
 
@@ -135,8 +137,8 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
     codesSend++;
     Serial.print(SD_SUB.tempFreq);
     CC1101.setFrequency(SD_SUB.tempFreq);
-  //  CC1101.setCC1101Preset(C1101preset);
-   // CC1101.loadPreset();
+    CC1101.setCC1101Preset(C1101preset);
+    CC1101.loadPreset();
     Serial.println(presetToString(C1101preset));   
 
    
@@ -144,7 +146,6 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
 
     C1101CurrentState = STATE_IDLE;
     runningModule = MODULE_NONE;
-
 
   }
 
@@ -262,7 +263,7 @@ bool SubGHzParser::loadFile(const char* filename) {
 
 
 void SubGHzParser::clearData() {
-    data = SubGHzData(); 
+    data = SubGHzData();  // Reset data to a new instance (clears all fields)
     SD_SUB.tempFreq = 0;
     SD_SUB.tempSampleCount = 0;
     C1101CurrentState = STATE_IDLE;

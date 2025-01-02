@@ -368,39 +368,23 @@ void ScreenManager::createIRRecScreen() {
 void ScreenManager::createRFdetectScreen() {
     ContainerHelper containerHelper;
 
-    // CC1101_MODULATION = 0;  0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
-    // CC1101_DRATE = 4.79794; 0.02 to 1621.83. Default is 99.97 kBaud!
-    // CC1101_RX_BW = 270.833333; // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
-    // CC1101_DEVIATION = 2.380371;
-
     detectScreen_ = lv_obj_create(NULL);
     lv_scr_load(detectScreen_);
+    lv_obj_delete(previous_screen);
+
     previous_screen = detectScreen_;
-   lv_obj_set_flex_flow(detectScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_flow(detectScreen_, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(detectScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
 
-    lv_obj_t * topLabel_container_;
-    containerHelper.createContainer(&topLabel_container_, teslaScreen_, LV_FLEX_FLOW_ROW, 125, 240);
-    lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
-
-    detect_dropdown_ = lv_dropdown_create(topLabel_container_);
-    lv_dropdown_set_options(detect_dropdown_, "AM650\nAM270\nFM238\nFM476\nFM95\nFM15k\nPAGER\nHND1\nHND2\n");
-
-
-    customPreset = lv_dropdown_create(topLabel_container_);
-    lv_dropdown_set_options(customPreset, "FRQ1\nFRQ2\nFRQ3\nFRQ4\nFRQ5\n");
-    //lv_obj_set_size(customPreset, 70, 30);
-
-
-    containerHelper.createContainer(&secondLabel_detectForce_container_, detectScreen_, LV_FLEX_FLOW_COLUMN, 240, 240);
+    containerHelper.createContainer(&secondLabel_detectForce_container_, detectScreen_, LV_FLEX_FLOW_COLUMN, 270, 240);
     lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
 
 
     detectLabel = lv_label_create(secondLabel_detectForce_container_);
-    lv_obj_set_size(detectLabel, 210, 140);
+    lv_obj_set_size(detectLabel, 210, 180);
     lv_obj_align(detectLabel, LV_ALIGN_LEFT_MID, 0, 0);
-    lv_label_set_text(detectLabel, "detect label");
+    lv_label_set_text(detectLabel, "Press start");
 
 
    containerHelper.createContainer(&button_container_Detec1_, detectScreen_, LV_FLEX_FLOW_ROW, 35, 240);
@@ -408,16 +392,15 @@ void ScreenManager::createRFdetectScreen() {
    lv_obj_t *startButton = ButtonHelper::createButton(button_container_Detec1_, "Start");
     lv_obj_add_event_cb(startButton, EVENTS::btn_event_detect_run, LV_EVENT_CLICKED, NULL);
 
-   lv_obj_t *stopButton = ButtonHelper::createButton(button_container_Detec1_, "Pause");
-    lv_obj_add_event_cb(stopButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL);
+   lv_obj_t *stopButton = ButtonHelper::createButton(button_container_Detec1_, "Exit");
+    lv_obj_add_event_cb(stopButton, EVENTS::closeCC1101scanner, LV_EVENT_CLICKED, NULL);
+}
 
-    // Container for save and exit buttons
- //   containerHelper.createContainer(&button_container_detectForce2_, detectScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-
-  //  lv_obj_t *setButton = ButtonHelper::createButton(button_container_detectForce2_, "Save");
-  //  lv_obj_t *exitButton = ButtonHelper::createButton(button_container_detectForce2_, "Exit");
-    // lv_obj_add_event_cb(setButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, NULL);
-    // lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL);
+void ScreenManager::draw_image() {
+  LV_IMAGE_DECLARE(logo_dsc);
+  lv_obj_t * img1 = lv_image_create(lv_screen_active());
+  lv_image_set_src(img1, &logo_dsc);
+  lv_obj_align(img1, LV_ALIGN_CENTER, 0, 0);
 }
 
 void ScreenManager::createSourAppleScreen() {
@@ -510,6 +493,7 @@ void ScreenManager::createBTSPamScreen() {
 void ScreenManager::createIRMenuScreen() {
     lv_obj_t *IRMenu = lv_obj_create(NULL);                                        
     lv_scr_load(IRMenu);
+    lv_obj_delete(previous_screen);
     ScreenManager::apply_neon_theme(IRMenu);
     previous_screen = IRMenu;                                                        
     
@@ -600,6 +584,7 @@ void ScreenManager::createJammerMenu() {
     lv_obj_t *jammerMenu = lv_obj_create(NULL);
     ScreenManager::apply_neon_theme(jammerMenu);
     lv_scr_load(jammerMenu);
+    lv_obj_delete(previous_screen);
     previous_screen = jammerMenu;
 
     // Bluetooth Jam Button
@@ -807,6 +792,7 @@ void ScreenManager::createFileExplorerScreen()
     fileExplorerScreen = lv_obj_create(NULL);
     ScreenManager::apply_neon_theme(fileExplorerScreen);
     lv_scr_load(fileExplorerScreen);
+    lv_obj_delete(previous_screen);
 
     lv_obj_set_style_bg_color(fileExplorerScreen, lv_color_black(), 0);
 

@@ -4,7 +4,7 @@
 #include "../../globals.h"
 #include "RCSwitch.h"
 #include "SPI.h"
-#define SAMPLE_SIZE 512
+#define SAMPLE_SIZE 1024
 
 
 
@@ -19,8 +19,8 @@
  extern bool CC1101_transmit_is_running;
  extern bool CC1101_isiddle;
  extern bool CC1101_interup_attached;
- extern int sample[];
- extern int samplecount;
+ extern uint16_t  sample[];
+ extern uint8_t samplecount;
  extern bool startLow;
  extern int CC1101_MODULATION;
  extern uint32_t actualFreq;
@@ -74,10 +74,7 @@ private:
 
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
-    void decodeWithESPiLight(uint16_t *timings, size_t length);
-
-
-    
+    void decodeWithESPiLight(uint16_t *timings, size_t length);    
 };
 
 #endif 

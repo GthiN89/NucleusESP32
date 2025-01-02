@@ -4,6 +4,7 @@
 #include "lvgl.h"
 #include <functional>
 #include "XPT2046_Bitbang.h"
+#include "logo.h"
 
 class ScreenManager {
 public:
@@ -36,6 +37,7 @@ public:
     void create_neon_theme(void);
     static void apply_neon_theme(lv_obj_t * obj);
     void createJammerMenu();
+    void draw_image();
 
     lv_obj_t* customPreset;
     lv_obj_t *input_datarate;
