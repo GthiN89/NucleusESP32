@@ -89,48 +89,42 @@ void setup() {
 }
  
  void CC1101Loop() {
-    switch (C1101CurrentState) {
-    case STATE_ANALYZER:
+    if(C1101CurrentState == STATE_ANALYZER) {
+                    delay(50);
         if (CC1101.CheckReceived()) {
-            delay(5);
+            delay(50);
             CC1101.signalanalyse();
             CC1101.disableReceiver();
-            delay(10);
+            delay(50);
             C1101CurrentState = STATE_IDLE;
             runningModule = MODULE_NONE;
         }
-        delay(1);
-        break;
-
-    case STATE_PLAYBACK:
+    }
+    if(C1101CurrentState == STATE_PLAYBACK) {
         CC1101.initrRaw();
         CC1101.sendRaw();
         CC1101.disableTransmit();
         C1101CurrentState = STATE_IDLE;
         runningModule = MODULE_NONE;
-        break;
-
-    case STATE_DETECT:
-        lv_label_set_text(screenMgrM.detectLabel, 
-            (String("Frequencies:\n") +
-            "Frequency: " + strongestASKFreqs[0] + " MHz | RSSI: " + strongestASKRSSI[0] + "\n" +
-            "Frequency: " + strongestASKFreqs[1] + " MHz | RSSI: " + strongestASKRSSI[1] + "\n" +
-            "Frequency: " + strongestASKFreqs[2] + " MHz | RSSI: " + strongestASKRSSI[2] + "\n" +
-            "Frequency: " + strongestASKFreqs[3] + " MHz | RSSI: " + strongestASKRSSI[3] + "\n\n")
-            .c_str());
-        break;
-
-    case STATE_SEND_FLIPPER:
-        {
-            SubGHzParser parser;
-            parser.loadFile(EVENTS::fullPath);
-            SubGHzData data = parser.parseContent();
-        }
-        break;
-
-    default:
-        break;
     }
+    if(C1101CurrentState == STATE_DETECT) {
+        lv_label_set_text(screenMgrM.detectLabel, 
+        (String("Frequencies:\n") +
+        "Frequency: " + strongestASKFreqs[0] + " MHz | RSSI: " + strongestASKRSSI[0] + "\n" +
+        "Frequency: " + strongestASKFreqs[1] + " MHz | RSSI: " + strongestASKRSSI[1] + "\n" +
+        "Frequency: " + strongestASKFreqs[2] + " MHz | RSSI: " + strongestASKRSSI[2] + "\n" +
+        "Frequency: " + strongestASKFreqs[3] + " MHz | RSSI: " + strongestASKRSSI[3] + "\n\n")
+        .c_str());
+    }
+    if(C1101CurrentState == STATE_SEND_FLIPPER) {
+        SubGHzParser parser;
+        parser.loadFile(EVENTS::fullPath);
+        SubGHzData data = parser.parseContent();
+    }
+    if(C1101CurrentState == STATE_IDLE) {
+        runningModule = MODULE_NONE;
+    }  
+
 }
  
  void IRLoop() {

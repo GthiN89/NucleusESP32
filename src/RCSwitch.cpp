@@ -35,25 +35,9 @@
 
 #include "RCSwitch.h"
 
-#ifdef RaspberryPi
-    // PROGMEM and _P functions are for AVR based microprocessors,
-    // so we must normalize these for the ARM processor:
-    #define PROGMEM
-    #define memcpy_P(dest, src, num) memcpy((dest), (src), (num))
-#endif
 
-#if defined(ESP8266)
-    // interrupt handler and related code must be in RAM on ESP8266,
-    // according to issue #46.
-    #define RECEIVE_ATTR ICACHE_RAM_ATTR
-    #define VAR_ISR_ATTR
-#elif defined(ESP32)
     #define RECEIVE_ATTR IRAM_ATTR
     #define VAR_ISR_ATTR DRAM_ATTR
-#else
-    #define RECEIVE_ATTR
-    #define VAR_ISR_ATTR
-#endif
 
 
 /* Protocol description format
@@ -735,12 +719,9 @@ static inline unsigned int diff(int A, int B) {
  *
  */
 bool RCSwitch::receiveProtocol(const int p, unsigned int changeCount) {
-#if defined(ESP8266) || defined(ESP32)
+
     const Protocol &pro = proto[p-1];
-#else
-    Protocol pro;
-    memcpy_P(&pro, &proto[p-1], sizeof(Protocol));
-#endif
+
 
     unsigned long long code = 0;
     unsigned int FirstTiming = 0;

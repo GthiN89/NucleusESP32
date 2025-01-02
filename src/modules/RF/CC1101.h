@@ -4,8 +4,8 @@
 #include "../../globals.h"
 #include "RCSwitch.h"
 #include "SPI.h"
-#define SAMPLE_SIZE 1024
-
+#define SAMPLE_SIZE 2048
+#define MAX_SIGNAL_LENGTH 10000000  
 
 
    //---------------------------------------------------------------------------//
@@ -67,14 +67,14 @@ public:
     void enableScanner(float start, float stop);
 
 private:
-    int smoothcount;
-    unsigned long samplesmooth[SAMPLE_SIZE];
+    size_t smoothcount;
+    uint16_t samplesmooth[SAMPLE_SIZE];
     String rawString = "";
     int minsample = 15;
 
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
-    void decodeWithESPiLight(uint16_t *timings, size_t length);    
+   void decodeWithESPiLight(uint16_t *pulseTrain, size_t length);
 };
 
 #endif 

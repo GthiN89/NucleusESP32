@@ -59,13 +59,14 @@ static char buffer[256];
 TaskHandle_t taskHandle = NULL; 
 
 void EVENTS::btn_event_playZero_run(lv_event_t* e) {
+        lv_event_code_t code = lv_event_get_code(e);    
+    if (code == LV_EVENT_CLICKED) {
     digitalWrite(SDCARD_CS_PIN, LOW);
    // delay(10); // Allow SD card to stabilize
     if (!SD_EVN.initializeSD()) {
         Serial.println(F("Failed to initialize SD card!"));
     }
-    lv_event_code_t code = lv_event_get_code(e);    
-    if (code == LV_EVENT_CLICKED) {
+
         screenMgr.createFileExplorerScreen();
     }
 }
@@ -178,7 +179,8 @@ void EVENTS::ta_freq_event_cb(lv_event_t *e) {
 }
 
 void EVENTS::dropdown_modulation_event_cb(lv_event_t *e) {
-  
+      lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
     int selected = lv_dropdown_get_selected(screenMgr.dropdown_modulation); // Get selected index
 
     if (selected == 0) { // ASK selected
@@ -187,6 +189,7 @@ void EVENTS::dropdown_modulation_event_cb(lv_event_t *e) {
     } else if (selected == 1) { // FSK selected
         CC1101_MODULATION = 0;
         Serial.println("Modulation set to FSK.");
+    }
     }
 }
 
@@ -211,6 +214,8 @@ InputType get_input_type(lv_obj_t *textarea) {
 }
 
 void EVENTS::ok_button_event_cb(lv_event_t *e) {
+        lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
     lv_obj_t *container = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
     lv_obj_t *textareas[] = { screenMgr.input_datarate, screenMgr.input_bandwidth, screenMgr.input_deviation };
     const char *messages[] = {
@@ -267,6 +272,8 @@ void EVENTS::ok_button_event_cb(lv_event_t *e) {
                       lv_textarea_get_text(screenMgr.input_deviation));
         lv_msgbox_create(NULL);
     }
+    }
+
 }
 
 
@@ -292,7 +299,8 @@ void EVENTS::ta_filename_event_cb(lv_event_t * e) {
     } else {
         Serial.println("Error: Filename input, keyboard, or text_area is NULL");
     }
-}
+    }
+
 
 
 void EVENTS::kb_event_cb(lv_event_t * e) {
@@ -311,15 +319,21 @@ void EVENTS::kb_qwert_event_cb(lv_event_t * e) {
 
 
 void EVENTS::save_RF_to_sd_event(lv_event_t * e) {
+        lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
     lv_obj_t* text_area = screenMgr.getTextArea();
     lv_textarea_set_text(text_area, "Moving to SD\n");
    // CC1101.saveToSD();
     lv_textarea_set_text(text_area, "Done.");
+    }
 }
 
 void EVENTS::saveSignal(lv_event_t * e) {
+        lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
     Serial.print("event se spustil");
     CC1101.saveSignal();
+    }
 }
 
 void EVENTS::closeCC1101scanner(lv_event_t * e){    
@@ -335,7 +349,8 @@ void EVENTS::closeCC1101scanner(lv_event_t * e){
 void EVENTS::replayEvent(lv_event_t * e) {
     lv_obj_t * text_area = screenMgr.getTextArea();
     lv_textarea_set_text(text_area, "Sending signal from buffer");
-
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
       Serial.print("event_playback_rec_play");
 
   if (C1101CurrentState == STATE_IDLE)
@@ -352,32 +367,50 @@ void EVENTS::replayEvent(lv_event_t * e) {
     Serial.print("NOT IDLE");
   }
     lv_textarea_add_text(text_area, "Signal has been send");
+    }
 }
 
 void EVENTS::exitReplayEvent(lv_event_t * e) {
+        lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
     screenMgr.createRFMenu();
+    }
 }
 void EVENTS::sendCapturedEvent(lv_event_t * e) {
+        lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
     lv_obj_t * text_area = screenMgr.getTextAreaRCSwitchMethod();
     CC1101.sendRaw();
+    }
 }
 
 void EVENTS::sendCapturedIREvent(lv_event_t * e) {
+        lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
     sendReceived();
+    }
 }
 
 void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
+     lv_event_code_t code = lv_event_get_code(e);
+     if (code == LV_EVENT_CLICKED) {
     screenMgr.createRFMenu();
+     }
 }
 
 void EVENTS::btn_event_UR_BGONE(lv_event_t * e) {
+        lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
     IRCurrentState = IR_STATE_BGONE;
     runningModule = MODULE_IR;
+    }
 }
 
 void EVENTS::btn_event_IR_START_READ(lv_event_t * e) {
+        lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
     screenMgr.createIRRecScreen();
-    
+    }
 }
 
  void EVENTS::btn_event_SourApple(lv_event_t * e){
@@ -421,15 +454,21 @@ void EVENTS::btn_event_IR_START_READ(lv_event_t * e) {
  
 
 void EVENTS::btn_event_BTTools(lv_event_t * e) {
-    screenMgr.createBTMenu();
+        lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        screenMgr.createBTMenu();
 }
-
+}
 void EVENTS::btn_event_mainMenu_run(lv_event_t* e) {   
+     lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
     screenMgr.createmainMenu();
 }
-
+}
 
 void EVENTS::ta_preset_event_cb(lv_event_t * e) {
+     lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
      char selected_text[32];
      lv_event_code_t code = lv_event_get_code(e);
      lv_obj_t* text_area = screenMgr.getTextArea();
@@ -451,7 +490,7 @@ void EVENTS::ta_preset_event_cb(lv_event_t * e) {
     CC1101.loadPreset();
 
 } 
-
+}
 
 void EVENTS::ta_rf_type_event_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -485,7 +524,7 @@ void EVENTS::btn_event_IR_run(lv_event_t* e) {
 void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 {
     lv_event_code_t code = lv_event_get_code(e);
-     if (code == LV_EVENT_CLICKED) {
+    if (code == LV_EVENT_CLICKED) {
     char selected_text[32];
     char selected_text_type[32];
     char frequency_buffer[10];
@@ -499,21 +538,21 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 
     lv_textarea_set_text(text_area, "Waiting for signal.\n");
 
-     CC1101.setCC1101Preset(convert_str_to_enum(selected_text));
-     CC1101.loadPreset();
+ //    CC1101.setCC1101Preset(convert_str_to_enum(selected_text));
+ //    CC1101.loadPreset();
      if(strcmp(selected_text_type, "Raw") == 0){
      CC1101.enableReceiver();
      } else {
 
       //  CC1101.enableRCSwitch();
-        lv_textarea_add_text(text_area, "Decoder active.\n");
+    lv_textarea_add_text(text_area, "Decoder active.\n");
      }
      CC1101.setFrequency(CC1101_MHZ);
    //  delay(20);
-    
-    C1101CurrentState = STATE_ANALYZER;
     runningModule = MODULE_CC1101;
-     }
+    C1101CurrentState = STATE_ANALYZER;
+    
+    }
 }
 
 void EVENTS::sendTesla(lv_event_t* e) {   
@@ -794,6 +833,7 @@ void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
 
 void EVENTS::CC1101TransmitTask(void* pvParameters) {    
     
+
     char* fullPath = static_cast<char*>(pvParameters);
 
     detachInterrupt(CC1101_CCGDO0A);
@@ -820,6 +860,7 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
 
 
     vTaskDelete(taskHandle);
-}
+    }
+
 
 

@@ -53,7 +53,6 @@ enum SPI_STATE
   SPI_STATE_RC522
 };
 
-extern SPI_STATE SPICurrentState;
 
 const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0); // May have to be set if hardware is not fully compatible to Arduino specifications.
 
@@ -118,28 +117,18 @@ extern bool teslaSucessFlag;
 
 extern Jammer jammer;
 
-//extern SoftSpiDriver<CYD_MISO, CYD_MOSI, CYD_SCLK> vspi;
 
-
-
-//extern const SPISettings spiSettings; 
 
    //---------------------------------------------------------------------------//
   //-----------------------------ENUMBS----------------------------------------//
  //---------------------------------------------------------------------------//
-// SPI STATE!
+// 
 
 
 
 
 
 
-
-
-
-
-
-// C1101 state mashine
 enum C1101State
 {
   STATE_IDLE,
@@ -151,11 +140,7 @@ enum C1101State
   STATE_PLAYBACK,
   STATE_TESLA_US,
   STATE_TESLA_EU,
-  STATE_AUDIO_TEST,
   STATE_SEND_FLIPPER,
-  STATE_WIFI_SCAN,
-  STATE_SEND_BLESPAM,
-  STATE_PULSE_SCAN,
   STATE_DETECT,
 };
 
@@ -178,12 +163,6 @@ extern bool receiverEnabled;
 extern float CC1101_MHZ;
 
 
-
-
-
-
-
-
 enum BTState
 {
   STATE_SOUR_APPLE_IDLE,
@@ -194,21 +173,16 @@ enum BTState
 
     typedef struct
 {
-    std::vector<unsigned long> samples;
-    volatile unsigned long lastReceiveTime = 0;
+  std::vector<unsigned long> samples;
+  volatile unsigned long lastReceiveTime = 0;
 } recievedData;
 
-// Current State
-extern uint8_t BTCurrentState;
+
 
 //////////////////////////////////////////////////////////////////////////
 //FLAGS
 ///////////////////
 extern bool CC1101_init; 
-extern bool CC1101_RCSwitch_init; 
-extern bool CC1101_RCSwitch_listen;
-extern bool CC1101_RCSwitch_play;
-extern bool bruteIsRunning;
 
 // Function declarations
 typedef void (*TouchCallback)();

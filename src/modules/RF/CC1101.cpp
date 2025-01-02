@@ -10,6 +10,13 @@
 #include "SPI.h"
 #include "modules/ETC/SDcard.h"
 #include "ESPiLight.h"
+#include <esp_timer.h>
+#include <esp_attr.h>
+#include <driver/gpio.h>
+#include <esp_intr_alloc.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/portmacro.h>
+
 
 
 float start_freq = 433;
@@ -70,6 +77,9 @@ ESPiLight espilight(-1);
 
 ScreenManager& screenMgr1 = ScreenManager::getInstance();
 
+portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+
+
 using namespace std;
 int receiverGPIO;
 
@@ -108,66 +118,93 @@ RCSwitch CC1101_CLASS::getRCSwitch() {
  return mySwitch;
 }
 
-void IRAM_ATTR InterruptHandler()
-{    
 
-    if (!receiverEnabled)
-    {
-        return;
-    }
+#define CONFIG_CPU_FREQ_MHZ 240
+#define CYCLES_PER_MICROSECOND CONFIG_CPU_FREQ_MHZ
+
+
+static inline uint32_t IRAM_ATTR getCycleCount() {
+    uint32_t ccount;
+    __asm__ __volatile__("rsr %0,ccount":"=a" (ccount));
+    return ccount;
+}
+
+// microseconds to CPU cycles
+static inline uint32_t IRAM_ATTR usToTicks(uint32_t us) {
+    return us * CYCLES_PER_MICROSECOND;
+}
+
+//CPU cycles to microseconds
+static inline uint32_t IRAM_ATTR ticksToUs(uint32_t ticks) {
+    return ticks / CYCLES_PER_MICROSECOND;
+}
+
+void IRAM_ATTR InterruptHandler() {    
+    if (!receiverEnabled) return;
+
+    static volatile uint64_t DRAM_ATTR lastTime = 0;
+    static volatile bool DRAM_ATTR signalStarted = false;
     
-    const long time = micros();
-    const unsigned int duration = time - lastTime;
+    const uint64_t time = xthal_get_ccount();
+    const uint64_t duration = time - lastTime;
+    lastTime = time;
 
-    if (duration > 100000)
-    {
-        samplecount = 0;
-    }
 
-    if (duration >= 100)
-    {
-        sample[samplecount++] = duration;
-    }
+    constexpr uint64_t TIMEOUT_TICKS = 1000000 * 240; // 1000ms timeout
+    constexpr uint64_t MIN_DURATION_TICKS = 50 * 240; // 50µs minimum duration
 
-    if (samplecount >= SAMPLE_SIZE)
-    {
+
+    if (duration > TIMEOUT_TICKS) {
+        if (!signalStarted) {
+            samplecount = 0;
+            signalStarted = false;
+        }
         return;
     }
 
-    if (CC1101_MODULATION == 0)
-    {
-        if (samplecount == 1 && digitalRead(receiverGPIO) != HIGH)
-        {
-            samplecount = 0;
-        }
+
+    if (duration < MIN_DURATION_TICKS) return;
+
+
+    if (!signalStarted && duration > MIN_DURATION_TICKS) {
+        signalStarted = true;
     }
 
-    lastTime = time;
+
+    if (samplecount >= SAMPLE_SIZE) {
+        signalStarted = false;
+        return;
+    }
+
+
+    sample[samplecount++] = duration / 240;
+
+
+    if (signalStarted && duration > TIMEOUT_TICKS/2) {
+        signalStarted = false;
+    }
 }
 
 
-bool CC1101_CLASS::init()
-{
+
+bool CC1101_CLASS::init() {
     ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
     ELECHOUSE_cc1101.Init();
 
-    if (ELECHOUSE_cc1101.getCC1101())
-    {
+    if (ELECHOUSE_cc1101.getCC1101()) {
+        ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL2, 0x07);  // Maximum LNA gain
+        ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL1, 0x00);  // Fastest AGC
+        ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL0, 0x91);  // Normal AGC, 16 samples
+        ELECHOUSE_cc1101.SpiWriteReg(CC1101_FREND1, 0xB6);    // RX frontend configuration
+        ELECHOUSE_cc1101.SpiWriteReg(CC1101_FREND0, 0x10);    // TX frontend configuration
+        
         ELECHOUSE_cc1101.setGDO(CCGDO0A, CCGDO2A);
         ELECHOUSE_cc1101.setSidle();
-        CC1101_isiddle = true;
         CC1101_is_initialized = true;
         return true;
     }
-    else
-    {
-        ELECHOUSE_cc1101.setSidle();
-        CC1101_isiddle = true;
-        return false;
-    }
-    
+    return false;
 }
-
 
 void CC1101_CLASS::setFrequency(float freq)
 {
@@ -186,213 +223,68 @@ void CC1101_CLASS::setPTK(int ptk)
 }
 
 
-void CC1101_CLASS::enableReceiver()
-{
+void CC1101_CLASS::enableReceiver() {
+    portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+    portENTER_CRITICAL(&mux);
+
     if (!CC1101_is_initialized) {
         CC1101_CLASS::init();
     }
     CC1101_CLASS::loadPreset();
 
-    memset(sample, 0, sizeof(SAMPLE_SIZE));
+    // Clear sample buffer with memset
+    memset(sample, 0, sizeof(uint16_t) * SAMPLE_SIZE);
     samplecount = 0;
 
-   // ELECHOUSE_cc1101.Init();
-
-    if (CC1101_MODULATION == 2)
-    {
-        ELECHOUSE_cc1101.setDcFilterOff(0);
-    }
-
-    if (CC1101_MODULATION == 0)
-    {
-        ELECHOUSE_cc1101.setDcFilterOff(1);
-    }
-
-     ELECHOUSE_cc1101.setDcFilterOff(1);
-    ELECHOUSE_cc1101.setSyncMode(CC1101_SYNC);  // Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.
-    ELECHOUSE_cc1101.setPktFormat(CC1101_PKT_FORMAT); // Format of RX and TX data. 0 = Normal mode, use FIFOs for RX and TX.
-                                                      // 1 = Synchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
-                                                      // 2 = Random TX mode; sends random data using PN9 generator. Used for test. Works as normal mode, setting 0 (00), in RX.
-                                                      // 3 = Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
-                                                      // ELECHOUSE_cc1101.setSyncMode(3);       
-    ELECHOUSE_cc1101.setModulation(CC1101_MODULATION); // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
-    ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);               // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
-    ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
-    ELECHOUSE_cc1101.setDRate(CC1101_DRATE); // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
-    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Set the Receive Bandwidth in kHz. Value from 58.03 to 812.50. Default is 812.50 kHz.
- 
+    // Optimize CC1101 settings for longer signals
+    ELECHOUSE_cc1101.setSidle();
     
+    // Set wider bandwidth and disable filters
+    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Maximum bandwidth
+    ELECHOUSE_cc1101.setDcFilterOff(1); // Disable DC blocking
+    
+    // Disable packet handling
+    ELECHOUSE_cc1101.setSyncMode(0);    // No sync word
+    ELECHOUSE_cc1101.setPktFormat(3);   // Async serial mode
+    
+    // Configure for maximum sensitivity
+    ELECHOUSE_cc1101.SpiWriteReg(0x18, 0x50); // AGC settings
+    ELECHOUSE_cc1101.SpiWriteReg(0x1B, 0x07); // High sensitivity
+    ELECHOUSE_cc1101.SpiWriteReg(0x1D, 0x91); // Frequency offset compensation
+
+    // Standard configuration
+    ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);
+    ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);
+    ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
+    ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
+
+    // Configure GPIO for interrupt
     pinMode(CC1101_CCGDO2A, INPUT);
     receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO2A);    
+
+    // Flush FIFOs and calibrate
+    ELECHOUSE_cc1101.SpiStrobe(0x3A);    // Flush RX
+    ELECHOUSE_cc1101.SpiStrobe(0x3B);    // Flush TX
+    ELECHOUSE_cc1101.SpiStrobe(0x33);    // Calibrate
+
+    // Enter RX mode
     ELECHOUSE_cc1101.SetRx();
-/////////////////////////////
     receiverEnabled = true;
-//////////////////////////////
-   attachInterrupt(CC1101_CCGDO2A, InterruptHandler, CHANGE);
+
+    // Attach interrupt with high priority
+    esp_intr_alloc(ETS_GPIO_INTR_SOURCE,
+                   ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1,
+                   (intr_handler_t)InterruptHandler,
+                   NULL,
+                   NULL);
+    attachInterrupt(CC1101_CCGDO2A, InterruptHandler, CHANGE);
+
+    portEXIT_CRITICAL(&mux);
 }
+
 
 void CC1101_CLASS::setCC1101Preset(CC1101_PRESET preset) {
     C1101preset = preset;
-}
-
-void CC1101_CLASS::decodeWithESPiLight(uint16_t *pulseTrain, size_t length) {
-    if (length == 0) {
-        Serial.println("No pulses to decode.");
-        return;
-    }
-
-    bool foundSeparator = false;
-    size_t startIndex = 0, endIndex = 0;
-    uint16_t extractedSequence[RCSWITCH_MAX_CHANGES]; // Buffer to store extracted sequences
-
-    // Decode the pulse train using ESPiLight
-    size_t result = espilight.parsePulseTrain(pulseTrain, length);
-    lv_obj_t *ta = screenMgr1.getTextArea();
-
-    if (result > 0) {
-        Serial.println("Signal successfully decoded by ESPiLight:");
-        String protocolName = ""; // Placeholder for protocol name
-        String decodedData = "";  // Placeholder for decoded data
-
-        lv_textarea_set_text(ta, "\nProtocol: ");
-        lv_textarea_add_text(ta, protocolName.c_str());
-        lv_textarea_add_text(ta, "\nDecoded Data: ");
-        lv_textarea_add_text(ta, decodedData.c_str());
-
-        Serial.print("\nProtocol: ");
-        Serial.println(protocolName);
-        Serial.print("\nDecoded Data: ");
-        Serial.println(decodedData);
-        return; // If ESPiLight succeeds, stop further processing
-    }
-
-    Serial.println("Failed to decode signal with ESPiLight. Trying RC Switch...");
-
-    // Try to find and decode multiple sequences
-    while (startIndex < length) {
-        // Find the first sequence between numbers > 1000
-        for (size_t i = startIndex; i < length; i++) {
-            if (pulseTrain[i] > 1000) {
-                if (!foundSeparator) {
-                    foundSeparator = true;
-                    startIndex = i + 1;  // Sequence starts after this separator
-                } else {
-                    endIndex = i;  // Sequence ends before the next separator
-                    break;
-                }
-            }
-        }
-
-        // If a valid sequence was found, extract it
-        if (foundSeparator && endIndex > startIndex) {
-            size_t newLength = endIndex - startIndex;
-            for (size_t i = 0; i < newLength; i++) {
-                extractedSequence[i] = pulseTrain[startIndex + i];
-            }
-
-            // Decode the extracted sequence with RC Switch
-            size_t extractedLength = newLength;
-            if (extractedLength > RCSWITCH_MAX_CHANGES) {
-                Serial.println("Error: Pulse train too long for RC Switch.");
-                return;
-            }
-
-            for (size_t i = 0; i < extractedLength; i++) {
-                mySwitch.timings[i] = extractedSequence[i];
-            }
-
-            mySwitch.enableReceive();
-            for (int protocol = 1; protocol <= mySwitch.getNumProtos(); protocol++) {
-                if (mySwitch.receiveProtocol(protocol, extractedLength)) {
-                    unsigned long long receivedValue = mySwitch.getReceivedValue();
-                    Serial.println("Decoded Signal using RC Switch:");
-                    Serial.print("Protocol: ");
-                    Serial.println(protDecode[protocol]);
-                    Serial.print("Value: ");
-                    Serial.println(receivedValue);
-                    Serial.print("Bit Length: ");
-                    Serial.println(mySwitch.getReceivedBitlength());
-                    Serial.print("Pulse Length: ");
-                    Serial.println(mySwitch.getReceivedDelay());
-
-                    lv_textarea_add_text(ta, "\nDecoded Signal:");
-                    lv_textarea_add_text(ta, "\nProtocol: ");
-                    lv_textarea_add_text(ta, protDecode[protocol].c_str());
-                    lv_textarea_add_text(ta, "\nValue: ");
-                    lv_textarea_add_text(ta, std::to_string(receivedValue).c_str());
-                    lv_textarea_add_text(ta, "\nBit Length: ");
-                    lv_textarea_add_text(ta, std::to_string(mySwitch.getReceivedBitlength()).c_str());
-                    lv_textarea_add_text(ta, "\nPulse Length: ");
-                    lv_textarea_add_text(ta, std::to_string(mySwitch.getReceivedDelay()).c_str());
-
-                    if (receivedValue == 0) {
-                        Serial.println("Unknown encoding.");
-                    } else {
-                        Serial.print("Binary: ");
-                        lv_textarea_add_text(ta, "\nBinary: ");
-                        for (int i = mySwitch.getReceivedBitlength() - 1; i >= 0; i--) {
-                            Serial.print((receivedValue >> i) & 1);
-                            lv_textarea_add_text(ta, std::to_string((receivedValue >> i) & 1).c_str());
-                        }
-                        Serial.println();
-
-                        char hexBuffer[20];
-                        snprintf(hexBuffer, sizeof(hexBuffer), "0x%lX", receivedValue);
-                        lv_textarea_add_text(ta, "\nHex: ");
-                        lv_textarea_add_text(ta, hexBuffer);
-
-                        if (receivedValue <= 0x7F) {
-                            char asciiBuffer[2] = {0};
-                            asciiBuffer[0] = static_cast<char>(receivedValue);
-                            Serial.print("ASCII: '");
-                            Serial.write(asciiBuffer[0]);
-                            Serial.println("'");
-
-                            lv_textarea_add_text(ta, "\nASCII: '");
-                            lv_textarea_add_text(ta, asciiBuffer);
-                            lv_textarea_add_text(ta, "'");
-                        } else {
-                            lv_textarea_add_text(ta, "\nASCII: (non-printable)");
-                        }
-
-
-                        mySwitch.resetAvailable();
-                        return;
-                    }
-                }
-            }
-        }
-
-
-        startIndex = endIndex + 1;
-        foundSeparator = false;
-    }
-
-
-    Serial.println("Trying to decode non-smoothed data stored in sample...");
-
-    if (sample != nullptr && samplecount > 0) {
-        size_t result = espilight.parsePulseTrain(sample, samplecount);
-
-        if (result > 0) {
-            Serial.println("Signal successfully decoded using non-smoothed data:");
-            String protocolName = "";
-            String decodedData = "";  
-
-            lv_textarea_set_text(ta, "\nProtocol: ");
-            lv_textarea_add_text(ta, protocolName.c_str());
-            lv_textarea_add_text(ta, "\nDecoded Data: ");
-            lv_textarea_add_text(ta, decodedData.c_str());
-
-            Serial.print("\nProtocol: ");
-            Serial.println(protocolName);
-            Serial.print("\nDecoded Data: ");
-            Serial.println(decodedData);
-            return;
-        }
-    }
-
-    Serial.println("Failed to decode signal with ESPiLight, RC Switch, and non-smoothed data.");
 }
 
 
@@ -400,8 +292,6 @@ void CC1101_CLASS::decodeWithESPiLight(uint16_t *pulseTrain, size_t length) {
 void CC1101_CLASS::disableReceiver()
 {
     detachInterrupt((uint8_t)receiverGPIO);
-    receiverEnabled = false;
-    CC1101_is_initialized = false;
     ELECHOUSE_cc1101.setSidle();
     ELECHOUSE_cc1101.goSleep();
     ELECHOUSE_cc1101.SpiEnd();
@@ -521,45 +411,59 @@ void CC1101_CLASS::loadPreset() {
     Serial.print("preset loaded");
 }
 
-bool CC1101_CLASS::CheckReceived()
-{
-    if (samplecount >= minsample && micros() - lastTime > 100000)
-    {
+bool CC1101_CLASS::CheckReceived() {
+    static unsigned long signalStartTime = 0;
+    static const unsigned long MIN_SIGNAL_LENGTH = 1000; // 1ms minimum
+    static const unsigned long SIGNAL_TIMEOUT = 250000;  // 250ms timeout
+
+    if (samplecount == 0) {
+        signalStartTime = micros();
+        return false;
+    }
+
+    unsigned long currentTime = micros();
+    unsigned long signalDuration = currentTime - signalStartTime;
+
+    // Signal is complete if:
+    // 1. We have minimum number of samples
+    // 2. AND either timeout occurred or buffer is full
+    if (samplecount >= 24 && 
+        (signalDuration > MIN_SIGNAL_LENGTH) &&
+        (signalDuration > SIGNAL_TIMEOUT || samplecount >= SAMPLE_SIZE - 1)) {
+        
         receiverEnabled = false;
-        return 1;
+        return true;
     }
-    else
-    {
-        return 0;
-    }
+
+    return false;
 }
 
 void CC1101_CLASS::fskAnalyze() {
     Serial.println("ana run");         
 
-    while (true) { // Run indefinitely
-        // Check modulation mode
-        if (CC1101_MODULATION == 2) { // ASK/OOK
+    while (true) { 
+
+        if (CC1101_MODULATION == 2) {
             freq = start_freq;
 
             while (freq <= stop_freq) {
                 ELECHOUSE_cc1101.setMHZ(freq);
                 int rssi = ELECHOUSE_cc1101.getRssi();
 
-                if (rssi > -80) { // RSSI threshold
-                    // Update the four strongest ASK frequencies
+                if (rssi > -80) { 
+ 
                     for (int i = 0; i < 4; i++) {
                         if (rssi > strongestASKRSSI[i]) {
-                            // Shift weaker entries down
+      
                             for (int j = 3; j > i; j--) {
                                 strongestASKRSSI[j] = strongestASKRSSI[j - 1];
                                 strongestASKFreqs[j] = strongestASKFreqs[j - 1];
                             }
-                            // Insert new strongest entry
+
                             strongestASKRSSI[i] = rssi;
                             strongestASKFreqs[i] = freq;
 
-                            // Immediately print the new strongest frequency
+
                             Serial.println(String("New ASK Frequency: ") + strongestASKFreqs[i] +
                                            " MHz | RSSI: " + strongestASKRSSI[i]);
          
@@ -568,47 +472,48 @@ void CC1101_CLASS::fskAnalyze() {
                     }
                 }
 
-                freq += 0.10; // Frequency step size
+                freq += 0.10; 
             }
-        } else if (CC1101_MODULATION == 0) { // FSK
+        } else if (CC1101_MODULATION == 0) {
             freq = start_freq;
 
             while (freq <= stop_freq) {
                 ELECHOUSE_cc1101.setMHZ(freq);
                 int rssi = ELECHOUSE_cc1101.getRssi();
 
-                if (rssi > -80) { // RSSI threshold
+                if (rssi > -80) { 
                     if (rssi > strongestFSKRSSI[0]) {
-                        // Update F0 and shift the previous F0 to F1
+
                         strongestFSKRSSI[1] = strongestFSKRSSI[0];
                         strongestFSKFreqs[1] = strongestFSKFreqs[0];
 
                         strongestFSKRSSI[0] = rssi;
                         strongestFSKFreqs[0] = freq;
 
-                        // Print the strongest FSK frequency pair (F0 and F1)
+
                         Serial.println(String("New FSK Frequencies: F0 = ") + strongestFSKFreqs[0] +
                                        " MHz | RSSI: " + strongestFSKRSSI[0] +
                                        ", F1 = " + strongestFSKFreqs[1] +
                                        " MHz | RSSI: " + strongestFSKRSSI[1]);
                     } else if (rssi > strongestFSKRSSI[1]) {
-                        // Update F1
+
                         strongestFSKRSSI[1] = rssi;
                         strongestFSKFreqs[1] = freq;
 
-                        // Print the updated F1 frequency
+
                         Serial.println(String("Updated FSK F1: ") + strongestFSKFreqs[1] +
                                        " MHz | RSSI: " + strongestFSKRSSI[1]);
                     }
                 }
 
-                freq += 0.10; // Frequency step size
+                freq += 0.10; 
             }
         } else {
             Serial.println("Unsupported modulation type");
         }
     }
 }
+
 void CC1101_CLASS::enableScanner(float start, float stop) {
     start_freq = start;
     stop_freq = stop;
@@ -618,11 +523,9 @@ void CC1101_CLASS::enableScanner(float start, float stop) {
     }
     CC1101_CLASS::loadPreset();
 
-    if (CC1101_MODULATION == 2) {
-        ELECHOUSE_cc1101.setDcFilterOff(0);
-    } else if (CC1101_MODULATION == 0) {
+
         ELECHOUSE_cc1101.setDcFilterOff(1);
-    }
+
 
     ELECHOUSE_cc1101.setSyncMode(CC1101_SYNC);
     ELECHOUSE_cc1101.setPktFormat(CC1101_PKT_FORMAT);
@@ -635,7 +538,19 @@ void CC1101_CLASS::enableScanner(float start, float stop) {
     // Start scanning on second core
     startSignalanalyseTask();
 }
-
+void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength) {
+    uint8_t dataByte;
+    uint8_t i; 
+    for (i = 0; i <= messageLength; i++) 
+    {
+        dataByte = sequence[i];
+        for (int8_t bit = 7; bit >= 0; bit--)
+        { 
+            digitalWrite(CC1101_CCGDO0A, (dataByte & (1 << bit)) != 0 ? HIGH : LOW);
+            delayMicroseconds(pulseWidth);
+        }
+    }    
+}
 void CC1101_CLASS::signalanalyseTask(void *pvParameters) {
     CC1101_CLASS *cc1101 = static_cast<CC1101_CLASS *>(pvParameters);
 
@@ -653,18 +568,18 @@ void CC1101_CLASS::signalanalyseTask(void *pvParameters) {
 
     Serial.println(F("\r\nScanning predefined frequency list, press any key to stop..."));
 
-    // Initialize RF module
+
     ELECHOUSE_cc1101.Init();
     ELECHOUSE_cc1101.setRxBW(58);
     ELECHOUSE_cc1101.SetRx();
 
-    // Loop through each frequency in the list
+
     for (int i = 0; i < num_frequencies; ++i) {
         float freq = subghz_frequency_list[i] / 1000000.0;  // Convert to MHz
         ELECHOUSE_cc1101.setMHZ(freq);
         rssi = ELECHOUSE_cc1101.getRssi();
 
-        if (rssi > -75) {  // Signal strength threshold
+        if (rssi > -75) {  
             if (rssi > mark_rssi) {
                 mark_rssi = rssi;
                 mark_freq = freq;
@@ -677,12 +592,12 @@ void CC1101_CLASS::signalanalyseTask(void *pvParameters) {
         Serial.print(F(" MHz, RSSI: "));
         Serial.println(rssi);
 
-        if (Serial.available()) {  // Check for stop condition (any key press)
+        if (Serial.available()) { 
             break;
         }
     }
 
-    if (mark_rssi > -75) {  // If a strong signal was found
+    if (mark_rssi > -75) {  
         Serial.print(F("\r\nSignal found at "));
         Serial.print(F("Freq: "));
         Serial.print(mark_freq);
@@ -694,10 +609,8 @@ void CC1101_CLASS::signalanalyseTask(void *pvParameters) {
 
     Serial.println(F("\r\nScanning stopped."));
     
-    // Optionally, stop the module or reset for further use
     ELECHOUSE_cc1101.SetRx();
 }
-
 
 void CC1101_CLASS::startSignalanalyseTask() {
     xTaskCreatePinnedToCore(
@@ -800,24 +713,7 @@ void CC1101_CLASS::signalanalyse(){
 lv_obj_t * textareaRC = screenMgr1.getTextArea();
   bool lastbin=0;
   lv_textarea_set_text(textareaRC, "\nDemodulating\n");
-  for (int i=1; i<samplecount; i++){
-    float r = (float)sample[i]/timingdelay[0];
-    int calculate = r;
-    r = r-calculate;
-    r*=10;
-    if (r>=5){calculate+=1;}
-    if (calculate>0){
-      if (lastbin==0){
-        lastbin=1;
-      }else{
-      lastbin=0;
-    }
-    }
-  }
-  Serial.println();
-  Serial.print("Samples/Symbol: ");
-  Serial.println(timingdelay[0]);
-  Serial.println();
+
 
   smoothcount=0;
   for (int i=1; i<samplecount; i++){
@@ -832,7 +728,7 @@ lv_obj_t * textareaRC = screenMgr1.getTextArea();
     }
   }
 
-uint16_t pulseTrain[SAMPLE_SIZE];
+uint16_t pulseTrain[SAMPLE_SIZE]; 
 size_t length = smoothcount;
 
 for (size_t i = 0; i < smoothcount; i++) {
@@ -863,13 +759,13 @@ lv_obj_set_scroll_dir(container, LV_DIR_HOR);
 lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
 
 lv_obj_t *chart = lv_chart_create(container);
-lv_obj_set_size(chart, 1000, 100); 
+lv_obj_set_size(chart, 1000, 100);  
 lv_chart_set_type(chart, LV_CHART_TYPE_SCATTER);  
 
 
 lv_chart_series_t *ser1 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
 
-lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, -10, 40); 
+lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, -10, 40);  
 
 size_t num_elements = sizeof(samplesmooth) / sizeof(samplesmooth[0]);
 std::vector<unsigned long> filtered_values;
@@ -877,18 +773,20 @@ std::vector<unsigned long> filtered_values;
 bool found_first = false;
 size_t i_sec = 0;
 size_t num_elements_f = 0;
+
 for (size_t i = 0; i < num_elements; ++i) {
     if (samplesmooth[i] > 1000) {
-        if (found_first) break;          
+        if (found_first) break;         
         found_first = true;
         i_sec = i;                       
         continue;                      
+    }
     
     if (found_first) {    
-        if (samplesmooth[i] > 1000) break; 
-        if (i - i_sec > 20) break;                
+        if (samplesmooth[i] > 1000) break;          
+        if (i - i_sec > 20) break;                 
 
-        filtered_values.push_back(samplesmooth[i] / 100); 
+        filtered_values.push_back(samplesmooth[i] / 100);
         Serial.println(samplesmooth[i] / 100);
         num_elements_f++;
         continue;
@@ -897,13 +795,17 @@ for (size_t i = 0; i < num_elements; ++i) {
     
 }
 
-int x_pos = 5;       
+
+int x_pos = 5;           
 int high_value = 25;     
 int low_value = 5;       
 int pulse_width;    
 
-lv_chart_set_point_count(chart, 100);  // Ensure enough points for waveform
+lv_chart_set_point_count(chart, 100);  
+Serial.println("yes");
+
 for (int i = 0; i < num_elements_f; i++) {  
+pulse_width = filtered_values[i];
 
 
 
@@ -929,60 +831,186 @@ lv_obj_scroll_to_x(container, 0, LV_ANIM_OFF);
 
 lv_chart_refresh(chart);
 
-    FlipperSubFile subFile;
-    CC1101_CLASS::disableReceiver();
+     FlipperSubFile subFile;
+     CC1101_CLASS::disableReceiver();
     SD_RF.restartSD();
 
-    if (!SD_RF.directoryExists("/recordedRF/")) {
-        SD_RF.createDirectory("/recordedRF/");
+if (!SD_RF.directoryExists("/recordedRF/")) {
+    SD_RF.createDirectory("/recordedRF/");
+}
+
+String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
+String fullPath = "/recordedRF/" + filename;
+
+File32* outputFilePtr = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
+if (outputFilePtr) {
+    File32& outputFile = *outputFilePtr; 
+    std::vector<byte> customPresetData;
+    if (C1101preset == CUSTOM) {
+        customPresetData.insert(customPresetData.end(), {
+            CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
+            CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
+            CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
+            CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
+            CC1101_FREND0,  ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
+            0x00, 0x00
+        });
+
+        std::array<byte, 8> paTable;
+        ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
+        customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
+    }
+    subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
+    SD_RF.closeFile(outputFilePtr);
+
+CC1101_CLASS::enableReceiver();
+}
+}
+void CC1101_CLASS::decodeWithESPiLight(uint16_t *pulseTrain, size_t length) {
+    if (length == 0) {
+        Serial.println("No pulses to decode.");
+        return;
     }
 
-    String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
-    String fullPath = "/recordedRF/" + filename;
+    lv_obj_t *ta = screenMgr1.getTextArea();
 
-    // Create or open the file once for saving
-    File32* outputFilePtr = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
-    if (outputFilePtr) {
-        File32& outputFile = *outputFilePtr;
+    size_t result = espilight.parsePulseTrain(pulseTrain, length);
+    if (result > 0) {
+        Serial.println("Signal successfully decoded by ESPiLight:");
 
-        // Prepare custom preset data only if needed
-        std::vector<byte> customPresetData;
-        if (C1101preset == CUSTOM) {
-            customPresetData.insert(customPresetData.end(), {
-                CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
-                CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
-                CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
-                CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
-                CC1101_FREND0, ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
-                0x00, 0x00
-            });
+        String protocolName = ""; 
+        String decodedData = "";  
 
-            std::array<byte, 8> paTable;
-            ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
-            customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
-        }
+        lv_textarea_set_text(ta, "\nProtocol: ");
+        lv_textarea_add_text(ta, protocolName.c_str());
+        lv_textarea_add_text(ta, "\nDecoded Data: ");
+        lv_textarea_add_text(ta, decodedData.c_str());
 
-        subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
-        SD_RF.closeFile(outputFilePtr);
+        Serial.print("\nProtocol: ");
+        Serial.println(protocolName);
+        Serial.print("\nDecoded Data: ");
+        Serial.println(decodedData);
+        return;
     }
 
-    CC1101_CLASS::enableReceiver();
-}
+    Serial.println("Failed to decode signal with ESPiLight. Trying RC Switch...");
+
+    size_t currentStartIndex = 0;
+
+    while (currentStartIndex < length) {
+        size_t startIndex = 0;
+        size_t endIndex = 0;
+        bool foundSeparator = false;
+
+        // Find the next sequence
+        for (size_t i = currentStartIndex; i < length; i++) {
+            if (pulseTrain[i] > 1000) {
+                if (!foundSeparator) {
+                    foundSeparator = true;
+                    startIndex = i + 1;  
+                } else {
+                    endIndex = i;       
+                    break;
+                }
+            }
+        }
+
+
+        if (!foundSeparator || endIndex <= startIndex) {
+            Serial.println("No more valid sequences found.");
+            break;
+        }
+
+
+        size_t sequenceLength = endIndex - startIndex;
+        std::vector<uint16_t> currentSequence(sequenceLength);
+        for (size_t i = 0; i < sequenceLength; i++) {
+            currentSequence[i] = pulseTrain[startIndex + i];
+        }
+
+        if (sequenceLength > RCSWITCH_MAX_CHANGES) {
+            Serial.println("Error: Pulse train too long for RC Switch.");
+            currentStartIndex = endIndex + 1;  
+            continue;
+        }
+
+
+        mySwitch.enableReceive();
+
+
+        for (size_t i = 0; i < sequenceLength; i++) {
+            mySwitch.timings[i] = currentSequence[i];
+        }
+
+
+        for (int protocol = 1; protocol <= mySwitch.getNumProtos(); protocol++) {
+            if (mySwitch.receiveProtocol(protocol, sequenceLength)) {
+                unsigned long long receivedValue = mySwitch.getReceivedValue();
+
+                Serial.println("Decoded Signal using RC Switch:");
+                Serial.print("Protocol: ");
+                Serial.println(protDecode[protocol]);
+                Serial.print("Value: ");
+                Serial.println(receivedValue);
+                Serial.print("Bit Length: ");
+                Serial.println(mySwitch.getReceivedBitlength());
+                Serial.print("Pulse Length: ");
+                Serial.println(mySwitch.getReceivedDelay());
+
+                lv_textarea_add_text(ta, "\nDecoded Signal:");
+                lv_textarea_add_text(ta, "\nProtocol: ");
+                lv_textarea_add_text(ta, protDecode[protocol].c_str());
+                lv_textarea_add_text(ta, "\nValue: ");
+                lv_textarea_add_text(ta, std::to_string(receivedValue).c_str());
+                lv_textarea_add_text(ta, "\nBit Length: ");
+                lv_textarea_add_text(ta, std::to_string(mySwitch.getReceivedBitlength()).c_str());
+                lv_textarea_add_text(ta, "\nPulse Length: ");
+                lv_textarea_add_text(ta, std::to_string(mySwitch.getReceivedDelay()).c_str());
+
+                if (receivedValue == 0) {
+                    Serial.println("Unknown encoding.");
+                } else {
+                    Serial.print("Binary: ");
+                    lv_textarea_add_text(ta, "\nBinary: ");
+                    for (int i = mySwitch.getReceivedBitlength() - 1; i >= 0; i--) {
+                        Serial.print((receivedValue >> i) & 1);
+                        lv_textarea_add_text(ta, std::to_string((receivedValue >> i) & 1).c_str());
+                    }
+                    Serial.println();
+
+                    char hexBuffer[20];
+                    snprintf(hexBuffer, sizeof(hexBuffer), "0x%lX", receivedValue);
+                    lv_textarea_add_text(ta, "\nHex: ");
+                    lv_textarea_add_text(ta, hexBuffer);
+
+                    if (receivedValue <= 0x7F) {
+                        char asciiBuffer[2] = {0};
+                        asciiBuffer[0] = static_cast<char>(receivedValue);
+                        Serial.print("ASCII: '");
+                        Serial.write(asciiBuffer[0]);
+                        Serial.println("'");
+
+                        lv_textarea_add_text(ta, "\nASCII: '");
+                        lv_textarea_add_text(ta, asciiBuffer);
+                        lv_textarea_add_text(ta, "'");
+                    } else {
+                        lv_textarea_add_text(ta, "\nASCII: (non-printable)");
+                    }
+                }
+
+                mySwitch.resetAvailable();
+                return;  
+            }
+        }
+
+
+        currentStartIndex = endIndex + 1;
+    }
+
+    Serial.println("Failed to decode signal with RC Switch.");
 }
 
-void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength) {
-    uint8_t dataByte;
-    uint8_t i; 
-    for (i = 0; i <= messageLength; i++) 
-    {
-        dataByte = sequence[i];
-        for (int8_t bit = 7; bit >= 0; bit--)
-        { 
-            digitalWrite(CC1101_CCGDO0A, (dataByte & (1 << bit)) != 0 ? HIGH : LOW);
-            delayMicroseconds(pulseWidth);
-        }
-    }    
-}
+
 
 void CC1101_CLASS::sendRaw() {
     detachInterrupt(CC1101_CCGDO0A);
@@ -996,10 +1024,12 @@ void CC1101_CLASS::sendRaw() {
     {
         unsigned long highTime = max((unsigned long)(samplesmooth[i]), 0UL);
         unsigned long lowTime = max((unsigned long)(samplesmooth[i + 1]), 0UL);
-        digitalWrite(CC1101_CCGDO0A, HIGH);
-        delayMicroseconds(highTime);
-        digitalWrite(CC1101_CCGDO0A, LOW);
-        delayMicroseconds(lowTime);
+
+        GPIO.out_w1ts = (1 << CC1101_CCGDO0A);
+        ets_delay_us(highTime);
+        GPIO.out_w1tc = (1 << CC1101_CCGDO0A);
+        ets_delay_us(lowTime);
+
     }
     Serial.print("Transmitted\n");
 
@@ -1053,13 +1083,8 @@ String CC1101_CLASS::generateRandomString(int length)
     return String(ss.str().c_str());
 }
 
-
-
 void CC1101_CLASS::sendSamples(int timings[], int timingsLength)
 {
-
-    // disconnectSD();
-    // digitalWrite(SDCARD_CS, HIGH);
     CC1101_CLASS::initrRaw();
     
 
@@ -1074,10 +1099,12 @@ void CC1101_CLASS::sendSamples(int timings[], int timingsLength)
     {
         unsigned long highTime = max((unsigned long)(timings[i]), 0UL);
         unsigned long lowTime = max((unsigned long)(timings[i + 1]), 0UL);
-        digitalWrite(CC1101_CCGDO0A, HIGH);
-        delayMicroseconds(highTime);
-        digitalWrite(CC1101_CCGDO0A, LOW);
-        delayMicroseconds(lowTime);
+
+        GPIO.out_w1ts = (1 << CC1101_CCGDO0A);
+        ets_delay_us(highTime);
+        GPIO.out_w1tc = (1 << CC1101_CCGDO0A);
+        ets_delay_us(lowTime);
+
     }
     Serial.print("Transmitted\n");
 
