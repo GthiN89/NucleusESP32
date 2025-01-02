@@ -9,7 +9,7 @@ This is my first project in C, which I began in early summer, with prior experie
 
 **Status**: Work in Progress (WIP)  
 Please go easy on it; it's still evolving!  
-Getting near to 0.1 nightly release!
+Currently at **version Neon Green**.
 
 ## Features Implemented
 
@@ -19,38 +19,34 @@ With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol f
 
 **Last Stable Version**: Compiled into bin files. Occasionally, things may break in new versions, so for consistent testing, use this stable version.
 
-### Last Commit Status
-- **Updated to new LVGL**: This was challenging.  
-- **Touch drivers**: Moving to the new LVGL reminded me why I use bitbang drivers - drivers are included and should compile from source.  
-- **New file browser**: Unlike the previous version, this one is usable, even with bare hands.  
-- **SubGhz file transmission**: When the system starts transmitting, if the `.sub` file contains more codes (e.g., brute-force files), sending completes when the counter stops increasing.
-- **CYD Smart Display Library Compatibility**: The compiler may have issues with `display->sw_rotate` and `LED_RGB`. You can comment out or delete these sections; they would only cause problems anyway.  
-- **RFID Module Support**: Added initialization and testing; works as expected.  
-- **RF24L01 Module Support**: Successfully initialized.  
-- **IR Module Support**: Can now capture and replay signals.  
-- **CYD 2USB Support**: Should work, since only touch calibration is different.
+### Latest Updates
+- **Improved Sub-GHz Signal Reception**: Enhanced performance.
+- **GUI Performance Boost**: Faster and more responsive.
+- **Dark Mode for GUI**: Aesthetic improvement as part of "Neon Green" version.
+- **CYD 2USB Compatibility**: Binary is included in the repo.
+- **Focus on CC1101 Module for CYD Version**: Future versions will target more powerful ESP32 S3 hardware.
+
+### Known Issues
+- **Large File Transmission**: Bigger files take longer to load, but they transmit just fine.
+- **Frequency Analyzer Non-Functional**: Currently broken. Fix planned.
 
 ### Priority List
-- Fully functional/featured file explorer  
-- Bug fixes  
-- Finalizing RAW timing Sub-GHz functionality and releasing version 0.1 of the firmware.
+- Repair frequency analyzer functionality.
+- Finalize CYD version with IR, Sub-GHz, Wi-Fi, and Bluetooth features.
+- Transition to ESP32 S3 hardware for enhanced capabilities.
 
-### Current Functionalities
+## Current Functionalities
 - **CC1101 RAW Replay**: Now operates similarly to the Flipper. Save files to SD card. Fully Flipper compatible.  
 - **`.sub` Files Player**: Supports RAW files, tested with AM270 and AM650, should send FM too, but timing files only. Sending is stable.  
 - **Tesla Charger Opener**: Operational.  
-- **Large `.sub` File Support**: Handles virtually unlimited file sizes, tested with a 3MB "Came_top_brute.sub" file.  
-- **TV-B-Gone**: Fully operational. Can turn TVs on and off.
+- **TV-B-Gone**: Fully operational.
 
-### Planned Features
+## Planned Features
 - Bluetooth Spam  
 - Sour Apple  
 - Wi-Fi Deauther  
-- Bad USB  
-- 2.4GHz Support  
-- MouseJack Attack  
 - Python Interpreter  
-- Version for ESP32 S3 with 8MB RAM and 16MB ROM (JC3248W535EN)
+
 
 ## Timing and Transmission Quality
 
@@ -74,15 +70,10 @@ The timing tolerance is around 1-5 microseconds. Transmission quality from `.sub
 - ESP32-2432S028R  
 - ESP32-2432S028Rv2  
 - **CC1101 Module**  
-- **RFID Module**  
-- **RF24L01 Module**  
 - **IR Module**
 
-## Known Issues
-
-- **SW Rotation Compiler Error**: If you encounter this issue, simply comment out the related code.  
-- **LVGL Compiler Error**: Ensure you copy the correct LVGL configuration file to resolve this.  
-- **File Browser Not Working Properly**: Make sure you are using the latest version of LVGL for full functionality.
-
+## Repository Stats
+- **Commits**: ![Commits](https://img.shields.io/github/commit-activity/m/GthiN89/NucleusESP32)
+- **Issues**: ![Issues](https://img.shields.io/github/issues/GthiN89/NucleusESP32)
 
 Happy hacking!
