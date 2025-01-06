@@ -1,32 +1,12 @@
 #include <Arduino.h>
-#include <XPT2046_Bitbang.h>
-#include "GUI/ScreenManager.h"
-#include "esp32_smartdisplay/src/esp32_smartdisplay.h"
-#include "GUI/events.h"
+#include "main.h"
 #include "modules/RF/CC1101.h"
-#include "modules/ETC/SDcard.h"
-#include <FFat.h>
-#include "lv_fs_if.h"
-#include "modules/dataProcessing/SubGHzParser.h"
-#include "modules/ir/TV-B-Gone.h"
-#include "modules/ir/WORLD_IR_CODES.h"
-#include "modules/IR/ir.h"
-#include "IRrecv.h"
-#include <assert.h>
-#include <IRremoteESP8266.h>
-#include <IRac.h>
-#include <IRtext.h>
-#include <IRutils.h>
-#include <Wire.h>
-#include <SPI.h>
-#include <IRsend.h>
-#include "GUI/logo.h"
-
 IRrecv irrecv(IR_RX);   
 
 decode_results lastResults;
 
 SDcard& SD_CARD = SDcard::getInstance();
+
 
 XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
 ScreenManager& screenMgrM = ScreenManager::getInstance();
@@ -52,7 +32,7 @@ void init_touch(TouchCallback singleTouchCallback);
 
 
 void setup() {
-
+CC1101_CLASS CC1101;
   Serial.begin(115200);
   init_touch([]() { Serial.println(F("Single touch detected!")); });
   smartdisplay_init();
@@ -89,6 +69,7 @@ void setup() {
 }
  
  void CC1101Loop() {
+    CC1101_CLASS CC1101;
     if(C1101CurrentState == STATE_ANALYZER) {
                     delay(50);
         if (CC1101.CheckReceived()) {

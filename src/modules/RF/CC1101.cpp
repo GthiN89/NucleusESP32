@@ -1,21 +1,5 @@
 #include "CC1101.h"
-#include "Arduino.h"
-#include "ELECHOUSE_CC1101_SRC_DRV.h"
-#include "GUI/ScreenManager.h"
-#include <sstream>
-#include <ctime>
-#include <vector>
-#include <string> 
-#include "GUI/events.h"
-#include "SPI.h"
-#include "modules/ETC/SDcard.h"
-#include "ESPiLight.h"
-#include <esp_timer.h>
-#include <esp_attr.h>
-#include <driver/gpio.h>
-#include <esp_intr_alloc.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/portmacro.h>
+
 
 
 
@@ -85,7 +69,6 @@ int receiverGPIO;
 
 String rawString;
 
-static unsigned long lastTime = 0;
 
 uint16_t  sample[SAMPLE_SIZE];
 
@@ -184,8 +167,6 @@ void IRAM_ATTR InterruptHandler() {
         signalStarted = false;
     }
 }
-
-
 
 bool CC1101_CLASS::init() {
     ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
@@ -431,82 +412,6 @@ bool CC1101_CLASS::CheckReceived() {
     return false;
 }
 
-void CC1101_CLASS::fskAnalyze() {
-    Serial.println("ana run");         
-
-    while (true) { 
-
-        if (CC1101_MODULATION == 2) {
-            freq = start_freq;
-
-            while (freq <= stop_freq) {
-                ELECHOUSE_cc1101.setMHZ(freq);
-                int rssi = ELECHOUSE_cc1101.getRssi();
-
-                if (rssi > -80) { 
- 
-                    for (int i = 0; i < 4; i++) {
-                        if (rssi > strongestASKRSSI[i]) {
-      
-                            for (int j = 3; j > i; j--) {
-                                strongestASKRSSI[j] = strongestASKRSSI[j - 1];
-                                strongestASKFreqs[j] = strongestASKFreqs[j - 1];
-                            }
-
-                            strongestASKRSSI[i] = rssi;
-                            strongestASKFreqs[i] = freq;
-
-
-                            Serial.println(String("New ASK Frequency: ") + strongestASKFreqs[i] +
-                                           " MHz | RSSI: " + strongestASKRSSI[i]);
-         
-                            break;
-                        }
-                    }
-                }
-
-                freq += 0.10; 
-            }
-        } else if (CC1101_MODULATION == 0) {
-            freq = start_freq;
-
-            while (freq <= stop_freq) {
-                ELECHOUSE_cc1101.setMHZ(freq);
-                int rssi = ELECHOUSE_cc1101.getRssi();
-
-                if (rssi > -80) { 
-                    if (rssi > strongestFSKRSSI[0]) {
-
-                        strongestFSKRSSI[1] = strongestFSKRSSI[0];
-                        strongestFSKFreqs[1] = strongestFSKFreqs[0];
-
-                        strongestFSKRSSI[0] = rssi;
-                        strongestFSKFreqs[0] = freq;
-
-
-                        Serial.println(String("New FSK Frequencies: F0 = ") + strongestFSKFreqs[0] +
-                                       " MHz | RSSI: " + strongestFSKRSSI[0] +
-                                       ", F1 = " + strongestFSKFreqs[1] +
-                                       " MHz | RSSI: " + strongestFSKRSSI[1]);
-                    } else if (rssi > strongestFSKRSSI[1]) {
-
-                        strongestFSKRSSI[1] = rssi;
-                        strongestFSKFreqs[1] = freq;
-
-
-                        Serial.println(String("Updated FSK F1: ") + strongestFSKFreqs[1] +
-                                       " MHz | RSSI: " + strongestFSKRSSI[1]);
-                    }
-                }
-
-                freq += 0.10; 
-            }
-        } else {
-            Serial.println("Unsupported modulation type");
-        }
-    }
-}
-
 void CC1101_CLASS::enableScanner(float start, float stop) {
     start_freq = start;
     stop_freq = stop;
@@ -547,7 +452,6 @@ void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pul
 }
 
 void CC1101_CLASS::signalanalyseTask(void *pvParameters) {
-    CC1101_CLASS *cc1101 = static_cast<CC1101_CLASS *>(pvParameters);
 
     // Initialize scanning parameters
     const uint32_t subghz_frequency_list[] = {
@@ -559,18 +463,18 @@ void CC1101_CLASS::signalanalyseTask(void *pvParameters) {
     int rssi = 0;
     int mark_rssi = -100;
     float mark_freq = 0;
-    long compare_freq = 0;
 
     Serial.println(F("\r\nScanning predefined frequency list, press any key to stop..."));
 
 
     ELECHOUSE_cc1101.Init();
-    ELECHOUSE_cc1101.setRxBW(58);
+    //ELECHOUSE_cc1101.setRxBW(58);
     ELECHOUSE_cc1101.SetRx();
 
 
     for (int i = 0; i < num_frequencies; ++i) {
-        float freq = subghz_frequency_list[i] / 1000000.0;  // Convert to MHz
+        float freq = subghz_frequency_list[i] / 1000000;  // Convert to MHz
+        ELECHOUSE_cc1101.setPktFormat(3);
         ELECHOUSE_cc1101.setMHZ(freq);
         rssi = ELECHOUSE_cc1101.getRssi();
 
@@ -624,7 +528,6 @@ void CC1101_CLASS::signalanalyse(){
 
   int signalanz=0;
   int timingdelay[signalstorage];
-  float pulse[signalstorage];
   long signaltimings[signalstorage*2];
   int signaltimingscount[signalstorage];
   long signaltimingssum[signalstorage];
@@ -706,7 +609,6 @@ void CC1101_CLASS::signalanalyse(){
   }
 
 lv_obj_t * textareaRC = screenMgr1.getTextArea();
-  bool lastbin=0;
   lv_textarea_set_text(textareaRC, "\nDemodulating\n");
 
 

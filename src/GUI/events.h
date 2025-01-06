@@ -76,6 +76,7 @@ static void save_RF_to_sd_event(lv_event_t * e);
 
 //file Explorer
 static void confirm_delete_event_handler(lv_event_t * e);
+static void confirm_deleteAll_event_handler(lv_event_t * e);
 static bool deleteFile(const char *path);
 static void file_explorer_event_delete_cb(lv_event_t * e);
 static void file_explorer_event_handler(lv_event_t * e);

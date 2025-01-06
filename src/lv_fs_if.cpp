@@ -1,6 +1,6 @@
 #include "lvgl.h"
 #include "lv_fs_if.h"
-#include "modules/ETC/SDcard.h"
+
 
 // SD card singleton instance
 SDcard& SD_FE = SDcard::getInstance();
@@ -27,7 +27,6 @@ lv_fs_res_t fs_dir_close(lv_fs_drv_t * drv, void * dir_p);
 
 // Open a file
 void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode) {
- //   String fullPath = normalizePath(String(path) + "/");
     uint8_t openMode;
     if (mode == LV_FS_MODE_WR) {
         openMode = O_WRONLY | O_CREAT | O_TRUNC;
@@ -119,6 +118,17 @@ void * fs_dir_open(lv_fs_drv_t * drv, const char * path) {
     }
     return dir;
 }
+
+lv_fs_res_t fs_remove(lv_fs_drv_t * drv, const char * path) {
+    Serial.print(path);
+     if(SD_FE.deleteFile(path)){
+    return LV_FS_RES_OK;
+     }
+    else{ 
+    return LV_FS_RES_FS_ERR;
+    }
+}
+
 
 // Read the next entry in a directory
 lv_fs_res_t fs_dir_read(lv_fs_drv_t * drv, void * rddir_p, char * fn, uint32_t fn_len) {

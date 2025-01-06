@@ -66,8 +66,9 @@
         "spi_master.h": "c",
         "esp32_smartdisplay.h": "c",
         "rtl_433_devices.h": "c",
-        "logo.h": "c"
+        "logo.h": "c",
+        "set": "cpp"
     },
-    "idf.portWin": "COM5",
+    "idf.portWin": "COM33",
     "C_Cpp.errorSquiggles": "disabled"
 }

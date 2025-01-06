@@ -9,7 +9,6 @@
 #include "XPT2046_Bitbang.h"
 #include "modules/nfc/nfc.h"
 #include "modules/IR/ir.h"
-#include "modules/RF/rf24.h"
 
 #define MAX_PATH_LENGTH 256
 
@@ -378,7 +377,7 @@ void ScreenManager::createRFdetectScreen() {
 
 
     containerHelper.createContainer(&secondLabel_detectForce_container_, detectScreen_, LV_FLEX_FLOW_COLUMN, 270, 240);
-    lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
+   // lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
 
 
     detectLabel = lv_label_create(secondLabel_detectForce_container_);
@@ -832,7 +831,7 @@ void ScreenManager::createFileExplorerScreen()
     lv_label_set_text(explorerRename_lbl, "RNM");
     lv_label_set_text(explorerMove_lbl, "MOV");
 
-    lv_obj_add_event_cb(explorerDelelete_btn, EVENTS::file_explorer_event_delete_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(explorerDelelete_btn, EVENTS::file_explorer_event_delete_cb, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(file_explorer, EVENTS::file_explorer_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 }
 

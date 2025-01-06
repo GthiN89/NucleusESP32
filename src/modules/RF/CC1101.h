@@ -3,7 +3,23 @@
 
 #include "../../globals.h"
 #include "RCSwitch.h"
+#include "Arduino.h"
+#include "ELECHOUSE_CC1101_SRC_DRV.h"
+#include "GUI/ScreenManager.h"
+#include <sstream>
+#include <ctime>
+#include <vector>
+#include <string> 
+#include "GUI/events.h"
 #include "SPI.h"
+#include "modules/ETC/SDcard.h"
+#include "ESPiLight.h"
+#include <esp_timer.h>
+#include <esp_attr.h>
+#include <driver/gpio.h>
+#include <esp_intr_alloc.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/portmacro.h>
 #define SAMPLE_SIZE 2048
 #define MAX_SIGNAL_LENGTH 10000000  
 

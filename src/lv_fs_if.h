@@ -4,6 +4,7 @@
 #include "lvgl.h"
 #include <SDFAT.h>
 #include <SPI.h>
+#include "modules/ETC/SDcard.h"
 
 // Function declarations
 void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode);
