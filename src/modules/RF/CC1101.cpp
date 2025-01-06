@@ -222,7 +222,6 @@ void CC1101_CLASS::setPTK(int ptk)
     CC1101_PKT_FORMAT = ptk;
 }
 
-
 void CC1101_CLASS::enableReceiver() {
     portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
     portENTER_CRITICAL(&mux);
@@ -282,12 +281,9 @@ void CC1101_CLASS::enableReceiver() {
     portEXIT_CRITICAL(&mux);
 }
 
-
 void CC1101_CLASS::setCC1101Preset(CC1101_PRESET preset) {
     C1101preset = preset;
 }
-
-
 
 void CC1101_CLASS::disableReceiver()
 {
@@ -413,8 +409,8 @@ void CC1101_CLASS::loadPreset() {
 
 bool CC1101_CLASS::CheckReceived() {
     static unsigned long signalStartTime = 0;
-    static const unsigned long MIN_SIGNAL_LENGTH = 1000; // 1ms minimum
-    static const unsigned long SIGNAL_TIMEOUT = 250000;  // 250ms timeout
+    static const unsigned long MIN_SIGNAL_LENGTH = 1000; 
+    static const unsigned long SIGNAL_TIMEOUT = 250000;  
 
     if (samplecount == 0) {
         signalStartTime = micros();
@@ -424,9 +420,6 @@ bool CC1101_CLASS::CheckReceived() {
     unsigned long currentTime = micros();
     unsigned long signalDuration = currentTime - signalStartTime;
 
-    // Signal is complete if:
-    // 1. We have minimum number of samples
-    // 2. AND either timeout occurred or buffer is full
     if (samplecount >= 24 && 
         (signalDuration > MIN_SIGNAL_LENGTH) &&
         (signalDuration > SIGNAL_TIMEOUT || samplecount >= SAMPLE_SIZE - 1)) {
@@ -538,6 +531,7 @@ void CC1101_CLASS::enableScanner(float start, float stop) {
     // Start scanning on second core
     startSignalanalyseTask();
 }
+
 void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength) {
     uint8_t dataByte;
     uint8_t i; 
@@ -551,6 +545,7 @@ void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pul
         }
     }    
 }
+
 void CC1101_CLASS::signalanalyseTask(void *pvParameters) {
     CC1101_CLASS *cc1101 = static_cast<CC1101_CLASS *>(pvParameters);
 
@@ -866,6 +861,7 @@ if (outputFilePtr) {
 CC1101_CLASS::enableReceiver();
 }
 }
+
 void CC1101_CLASS::decodeWithESPiLight(uint16_t *pulseTrain, size_t length) {
     if (length == 0) {
         Serial.println("No pulses to decode.");
@@ -1009,8 +1005,6 @@ void CC1101_CLASS::decodeWithESPiLight(uint16_t *pulseTrain, size_t length) {
 
     Serial.println("Failed to decode signal with RC Switch.");
 }
-
-
 
 void CC1101_CLASS::sendRaw() {
     detachInterrupt(CC1101_CCGDO0A);
