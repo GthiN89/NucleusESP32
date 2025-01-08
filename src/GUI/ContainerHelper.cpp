@@ -4,7 +4,7 @@
 #include <lvgl.h>
 #include <cstring>
 #include <Arduino.h>
-
+#include <string>
 // // Validator funkce pro numerický vstup
 // static bool number_validator(lv_obj_t* ta, const char* txt) {
 //     // Loop through the characters in the input string
