@@ -104,13 +104,17 @@ void EVENTS::btn_event_IR_menu_run(lv_event_t* e) {
 }
 
 void EVENTS::btn_event_NFC_menu_run(lv_event_t* e) {
-    //  lv_event_code_t code = lv_event_get_code(e);
-    // if (code == LV_EVENT_CLICKED) {
-    // RadioReceiver radio;
-    // Serial.println("Test");
-    // radio.setup();
-    // radio.loop();
-    // }
+     lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+    RadioReceiver radio;
+    Serial.println("Test");
+    radio.setup();
+    while (true)
+    {
+           radio.loop();
+    }    
+
+    }
 }
 
 void EVENTS::btn_event_RF24_menu_run(lv_event_t* e) {
@@ -542,6 +546,11 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     lv_textarea_add_text(text_area, "Decoder active.\n");
      }
      CC1101EV.setFrequency(CC1101_MHZ);
+         ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL1, 0x98);
+    //setting GPIO behavior
+    uint8_t iocfg0 = ELECHOUSE_cc1101.SpiReadReg(CC1101_IOCFG2);
+    iocfg0 |= (1 << 6); 
+    ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, iocfg0);
    //  delay(20);
     runningModule = MODULE_CC1101;
     C1101CurrentState = STATE_ANALYZER;

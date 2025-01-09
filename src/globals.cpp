@@ -9,7 +9,7 @@ char* current_dir;
 uint8_t C1101CurrentState = STATE_IDLE;
 
 
-bool receiverEnabled;
+//bool receiverEnabled;
 
 float CC1101_MHZ;
 

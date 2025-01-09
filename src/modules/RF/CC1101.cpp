@@ -9,13 +9,16 @@
 #include "GUI/events.h"
 #include "SPI.h"
 #include "modules/ETC/SDcard.h"
-#include "ESPiLight.h"
 #include <esp_timer.h>
 #include <esp_attr.h>
 #include <driver/gpio.h>
 #include <esp_intr_alloc.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/portmacro.h>
+#include "soc/gpio_struct.h"
+#include <numeric>
+#include <algorithm>
+#include "../decoder/bin_raw_decoder.h"
 
 
 
@@ -72,7 +75,7 @@ int mark_rssi = -100;
 
 SDcard& SD_RF = SDcard::getInstance();
 
-ESPiLight espilight(-1); 
+
 
 
 ScreenManager& screenMgr1 = ScreenManager::getInstance();
@@ -94,6 +97,7 @@ int error_toleranz = 200;
 uint8_t samplecount = 0;
 
 bool CC1101_is_initialized = false;
+bool receiverEnabled = false;
 bool CC1101_recieve_is_running = false;
 bool CC1101_transmit_is_running = false;
 bool CC1101_isiddle = true;
@@ -139,52 +143,26 @@ static inline uint32_t IRAM_ATTR ticksToUs(uint32_t ticks) {
     return ticks / CYCLES_PER_MICROSECOND;
 }
 
-void IRAM_ATTR InterruptHandler() {    
-    if (!receiverEnabled) return;
+// Initialize static member
+CC1101_CLASS::recievedData CC1101_CLASS::receivedData;
 
+void IRAM_ATTR InterruptHandler(void *arg) {
     static volatile uint64_t DRAM_ATTR lastTime = 0;
-    static volatile bool DRAM_ATTR signalStarted = false;
-    
     const uint64_t time = xthal_get_ccount();
     const uint64_t duration = time - lastTime;
     lastTime = time;
 
-
-    constexpr uint64_t TIMEOUT_TICKS = 1000000 * 240; // 1000ms timeout
-    constexpr uint64_t MIN_DURATION_TICKS = 50 * 240; // 50µs minimum duration
-
-
-    if (duration > TIMEOUT_TICKS) {
-        if (!signalStarted) {
-            samplecount = 0;
-            signalStarted = false;
+    // Simple noise filtering
+    if (duration > 20 * 240) { // 20µs minimum
+        noInterrupts();
+        if(CC1101_CLASS::receivedData.samples.size() < SAMPLE_SIZE) {
+            CC1101_CLASS::receivedData.samples.push_back(duration / 240);
+            CC1101_CLASS::receivedData.lastReceiveTime = esp_timer_get_time();
+            samplecount++;
         }
-        return;
-    }
-
-
-    if (duration < MIN_DURATION_TICKS) return;
-
-
-    if (!signalStarted && duration > MIN_DURATION_TICKS) {
-        signalStarted = true;
-    }
-
-
-    if (samplecount >= SAMPLE_SIZE) {
-        signalStarted = false;
-        return;
-    }
-
-
-    sample[samplecount++] = duration / 240;
-
-
-    if (signalStarted && duration > TIMEOUT_TICKS/2) {
-        signalStarted = false;
+        interrupts();
     }
 }
-
 
 
 bool CC1101_CLASS::init() {
@@ -221,67 +199,89 @@ void CC1101_CLASS::setPTK(int ptk)
 {
     CC1101_PKT_FORMAT = ptk;
 }
-
+/*
++------------------+----------------+
+| Threshold (dBm)  | AGCCTRL1 Value |
++------------------+----------------+
+| -80              | 0x80           |
+| -70              | 0x88           |
+| -60              | 0x90           |
+| -50              | 0x98           |
+| -40              | 0xA0           |
+| -30              | 0xA8           |
+| -20              | 0xB0           |
+| -10              | 0xB8           |
+|   0              | 0xC0           |
+| +10              | 0xC8           |
+| +20              | 0xD0           |
+| +30              | 0xD8           |
+| +40              | 0xE0           |
+| +50              | 0xE8           |
+| +60              | 0xF0           |
+| +70              | 0xF8           |
+| +80              | 0xFF           |
++------------------+----------------+
++------------+--------+-------------------------+
+| GDO Pin    | Reg    | Inversion Bit (INV)    |
++------------+--------+-------------------------+
+| GDO2       | 0x00   | Bit 6 (1 = Inverted)   |
+| GDO1       | 0x01   | Bit 6 (1 = Inverted)   |
+| GDO0       | 0x02   | Bit 6 (1 = Inverted)   |
++------------+--------+-------------------------+
+| Note: Inversion is controlled by setting Bit 6 
+|       of the respective IOCFGx register.
++------------------------------------------------+
+*/
 
 void CC1101_CLASS::enableReceiver() {
-    portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
-    portENTER_CRITICAL(&mux);
-
     if (!CC1101_is_initialized) {
         CC1101_CLASS::init();
     }
     CC1101_CLASS::loadPreset();
+    ELECHOUSE_cc1101.SpiStrobe(0x3C);//SWORRST
+     ELECHOUSE_cc1101.SpiStrobe(CC1101_SCAL);
 
-    // Clear sample buffer with memset
-    memset(sample, 0, sizeof(uint16_t) * SAMPLE_SIZE);
     samplecount = 0;
 
-    // Optimize CC1101 settings for longer signals
     ELECHOUSE_cc1101.setSidle();
-    
-    // Set wider bandwidth and disable filters
-    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);  // Maximum bandwidth
-    ELECHOUSE_cc1101.setDcFilterOff(1); // Disable DC blocking
-    
-    // Disable packet handling
-    ELECHOUSE_cc1101.setSyncMode(0);    // No sync word
-    ELECHOUSE_cc1101.setPktFormat(3);   // Async serial mode
-    
-    // Configure for maximum sensitivity
-    ELECHOUSE_cc1101.SpiWriteReg(0x18, 0x50); // AGC settings
-    ELECHOUSE_cc1101.SpiWriteReg(0x1B, 0x07); // High sensitivity
-    ELECHOUSE_cc1101.SpiWriteReg(0x1D, 0x91); // Frequency offset compensation
-
-    // Standard configuration
+    ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);
+    ELECHOUSE_cc1101.setDcFilterOff(1);
+    ELECHOUSE_cc1101.setSyncMode(0);
+    ELECHOUSE_cc1101.setPktFormat(3);
+    // ELECHOUSE_cc1101.SpiWriteReg(0x18, 0x50);
+    // ELECHOUSE_cc1101.SpiWriteReg(0x1B, 0x07);
+    // ELECHOUSE_cc1101.SpiWriteReg(0x1D, 0x91);
     ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);
+    ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL1, 0x98);
+    //setting GPIO behavior
+    uint8_t iocfg0 = ELECHOUSE_cc1101.SpiReadReg(CC1101_IOCFG2);
+    iocfg0 |= (1 << 6); 
+    ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, iocfg0);
+
     ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
     ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
+    pinMode(CC1101_CCGDO2A, PULLDOWN);
+    gpio_config_t io_conf = {
+        .pin_bit_mask = (1ULL << CC1101_CCGDO2A),
+        .mode = GPIO_MODE_INPUT,
+        .intr_type = GPIO_INTR_ANYEDGE
+    };
+    gpio_config(&io_conf);
 
-    // Configure GPIO for interrupt
-    pinMode(CC1101_CCGDO2A, INPUT);
-    receiverGPIO = digitalPinToInterrupt(CC1101_CCGDO2A);    
+    gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
+    gpio_isr_handler_add(CC1101_CCGDO2A, InterruptHandler, NULL);
 
-    // Flush FIFOs and calibrate
-    ELECHOUSE_cc1101.SpiStrobe(0x3A);    // Flush RX
-    ELECHOUSE_cc1101.SpiStrobe(0x3B);    // Flush TX
-    ELECHOUSE_cc1101.SpiStrobe(0x33);    // Calibrate
-
-    // Enter RX mode
+    ELECHOUSE_cc1101.SpiStrobe(0x3A); // Flush RX
+    ELECHOUSE_cc1101.SpiStrobe(0x3B); // Flush TX
+    ELECHOUSE_cc1101.SpiStrobe(0x33); // Calibrate
     ELECHOUSE_cc1101.SetRx();
+
     receiverEnabled = true;
 
-    // Attach interrupt with high priority
-    esp_intr_alloc(ETS_GPIO_INTR_SOURCE,
-                   ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1,
-                   (intr_handler_t)InterruptHandler,
-                   NULL,
-                   NULL);
-    attachInterrupt(CC1101_CCGDO2A, InterruptHandler, CHANGE);
-
-    portEXIT_CRITICAL(&mux);
+    receivedData.samples.clear();
+    receivedData.lastReceiveTime = 0;
 }
-
 
 void CC1101_CLASS::setCC1101Preset(CC1101_PRESET preset) {
     C1101preset = preset;
@@ -412,26 +412,90 @@ void CC1101_CLASS::loadPreset() {
 }
 
 bool CC1101_CLASS::CheckReceived() {
-    static unsigned long signalStartTime = 0;
-    static const unsigned long MIN_SIGNAL_LENGTH = 1000; // 1ms minimum
-    static const unsigned long SIGNAL_TIMEOUT = 250000;  // 250ms timeout
+    constexpr unsigned long MIN_SIGNAL_LENGTH = 20; // 20µs minimum signal length
+    constexpr unsigned long SIGNAL_TIMEOUT = 10000;
+    
+    // Timing windows for protocol detection
+    constexpr uint16_t SHORT_PULSE_MIN = 100;  // Minimum duration for short pulse
+    constexpr uint16_t LONG_PULSE_MAX = 2500;  // Maximum duration for long pulse
+    constexpr uint16_t TOLERANCE_PERCENT = 30;  // Tolerance percentage for pulse width
 
-    if (samplecount == 0) {
-        signalStartTime = micros();
-        return false;
+    // Ensure atomic read of samplecount
+    uint32_t localSampleCount = 0;
+    noInterrupts();
+    localSampleCount = samplecount;
+    interrupts();
+
+    if (localSampleCount < 24) return false;
+
+    uint64_t currentTime = esp_timer_get_time();
+    uint64_t signalDuration = currentTime - CC1101_CLASS::receivedData.lastReceiveTime;
+        if (CC1101_CLASS::receivedData.samples.size() > 0) {
+        if (CC1101_CLASS::receivedData.samples[0] > 3000) {
+            CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin());
+        }
     }
 
-    unsigned long currentTime = micros();
-    unsigned long signalDuration = currentTime - signalStartTime;
-
-    // Signal is complete if:
-    // 1. We have minimum number of samples
-    // 2. AND either timeout occurred or buffer is full
-    if (samplecount >= 24 && 
-        (signalDuration > MIN_SIGNAL_LENGTH) &&
-        (signalDuration > SIGNAL_TIMEOUT || samplecount >= SAMPLE_SIZE - 1)) {
-        
+    if (signalDuration > SIGNAL_TIMEOUT || localSampleCount >= SAMPLE_SIZE) {
         receiverEnabled = false;
+        CC1101_CLASS::receivedData.sampleCount = 0;
+
+        // Analyze pulse widths and group them
+        std::vector<uint16_t> shortPulses;
+        std::vector<uint16_t> longPulses;
+        uint16_t shortPulseAvg = 0;
+        uint16_t longPulseAvg = 0;
+
+        // First pass: separate short and long pulses
+        for (const auto& sample : CC1101_CLASS::receivedData.samples) {
+            if (sample < SHORT_PULSE_MIN) continue; // Skip noise
+            if (sample > LONG_PULSE_MAX) continue;  // Skip too long pulses
+
+            if (shortPulses.empty() && longPulses.empty()) {
+                // First valid pulse becomes reference for short pulse
+                shortPulses.push_back(sample);
+                continue;
+            }
+
+            // Calculate current averages
+            shortPulseAvg = std::accumulate(shortPulses.begin(), shortPulses.end(), 0) / 
+                           (shortPulses.size() > 0 ? shortPulses.size() : 1);
+            longPulseAvg = std::accumulate(longPulses.begin(), longPulses.end(), 0) / 
+                          (longPulses.size() > 0 ? longPulses.size() : 1);
+
+            // Calculate tolerance windows
+            uint16_t shortTolerance = (shortPulseAvg * TOLERANCE_PERCENT) / 100;
+            uint16_t longTolerance = (longPulseAvg * TOLERANCE_PERCENT) / 100;
+
+            // Categorize pulse
+            if (abs(static_cast<int>(sample - shortPulseAvg)) <= shortTolerance) {
+                shortPulses.push_back(sample);
+            } else if (longPulses.empty() || 
+                      abs(static_cast<int>(sample - longPulseAvg)) <= longTolerance) {
+                longPulses.push_back(sample);
+            }
+        }
+
+        // Calculate final averages
+        shortPulseAvg = std::accumulate(shortPulses.begin(), shortPulses.end(), 0) / 
+                       (shortPulses.size() > 0 ? shortPulses.size() : 1);
+        longPulseAvg = std::accumulate(longPulses.begin(), longPulses.end(), 0) / 
+                       (longPulses.size() > 0 ? longPulses.size() : 1);
+
+        // Print debug information
+        Serial.println("Pulse Analysis:");
+        Serial.print("Short pulses avg: "); Serial.println(shortPulseAvg);
+        Serial.print("Long pulses avg: "); Serial.println(longPulseAvg);
+        
+        // Print raw samples
+        Serial.print("Raw samples: ");
+        for (const auto& sample : CC1101_CLASS::receivedData.samples) {
+            Serial.print(sample);
+            Serial.print(" ");
+            CC1101_CLASS::receivedData.sampleCount++;
+        }
+        Serial.println();
+
         return true;
     }
 
@@ -601,16 +665,20 @@ void CC1101_CLASS::signalanalyseTask(void *pvParameters) {
         Serial.print(F("\r\nSignal found at "));
         Serial.print(F("Freq: "));
         Serial.print(mark_freq);
-        Serial.print(F(" MHz, RSSI: "));
-        Serial.println(mark_rssi);
-    } else {
-        Serial.println(F("\r\nNo strong signal found."));
-    }
-
-    Serial.println(F("\r\nScanning stopped."));
-    
-    ELECHOUSE_cc1101.SetRx();
+  
+  
+      
+  Serial.print(F(" MHz, RSSI: "));
+  Serial.println(mark_rssi);
+} else {
+  Serial.println(F("\r\nNo strong signal found."));
 }
+
+Serial.println(F("\r\nScanning stopped."));
+
+ELECHOUSE_cc1101.SetRx();
+}
+
 
 void CC1101_CLASS::startSignalanalyseTask() {
     xTaskCreatePinnedToCore(
@@ -625,135 +693,31 @@ void CC1101_CLASS::startSignalanalyseTask() {
 }
 
 void CC1101_CLASS::signalanalyse(){
- #define signalstorage 10
-
-  int signalanz=0;
-  int timingdelay[signalstorage];
-  float pulse[signalstorage];
-  long signaltimings[signalstorage*2];
-  int signaltimingscount[signalstorage];
-  long signaltimingssum[signalstorage];
-  long signalsum=0;
-
-  for (int i = 0; i<signalstorage; i++){
-    signaltimings[i*2] = 100000;
-    signaltimings[i*2+1] = 0;
-    signaltimingscount[i] = 0;
-    signaltimingssum[i] = 0;
-  }
-  for (int i = 1; i<samplecount; i++){
-    signalsum+=sample[i];
-  }
-
-  for (int p = 0; p<signalstorage; p++){
-
-  for (int i = 1; i<samplecount; i++){
-    if (p==0){
-      if (sample[i]<signaltimings[p*2]){
-        signaltimings[p*2]=sample[i];
-      }
-    }else{
-      if (sample[i]<signaltimings[p*2] && sample[i]>signaltimings[p*2-1]){
-        signaltimings[p*2]=sample[i];
-      }
-    }
-  }
-
-  for (int i = 1; i<samplecount; i++){
-    if (sample[i]<signaltimings[p*2]+error_toleranz && sample[i]>signaltimings[p*2+1]){
-      signaltimings[p*2+1]=sample[i];
-    }
-  }
-
-  for (int i = 1; i<samplecount; i++){
-    if (sample[i]>=signaltimings[p*2] && sample[i]<=signaltimings[p*2+1]){
-      signaltimingscount[p]++;
-      signaltimingssum[p]+=sample[i];
-    }
-  }
-  }
-  
-  int firstsample = signaltimings[0];
-  
-  signalanz=signalstorage;
-  for (int i = 0; i<signalstorage; i++){
-    if (signaltimingscount[i] == 0){
-      signalanz=i;
-      i=signalstorage;
-    }
-  }
-
-  for (int s=1; s<signalanz; s++){
-  for (int i=0; i<signalanz-s; i++){
-    if (signaltimingscount[i] < signaltimingscount[i+1]){
-      int temp1 = signaltimings[i*2];
-      int temp2 = signaltimings[i*2+1];
-      int temp3 = signaltimingssum[i];
-      int temp4 = signaltimingscount[i];
-      signaltimings[i*2] = signaltimings[(i+1)*2];
-      signaltimings[i*2+1] = signaltimings[(i+1)*2+1];
-      signaltimingssum[i] = signaltimingssum[i+1];
-      signaltimingscount[i] = signaltimingscount[i+1];
-      signaltimings[(i+1)*2] = temp1;
-      signaltimings[(i+1)*2+1] = temp2;
-      signaltimingssum[i+1] = temp3;
-      signaltimingscount[i+1] = temp4;
-    }
-  }
-  }
-
-  for (int i=0; i<signalanz; i++){
-    timingdelay[i] = signaltimingssum[i]/signaltimingscount[i];
-  }
-
-  if (firstsample == sample[1] and firstsample < timingdelay[0]){
-    sample[1] = timingdelay[0];
-  }
-
-lv_obj_t * textareaRC = screenMgr1.getTextArea();
-  bool lastbin=0;
-  lv_textarea_set_text(textareaRC, "\nDemodulating\n");
-
-
-  smoothcount=0;
-  for (int i=1; i<samplecount; i++){
-    float r = (float)sample[i]/timingdelay[0];
-    int calculate = r;
-    r = r-calculate;
-    r*=10;
-    if (r>=5){calculate+=1;}
-    if (calculate>0){
-      samplesmooth[smoothcount] = calculate*timingdelay[0];
-      smoothcount++;
-    }
-  }
-
-uint16_t pulseTrain[SAMPLE_SIZE]; 
-size_t length = smoothcount;
-
-for (size_t i = 0; i < smoothcount; i++) {
-    pulseTrain[i] = static_cast<uint16_t>(samplesmooth[i]);
-}
-
+ BinRawDecoder binRawDecoder;
     
     lv_obj_t * container = screenMgr1.getSquareLineContainer();
+    lv_obj_t * textareaRC = screenMgr1.getTextArea();
 
     lv_textarea_add_text(textareaRC, "\nNew RAW signal, \nCount: ");
-    lv_textarea_add_text(textareaRC, String(smoothcount).c_str());
+    lv_textarea_add_text(textareaRC, String(CC1101_CLASS::receivedData.sampleCount).c_str());
     String rawString = "";
-
+std::vector<uint16_t> pulseTrainVec;
 Serial.println("");
-    for (int i = 0; i < smoothcount; i++) {
+    for (int i = 0; i < CC1101_CLASS::receivedData.sampleCount; i++) {
             rawString += (i > 0 ? (i % 2 == 1 ? " -" : " ") : "");
-            rawString += samplesmooth[i];
-            Serial.print(samplesmooth[i]);
+            rawString += CC1101_CLASS::receivedData.samples[i];
+            pulseTrainVec.push_back(CC1101_CLASS::receivedData.samples[i]);
+            Serial.print(CC1101_CLASS::receivedData.samples[i]);
             Serial.print(", ");
         }
 Serial.println("");
 lv_textarea_add_text(textareaRC, "\nCapture Complete.");
 
-decodeWithESPiLight(pulseTrain, length);
+decodeWithESPiLight(pulseTrainVec.data(), CC1101_CLASS::receivedData.sampleCount);
 
+std::vector<long int> convertedSamples(CC1101_CLASS::receivedData.samples.begin(), CC1101_CLASS::receivedData.samples.end());
+binRawDecoder.setRawSamples(convertedSamples);
+binRawDecoder.tryDecode();
 
 lv_obj_set_scroll_dir(container, LV_DIR_HOR);
 lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
@@ -845,53 +809,55 @@ String fullPath = "/recordedRF/" + filename;
 File32* outputFilePtr = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
 if (outputFilePtr) {
     File32& outputFile = *outputFilePtr; 
-    std::vector<byte> customPresetData;
-    if (C1101preset == CUSTOM) {
-        customPresetData.insert(customPresetData.end(), {
-            CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
-            CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
-            CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
-            CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
-            CC1101_FREND0,  ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
-            0x00, 0x00
-        });
+    std::vector<uint8_t> customPresetData;
+if (C1101preset == CUSTOM) {
+    customPresetData.insert(customPresetData.end(), {
+        CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
+        CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
+        CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
+        CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
+        CC1101_FREND0,  ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
+        0x00, 0x00
+    });
 
-        std::array<byte, 8> paTable;
-        ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
-        customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
-    }
-    subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
-    SD_RF.closeFile(outputFilePtr);
+    std::array<uint8_t, 8> paTable;
+    ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
+    customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
+}
+subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
+SD_RF.closeFile(outputFilePtr);
 
 CC1101_CLASS::enableReceiver();
 }
 }
 void CC1101_CLASS::decodeWithESPiLight(uint16_t *pulseTrain, size_t length) {
-    if (length == 0) {
-        Serial.println("No pulses to decode.");
-        return;
-    }
+    //     ESPiLight espilight(-1); 
 
-    lv_obj_t *ta = screenMgr1.getTextArea();
+    // if (length == 0) {
+    //     Serial.println("No pulses to decode.");
+    //     return;
+    // }
 
-    size_t result = espilight.parsePulseTrain(pulseTrain, length);
-    if (result > 0) {
-        Serial.println("Signal successfully decoded by ESPiLight:");
+     lv_obj_t *ta = screenMgr1.getTextArea();
 
-        String protocolName = ""; 
-        String decodedData = "";  
+    // size_t result = espilight.parsePulseTrain(pulseTrain, length);
+    // if (result > 0) {
+    //     Serial.println("Signal successfully decoded by ESPiLight:");
 
-        lv_textarea_set_text(ta, "\nProtocol: ");
-        lv_textarea_add_text(ta, protocolName.c_str());
-        lv_textarea_add_text(ta, "\nDecoded Data: ");
-        lv_textarea_add_text(ta, decodedData.c_str());
+    //     String protocolName = ""; 
+    //     String decodedData = "";  
 
-        Serial.print("\nProtocol: ");
-        Serial.println(protocolName);
-        Serial.print("\nDecoded Data: ");
-        Serial.println(decodedData);
-        return;
-    }
+    //     lv_textarea_set_text(ta, "\nProtocol: ");
+    //     lv_textarea_add_text(ta, protocolName.c_str());
+    //     lv_textarea_add_text(ta, "\nDecoded Data: ");
+    //     lv_textarea_add_text(ta, decodedData.c_str());
+
+    //     Serial.print("\nProtocol: ");
+    //     Serial.println(protocolName);
+    //     Serial.print("\nDecoded Data: ");
+    //     Serial.println(decodedData);
+    //     return;
+    // }
 
     Serial.println("Failed to decode signal with ESPiLight. Trying RC Switch...");
 
@@ -1011,23 +977,35 @@ void CC1101_CLASS::decodeWithESPiLight(uint16_t *pulseTrain, size_t length) {
 }
 
 
-
 void CC1101_CLASS::sendRaw() {
     detachInterrupt(CC1101_CCGDO0A);
     CC1101_CLASS::initrRaw();
     Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
 
     Serial.print("Transmitting\n");
-    Serial.print(smoothcount);
+    Serial.print(CC1101_CLASS::receivedData.sampleCount);
     Serial.print("\n----------------\n");
-    for (int i = 1; i < smoothcount - 1; i += 2)
-    {
-        unsigned long highTime = max((unsigned long)(samplesmooth[i]), 0UL);
-        unsigned long lowTime = max((unsigned long)(samplesmooth[i + 1]), 0UL);
 
-        gpio_set_level((gpio_num_t)CC1101_CCGDO0A, 1);
+    for (int i = 1; i < CC1101_CLASS::receivedData.sampleCount - 1; i += 2)
+    {
+        unsigned long highTime = max((unsigned long)(CC1101_CLASS::receivedData.samples[i]), 0UL);
+        unsigned long lowTime = max((unsigned long)(CC1101_CLASS::receivedData.samples[i + 1]), 0UL);
+
+        GPIO.out_w1ts = (1 << CC1101_CCGDO0A);
         ets_delay_us(highTime);
-        gpio_set_level((gpio_num_t)CC1101_CCGDO0A, 0);
+        GPIO.out_w1tc = (1 << CC1101_CCGDO0A);
+        ets_delay_us(lowTime);
+
+    }
+
+      for (int i = 1; i < CC1101_CLASS::receivedData.sampleCount - 1; i += 2)
+    {
+        unsigned long highTime = max((unsigned long)(CC1101_CLASS::receivedData.samples[i]), 0UL);
+        unsigned long lowTime = max((unsigned long)(CC1101_CLASS::receivedData.samples[i + 1]), 0UL);
+
+        GPIO.out_w1tc = (1 << CC1101_CCGDO0A);
+        ets_delay_us(highTime);
+        GPIO.out_w1ts = (1 << CC1101_CCGDO0A);
         ets_delay_us(lowTime);
 
     }
@@ -1037,6 +1015,7 @@ void CC1101_CLASS::sendRaw() {
 
     Serial.print(F("\r\nReplaying RAW data complete.\r\n\r\n"));
 }
+
 
 void CC1101_CLASS::initrRaw() {
   Serial.print("Init CC1101 raw");
@@ -1153,4 +1132,3 @@ void CC1101_CLASS::disableTransmit()
 void CC1101_CLASS::saveSignal() {
 //;
 }
-

@@ -11,20 +11,16 @@
 #include "modules/ir/TV-B-Gone.h"
 #include "modules/ir/WORLD_IR_CODES.h"
 #include "modules/IR/ir.h"
-#include "IRrecv.h"
-#include <assert.h>
-#include <IRremoteESP8266.h>
-#include <IRac.h>
-#include <IRtext.h>
-#include <IRutils.h>
+
+
 #include <Wire.h>
 #include <SPI.h>
-#include <IRsend.h>
+
 #include "GUI/logo.h"
 
-IRrecv irrecv(IR_RX);   
+// IRrecv irrecv(IR_RX);   
 
-decode_results lastResults;
+// decode_results lastResults;
 
 SDcard& SD_CARD = SDcard::getInstance();
 
@@ -83,7 +79,7 @@ void setup() {
     }
 
     pinMode(IR_RX, INPUT_PULLUP);
-    irrecv.enableIRIn();
+
     pinMode(IR_TX, OUTPUT);
 
 }
@@ -91,6 +87,7 @@ void setup() {
  void CC1101Loop() {
     if(C1101CurrentState == STATE_ANALYZER) {
                     delay(50);
+                    Serial.println(digitalRead(CC1101_CCGDO2A));
         if (CC1101.CheckReceived()) {
             delay(50);
             CC1101.signalanalyse();
@@ -128,32 +125,32 @@ void setup() {
 }
  
  void IRLoop() {
-    switch (IRCurrentState)
-    {
-    case IR_STATE_BGONE:
-        {
-            const uint8_t num_EUcodes = sizeof(EUpowerCodes) / sizeof(EUpowerCodes[0]);        
-            sendAllCodes(EUpowerCodes, num_EUcodes);
-            IRCurrentState = IR_STATE_IDLE;
-            runningModule = MODULE_NONE;
-        }
-        break;
+    // switch (IRCurrentState)
+    // {
+    // case IR_STATE_BGONE:
+    //     {
+    //         // const uint8_t num_EUcodes = sizeof(EUpowerCodes) / sizeof(EUpowerCodes[0]);        
+    //         // sendAllCodes(EUpowerCodes, num_EUcodes);
+    //         // IRCurrentState = IR_STATE_IDLE;
+    //         // runningModule = MODULE_NONE;
+    //     }
+    //     break;
     
-    case IR_STATE_LISTENING:
-        if (irrecv.decode(&results)) {
-            IRCurrentState = IR_STATE_IDLE;
-            runningModule = MODULE_NONE;
-            Serial.println(results.value, HEX);
-            lv_textarea_set_text(screenMgrM.text_area_IR, "Received\n");
-            lv_textarea_add_text(screenMgrM.text_area_IR, String(results.value, HEX).c_str());
-            lastResults = results; 
-            irrecv.resume();
-        }
-        break;
+    // case IR_STATE_LISTENING:
+    //     // if (irrecv.decode(&results)) {
+    //     //     IRCurrentState = IR_STATE_IDLE;
+    //     //     runningModule = MODULE_NONE;
+    //     //     Serial.println(results.value, HEX);
+    //     //     lv_textarea_set_text(screenMgrM.text_area_IR, "Received\n");
+    //     //     lv_textarea_add_text(screenMgrM.text_area_IR, String(results.value, HEX).c_str());
+    //     //     lastResults = results; 
+    //     //     irrecv.resume();
+    //     // }
+    //     break;
     
-    default:
-        break;
-    }
+    // default:
+    //     break;
+    // }
 }
  
   ulong next_millis;

@@ -560,11 +560,11 @@ void ScreenManager::createmainMenu()
     lv_obj_t *btn_NFC_menu = lv_btn_create(mainMenu);
     lv_obj_set_pos(btn_NFC_menu, 25, 190);
     lv_obj_set_size(btn_NFC_menu, 200, 50);
-    lv_obj_add_event_cb(btn_NFC_menu, EVENTS::btn_event_NFC_menu_run, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(btn_NFC_menu, EVENTS::btn_event_NFC_menu_run, LV_EVENT_CLICKED, NULL);
     ScreenManager::apply_neon_theme_button(btn_NFC_menu); 
 
     lv_obj_t *label_NFC_menu = lv_label_create(btn_NFC_menu);
-    lv_label_set_text(label_NFC_menu, "TEST NFC");
+    lv_label_set_text(label_NFC_menu, "TEST rtl");
     lv_obj_center(label_NFC_menu);
 
     lv_obj_t *btn_RF24_menu = lv_btn_create(mainMenu);

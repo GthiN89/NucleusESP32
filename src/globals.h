@@ -158,7 +158,7 @@ enum RunnigModule
 
 
 extern bool C1101LoadPreset;
-extern bool receiverEnabled;
+//extern bool receiverEnabled;
 extern float CC1101_MHZ;
 
 
@@ -170,11 +170,6 @@ enum BTState
   STATE_BT_IDDLE,
 };
 
-    typedef struct
-{
-  std::vector<unsigned long> samples;
-  volatile unsigned long lastReceiveTime = 0;
-} recievedData;
 
 
 

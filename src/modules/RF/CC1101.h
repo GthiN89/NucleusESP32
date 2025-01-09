@@ -3,6 +3,8 @@
 
 #include "../../globals.h"
 #include "RCSwitch.h"
+//#include <PiLight.h>
+
 #include "SPI.h"
 #define SAMPLE_SIZE 2048
 #define MAX_SIGNAL_LENGTH 10000000  
@@ -41,6 +43,15 @@ public:
     int CC1101_SYNC = 2;
     float CC1101_FREQ = 433.92;
 
+    typedef struct
+{
+  std::vector<unsigned long> samples;
+  volatile unsigned long lastReceiveTime = 0;
+  volatile unsigned long sampleCount = 0;
+  volatile unsigned long normalizedCount = 0;
+  std::vector<uint16_t> pulseTrainVec;
+} recievedData;
+
     
     bool init();
     RCSwitch getRCSwitch();
@@ -65,7 +76,7 @@ public:
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
    
     void enableScanner(float start, float stop);
-
+ static recievedData receivedData;
 private:
     size_t smoothcount;
     uint16_t samplesmooth[SAMPLE_SIZE];
@@ -75,6 +86,7 @@ private:
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
    void decodeWithESPiLight(uint16_t *pulseTrain, size_t length);
+   
 };
 
-#endif 
+#endif
