@@ -3,7 +3,7 @@
 
 #include "../../globals.h"
 #include "RCSwitch.h"
-//#include <PiLight.h>
+#include "ESPiLight.h"
 
 #include "SPI.h"
 #define SAMPLE_SIZE 2048
@@ -24,7 +24,6 @@
  extern uint16_t  sample[];
  extern uint8_t samplecount;
  extern bool startLow;
- extern int CC1101_MODULATION;
  extern uint32_t actualFreq;
 extern float strongestASKFreqs[4];  // Store the four strongest ASK/OOK frequencies
 extern int strongestASKRSSI[4]; // Initialize with very low RSSI values
@@ -42,7 +41,7 @@ public:
     int CC1101_PKT_FORMAT = 0;
     int CC1101_SYNC = 2;
     float CC1101_FREQ = 433.92;
-
+    int CC1101_MODULATION;
     typedef struct
 {
   std::vector<unsigned long> samples;
@@ -58,6 +57,7 @@ public:
     void setCC1101Preset(CC1101_PRESET preset);
     void loadPreset();
     void disableReceiver();
+    void enableReceiverCustom();
     void setFrequency(float freq);
     void enableReceiver();
     void setSync(int sync);
@@ -85,7 +85,7 @@ private:
 
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
-   void decodeWithESPiLight(uint16_t *pulseTrain, size_t length);
+   void decode(uint16_t *pulseTrain, size_t length);
    
 };
 

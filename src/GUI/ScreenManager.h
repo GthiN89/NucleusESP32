@@ -5,6 +5,17 @@
 #include <functional>
 #include "XPT2046_Bitbang.h"
 #include "logo.h"
+struct SubGHzScreen {
+    lv_obj_t* screen;
+    lv_obj_t* spinbox;
+    lv_obj_t* spinbox1;
+    lv_obj_t* spinbox2;
+    lv_obj_t* spinbox3;
+    lv_obj_t* spinbox4;
+    lv_obj_t* spinbox5;
+    lv_obj_t* spinbox6;
+    lv_obj_t* spinbox7;
+};
 
 class ScreenManager {
 public:
@@ -14,6 +25,7 @@ public:
     lv_obj_t*  detect_dropdown_;
     lv_obj_t* ReplayScreen_;
     lv_obj_t* IRRecScreen_;
+    SubGHzScreen* SubGHzCustomScreen_;
     lv_obj_t* topLabel_container_;
     lv_obj_t *mbox_container;
     lv_obj_t* teslaScreen_;
@@ -24,6 +36,7 @@ public:
     ScreenManager& operator=(const ScreenManager&) = delete;
     void apply_neon_theme_button(lv_obj_t * obj);
     void createReplayScreen();
+    void createCustomSubghzScreen();
     void createmainMenu();
     void createRFMenu();
     void createBTMenu();
@@ -45,6 +58,7 @@ public:
     lv_obj_t *input_deviation;
     lv_obj_t *dropdown_modulation;
     lv_obj_t *text_area_IR;
+    lv_obj_t *text_area_SubGHzCustom;
 
     lv_obj_t* getFreqInput();  
     lv_obj_t* getTextArea();  

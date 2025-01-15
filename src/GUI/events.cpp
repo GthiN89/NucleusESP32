@@ -89,7 +89,7 @@ void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {
         screenMgr.createTeslaScreen();
      //   delay(10);
         detachInterrupt(CC1101_CCGDO0A);
-        CC1101_MODULATION = 2;
+        CC1101EV.CC1101_MODULATION = 2;
         CC1101EV.CC1101_FREQ = 433.92;
         CC1101EV.CC1101_PKT_FORMAT = 3;
         CC1101EV.initrRaw();
@@ -121,6 +121,8 @@ void EVENTS::btn_event_RF24_menu_run(lv_event_t* e) {
    // testRF24();
  //   RF24CurrentState = RF24_STATE_TEST;
 }
+
+
 
 void EVENTS::ta_freq_event_cb(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -184,10 +186,10 @@ void EVENTS::dropdown_modulation_event_cb(lv_event_t *e) {
     int selected = lv_dropdown_get_selected(screenMgr.dropdown_modulation); // Get selected index
 
     if (selected == 0) { // ASK selected
-        CC1101_MODULATION = 2;
+        CC1101EV.CC1101_MODULATION = 2;
         Serial.println("Modulation set to ASK.");
     } else if (selected == 1) { // FSK selected
-        CC1101_MODULATION = 0;
+        CC1101EV.CC1101_MODULATION = 0;
         Serial.println("Modulation set to FSK.");
     }
     }
@@ -467,26 +469,21 @@ void EVENTS::btn_event_mainMenu_run(lv_event_t* e) {
 
 void EVENTS::ta_preset_event_cb(lv_event_t * e) {
      lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
+     Serial.println("Preset event");
+    if (code == LV_EVENT_VALUE_CHANGED) {
      char selected_text[32];
      lv_event_code_t code = lv_event_get_code(e);
-
     lv_dropdown_get_selected_str(screenMgr.C1101preset_dropdown_, selected_text, sizeof(selected_text));  
-    if (code == LV_EVENT_VALUE_CHANGED) {
-        C1101preset = convert_str_to_enum(selected_text);
-        if(C1101preset == CUSTOM) {
-            lv_obj_remove_flag(screenMgr.mbox_container, LV_OBJ_FLAG_HIDDEN);
-
-
-
-
-        }
-
-    }  
-
+    Serial.println(selected_text);
     C1101preset = convert_str_to_enum(selected_text);
     CC1101EV.loadPreset();
-
+    if (code == LV_EVENT_VALUE_CHANGED) {
+        if(strcmp(selected_text, "CSTM") == 0) {
+            screenMgr.createCustomSubghzScreen();
+            return;
+        }
+        C1101preset = convert_str_to_enum(selected_text);
+    }  
 } 
 }
 
@@ -518,6 +515,43 @@ void EVENTS::btn_event_IR_run(lv_event_t* e) {
      }
 }
 
+void EVENTS::btn_event_CUSTOM_REC_run(lv_event_t* e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+
+
+    lv_obj_t * text_area = screenMgr.text_area_SubGHzCustom;
+    lv_textarea_set_text(text_area, "Waiting for signal.\n");
+    CC1101EV.enableReceiverCustom();
+    delay(20);
+    CC1101EV.setFrequency(CC1101_MHZ);
+    //ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL1, 0x98);
+  
+   //  delay(20);
+    runningModule = MODULE_CC1101;
+    C1101CurrentState = STATE_ANALYZER;
+
+    }
+}
+
+void EVENTS::CustomSubGhzHelp_CB(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_LONG_PRESSED) {
+        const char *user_data = static_cast<const char *>(lv_event_get_user_data(e));
+        if (strcmp(user_data, "SYNC") == 0) {
+            lv_textarea_set_text(screenMgr.text_area_SubGHzCustom, "Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.");            
+        } else if(strcmp(user_data, "PktFormat") == 0) {
+            lv_textarea_set_text(screenMgr.text_area_SubGHzCustom, "Packet format. 0 = Normal mode, no address check. 1 = Address check, no broadcast. 2 = Address check, 0 (0x00) broadcast. 3 = Address check, 0 (0x00) 0 (0x00) broadcast.");            
+        } else if(strcmp(user_data, "Modulatio") == 0) {
+            lv_textarea_set_text(screenMgr.text_area_SubGHzCustom, "Modulation format. 0 = 2-FSK. 1 = GFSK. 2 = ASK. 3 = 4-FSK.");            
+        } else if(strcmp(user_data, "Deviation") == 0) {
+            lv_textarea_set_text(screenMgr.text_area_SubGHzCustom, "Frequency deviation.");            
+        } else if(strcmp(user_data, "DataRate") == 0) {
+            lv_textarea_set_text(screenMgr.text_area_SubGHzCustom, "Data rate.");            
+        }
+    }
+}
 
 void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 {

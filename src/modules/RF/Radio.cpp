@@ -43,7 +43,7 @@ void RadioReceiver::setup() {
 
    // SPI.begin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
 
-    Serial.begin(115200);
+
   Log.begin(LOG_LEVEL_SILENT, &Serial);
   Log.notice(F(" " CR));
   Log.notice(F("****** setup ******" CR));

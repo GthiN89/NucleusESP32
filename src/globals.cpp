@@ -47,7 +47,8 @@ CC1101_PRESET convert_str_to_enum(const char * selected_str) {
     else if (strcmp(selected_str, "PAGER") == 0) return PAGER;
     else if (strcmp(selected_str, "HND1") == 0) return HND1;
     else if (strcmp(selected_str, "HND2") == 0) return HND2;
-    else return CUSTOM;  // Default to CUSTOM if no match is found
+    return CUSTOM;
+
 }
 
 const char* presetToString(CC1101_PRESET preset) {
