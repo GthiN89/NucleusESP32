@@ -1,21 +1,21 @@
-// #ifndef RADIO_RECEIVER_H
-// #define RADIO_RECEIVER_H
+#ifndef RADIO_RECEIVER_H
+#define RADIO_RECEIVER_H
 
-// #include <RadioLib.h>
-// #include <Module.h>
-// #include "globals.h"
-// #include "SPI.h"
-// #include <rtl_433_ESP.h>
+#include <RadioLib.h>
+#include <Module.h>
+#include "globals.h"
+#include "SPI.h"
+#include <rtl_433_ESP.h>
 
-// class RadioReceiver {
-// public:
-//     void setup();
-//     void loop();
+class RadioReceiver {
+public:
+    void setup();
+    void loop();
 
-// private:
-//     SPISettings SetSPI;
+private:
+    SPISettings SetSPI;
 
-//     rtl_433_ESP rf;
-// };
+    rtl_433_ESP rf;
+};
 
-// #endif
+#endif

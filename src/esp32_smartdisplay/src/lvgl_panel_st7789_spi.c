@@ -69,7 +69,7 @@ lv_display_t *lvgl_lcd_init(uint32_t hor_res, uint32_t ver_res)
         .lcd_cmd_bits = ST7789_SPI_CONFIG_LCD_CMD_BITS,
         .lcd_param_bits = ST7789_SPI_CONFIG_LCD_PARAM_BITS,
         .flags = {
-            .dc_as_cmd_phase = ST7789_SPI_CONFIG_FLAGS_DC_AS_CMD_PHASE,
+          //  .dc_as_cmd_phase = ST7789_SPI_CONFIG_FLAGS_DC_AS_CMD_PHASE,
             .dc_low_on_data = ST7789_SPI_CONFIG_FLAGS_DC_LOW_ON_DATA,
             .octal_mode = ST7789_SPI_CONFIG_FLAGS_OCTAL_MODE,
             .lsb_first = ST7789_SPI_CONFIG_FLAGS_LSB_FIRST}};

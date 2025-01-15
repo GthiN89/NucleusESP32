@@ -48,6 +48,7 @@ enum SPI_STATE
   SPI_STATE_INIT,
   SPI_STATE_FREE,
   SPI_STATE_CC1101,
+  SPI_STATE_NRF24,
   SPI_STATE_RC522
 };
 
@@ -68,6 +69,7 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 #define CYD_MISO 35  // Master In Slave Out
 #define CYD_SCLK 22  // Serial Clock
 #define RFID_CS -1
+#define RF24_CS 16
 
 // gd0 17
 // sck 22
@@ -78,10 +80,11 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 
 #define IRQ_PIN CCGDO2A
 #define RFID_RST -1
+#define RF24_CE  CCGDO0A
 
 
 
-// Pin configuration 
+// Pin configuration for CC1101 nfc CC-27 NRF24 CC-16
 #define CC1101_CS 27    // Chip Select
 #define CC1101_MOSI CYD_MOSI   // Master Out Slave In
 #define CC1101_MISO CYD_MISO  // Master In Slave Out
@@ -155,7 +158,7 @@ enum RunnigModule
 
 
 extern bool C1101LoadPreset;
-extern bool receiverEnabled;
+//extern bool receiverEnabled;
 extern float CC1101_MHZ;
 
 
@@ -167,11 +170,6 @@ enum BTState
   STATE_BT_IDDLE,
 };
 
-    typedef struct
-{
-  std::vector<unsigned long> samples;
-  volatile unsigned long lastReceiveTime = 0;
-} recievedData;
 
 
 

@@ -2,9 +2,8 @@
 #define IR_H
 
 #include <stdint.h>
-#include <IRremoteESP8266.h>
-#include <IRsend.h>
-#include <IRrecv.h>
+
+#include "modules/ETC/SDcard.h"
 
 // IR TX and RX Pins
 #define IR_TX 26        // The IR sender LED
@@ -42,8 +41,11 @@ enum IRState {
     IR_STATE_PLAYBACK,
     IR_STATE_BGONE
 };
-extern IRState IRCurrentState;
-extern decode_results results;   
+// extern IRState IRCurrentState;
+// extern decode_results results;  
+//extern decode_results lastResults;
 void sendReceived();
-
+bool txIrFile(String * filepath);
+void sendRaw(uint16_t frequency, String rawData);
+void sendNEC(String address, String command);
 #endif // IR_H

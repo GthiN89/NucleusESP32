@@ -1,12 +1,28 @@
 #include <Arduino.h>
-#include "main.h"
+#include <XPT2046_Bitbang.h>
+#include "GUI/ScreenManager.h"
+#include "esp32_smartdisplay/src/esp32_smartdisplay.h"
+#include "GUI/events.h"
 #include "modules/RF/CC1101.h"
-IRrecv irrecv(IR_RX);   
+#include "modules/ETC/SDcard.h"
+#include <FFat.h>
+#include "lv_fs_if.h"
+#include "modules/dataProcessing/SubGHzParser.h"
+#include "modules/ir/TV-B-Gone.h"
+#include "modules/ir/WORLD_IR_CODES.h"
+#include "modules/IR/ir.h"
 
-decode_results lastResults;
+
+#include <Wire.h>
+#include <SPI.h>
+
+#include "GUI/logo.h"
+
+// IRrecv irrecv(IR_RX);   
+
+// decode_results lastResults;
 
 SDcard& SD_CARD = SDcard::getInstance();
-
 
 XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
 ScreenManager& screenMgrM = ScreenManager::getInstance();
@@ -32,7 +48,7 @@ void init_touch(TouchCallback singleTouchCallback);
 
 
 void setup() {
-CC1101_CLASS CC1101;
+
   Serial.begin(115200);
   init_touch([]() { Serial.println(F("Single touch detected!")); });
   smartdisplay_init();
@@ -63,19 +79,24 @@ CC1101_CLASS CC1101;
     }
 
     pinMode(IR_RX, INPUT_PULLUP);
-    irrecv.enableIRIn();
+
     pinMode(IR_TX, OUTPUT);
 
 }
  
  void CC1101Loop() {
-    CC1101_CLASS CC1101;
     if(C1101CurrentState == STATE_ANALYZER) {
                     delay(50);
+             //       Serial.println(digitalRead(CC1101_CCGDO2A));
         if (CC1101.CheckReceived()) {
-            delay(50);
-            CC1101.signalanalyse();
+            Serial.println("Received");
             CC1101.disableReceiver();
+            Serial.println("Receiver disabled.");
+            delay(50);
+            Serial.println("Analyzing signal...");
+            CC1101.signalanalyse();
+            Serial.println("Signal analyzed.");
+
             delay(50);
             C1101CurrentState = STATE_IDLE;
             runningModule = MODULE_NONE;
@@ -109,32 +130,32 @@ CC1101_CLASS CC1101;
 }
  
  void IRLoop() {
-    switch (IRCurrentState)
-    {
-    case IR_STATE_BGONE:
-        {
-            const uint8_t num_EUcodes = sizeof(EUpowerCodes) / sizeof(EUpowerCodes[0]);        
-            sendAllCodes(EUpowerCodes, num_EUcodes);
-            IRCurrentState = IR_STATE_IDLE;
-            runningModule = MODULE_NONE;
-        }
-        break;
+    // switch (IRCurrentState)
+    // {
+    // case IR_STATE_BGONE:
+    //     {
+    //         // const uint8_t num_EUcodes = sizeof(EUpowerCodes) / sizeof(EUpowerCodes[0]);        
+    //         // sendAllCodes(EUpowerCodes, num_EUcodes);
+    //         // IRCurrentState = IR_STATE_IDLE;
+    //         // runningModule = MODULE_NONE;
+    //     }
+    //     break;
     
-    case IR_STATE_LISTENING:
-        if (irrecv.decode(&results)) {
-            IRCurrentState = IR_STATE_IDLE;
-            runningModule = MODULE_NONE;
-            Serial.println(results.value, HEX);
-            lv_textarea_set_text(screenMgrM.text_area_IR, "Received\n");
-            lv_textarea_add_text(screenMgrM.text_area_IR, String(results.value, HEX).c_str());
-            lastResults = results; 
-            irrecv.resume();
-        }
-        break;
+    // case IR_STATE_LISTENING:
+    //     // if (irrecv.decode(&results)) {
+    //     //     IRCurrentState = IR_STATE_IDLE;
+    //     //     runningModule = MODULE_NONE;
+    //     //     Serial.println(results.value, HEX);
+    //     //     lv_textarea_set_text(screenMgrM.text_area_IR, "Received\n");
+    //     //     lv_textarea_add_text(screenMgrM.text_area_IR, String(results.value, HEX).c_str());
+    //     //     lastResults = results; 
+    //     //     irrecv.resume();
+    //     // }
+    //     break;
     
-    default:
-        break;
-    }
+    // default:
+    //     break;
+    // }
 }
  
   ulong next_millis;

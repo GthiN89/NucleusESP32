@@ -9,6 +9,7 @@
 #include "XPT2046_Bitbang.h"
 #include "modules/nfc/nfc.h"
 #include "modules/IR/ir.h"
+#include "GUI/spinbox.h"
 
 #define MAX_PATH_LENGTH 256
 
@@ -34,6 +35,7 @@ ScreenManager &ScreenManager::getInstance()
 ScreenManager::ScreenManager()
     : ReplayScreen_(nullptr),
       IRRecScreen_(nullptr),
+      SubGHzCustomScreen_(nullptr),
       SourAppleScreen_(nullptr), 
       BTSpamScreen_(nullptr),
       fileExplorerScreen(nullptr),   
@@ -144,112 +146,9 @@ void ScreenManager::createReplayScreen() {
     lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
     lv_obj_set_style_pad_left(topLabel_container_, 10, LV_PART_MAIN);
     lv_obj_set_style_pad_right(topLabel_container_, 0, LV_PART_MAIN);
-
     containerHelper.fillTopContainer(topLabel_container_, "MHz:  ", TEXT_AREA, &customPreset, "433.92", "433.92", 10, NULL, NULL);
     lv_obj_set_size(customPreset, 90, 30);                   
-lv_obj_add_event_cb(customPreset, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, (void *)"freq");// Create a parent container for the message box
-mbox_container = lv_obj_create(ReplayScreen_);
-lv_obj_set_size(mbox_container, 240, 220); // Ensure enough height for the container
-lv_obj_align(mbox_container, LV_ALIGN_TOP_MID, 0, 10);
-lv_obj_set_flex_flow(mbox_container, LV_FLEX_FLOW_COLUMN);
-lv_obj_set_style_pad_all(mbox_container, 5, 0); // Slight padding for a clean look
-
-// Create the message box
-lv_obj_t *mbox = lv_msgbox_create(mbox_container);
-lv_obj_set_size(mbox, LV_PCT(100), LV_SIZE_CONTENT); // Ensure the message box fills the container's width
-lv_obj_set_style_pad_all(mbox, 0, 0); 
-lv_obj_clear_flag(mbox, LV_OBJ_FLAG_SCROLLABLE);
-
-// Create a container for the message box content
-lv_obj_t *content_container = lv_obj_create(mbox);
-lv_obj_set_size(content_container, LV_PCT(100), LV_SIZE_CONTENT);
-lv_obj_set_flex_flow(content_container, LV_FLEX_FLOW_COLUMN);
-lv_obj_set_style_pad_all(content_container, 0, 0);
-lv_obj_clear_flag(content_container, LV_OBJ_FLAG_SCROLLABLE);
-
-// Add a dropdown for ASK/FSK selection
-lv_obj_t *dropdown_container = lv_obj_create(content_container);
-lv_obj_set_size(dropdown_container, LV_PCT(100), LV_SIZE_CONTENT);
-lv_obj_set_flex_flow(dropdown_container, LV_FLEX_FLOW_ROW);
-lv_obj_set_style_pad_all(dropdown_container, 0, 0);
-
-lv_obj_t *label_modulation = lv_label_create(dropdown_container);
-lv_label_set_text(label_modulation, "Mode:");
-lv_obj_set_width(label_modulation, 50);
-dropdown_modulation = lv_dropdown_create(dropdown_container);
-lv_dropdown_set_options(dropdown_modulation, "ASK\nFSK");
-lv_obj_set_width(dropdown_modulation, LV_PCT(70));
-//lv_obj_add_event_cb(dropdown_modulation, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, dropdown_modulation);
-lv_obj_add_event_cb(dropdown_modulation, EVENTS::dropdown_modulation_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
-// Add a row for Data Rate input
-lv_obj_t *datarate_container = lv_obj_create(content_container);
-lv_obj_set_size(datarate_container, LV_PCT(100), LV_SIZE_CONTENT);
-lv_obj_set_flex_flow(datarate_container, LV_FLEX_FLOW_ROW);
-lv_obj_set_style_pad_all(datarate_container, 0, 0);
-
-lv_obj_t *label_datarate = lv_label_create(datarate_container);
-lv_label_set_text(label_datarate, "Data:");
-lv_obj_set_width(label_datarate, 50);
-
-input_datarate = lv_textarea_create(datarate_container);
-lv_textarea_set_placeholder_text(input_datarate, "kbps");
-lv_textarea_set_one_line(input_datarate, true);
-lv_obj_set_width(input_datarate, LV_PCT(70));
-lv_obj_add_event_cb(input_datarate, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, (void *)"drate");
-// Add a row for Bandwidth input
-lv_obj_t *bandwidth_container = lv_obj_create(content_container);
-lv_obj_set_size(bandwidth_container, LV_PCT(100), LV_SIZE_CONTENT);
-lv_obj_set_flex_flow(bandwidth_container, LV_FLEX_FLOW_ROW);
-lv_obj_set_style_pad_all(bandwidth_container, 0, 0);
-
-lv_obj_t *label_bandwidth = lv_label_create(bandwidth_container);
-lv_label_set_text(label_bandwidth, "BW:");
-lv_obj_set_width(label_bandwidth, 50);
-
-input_bandwidth = lv_textarea_create(bandwidth_container);
-lv_textarea_set_placeholder_text(input_bandwidth, "kHz");
-lv_textarea_set_one_line(input_bandwidth, true);
-lv_obj_set_width(input_bandwidth, LV_PCT(70));
-lv_obj_add_event_cb(input_bandwidth, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, (void *)"BW");
-// Add a row for Deviation input
-lv_obj_t *deviation_container = lv_obj_create(content_container);
-lv_obj_set_size(deviation_container, LV_PCT(100), LV_SIZE_CONTENT);
-lv_obj_set_flex_flow(deviation_container, LV_FLEX_FLOW_ROW);
-lv_obj_set_style_pad_all(deviation_container, 0, 0);
-
-lv_obj_t *label_deviation = lv_label_create(deviation_container);
-lv_label_set_text(label_deviation, "Dev:");
-lv_obj_set_width(label_deviation, 50);
-
-input_deviation = lv_textarea_create(deviation_container);
-lv_textarea_set_placeholder_text(input_deviation, "kHz");
-lv_textarea_set_one_line(input_deviation, true);
-lv_obj_set_width(input_deviation, LV_PCT(70));
-lv_obj_add_event_cb(input_deviation, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, (void *)"DEV");
-// Create a button container
-lv_obj_t *button_container = lv_obj_create(content_container);
-lv_obj_set_size(button_container, LV_PCT(100), LV_SIZE_CONTENT);
-lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW);
-lv_obj_set_flex_align(button_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-lv_obj_set_style_pad_all(button_container, 0, 0);
-
-lv_obj_t *ok_btn = lv_btn_create(button_container);
-lv_obj_set_size(ok_btn, 60, 30);
-lv_obj_t *ok_label = lv_label_create(ok_btn);
-lv_label_set_text(ok_label, "OK");
-lv_obj_add_event_cb(ok_btn, EVENTS::ok_button_event_cb, LV_EVENT_CLICKED, mbox_container);
-lv_obj_t *cancel_btn = lv_btn_create(button_container);
-lv_obj_set_size(cancel_btn, 60, 30);
-lv_obj_t *cancel_label = lv_label_create(cancel_btn);
-lv_label_set_text(cancel_label, "Cancel");
-
-lv_obj_add_flag(mbox_container, LV_OBJ_FLAG_HIDDEN); // Hide the keyboard initially
-
-
-
-    kb_qwert_ = KeyboardHelper::createKeyboard(ReplayScreen_, LV_KEYBOARD_MODE_TEXT_LOWER);
-    kb_freq_ = KeyboardHelper::createKeyboard(ReplayScreen_, LV_KEYBOARD_MODE_NUMBER);
-    lv_keyboard_set_textarea(kb_freq_, customPreset);
+    lv_obj_add_event_cb(customPreset, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, (void *)"freq");
 
     containerHelper.createContainer(&secondLabel_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
     lv_obj_set_style_border_width(secondLabel_container_, 0, LV_PART_MAIN);
@@ -313,6 +212,111 @@ lv_obj_add_flag(mbox_container, LV_OBJ_FLAG_HIDDEN); // Hide the keyboard initia
 
     lv_obj_add_event_cb(playButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, NULL); 
     lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
+
+}
+
+void ScreenManager::createCustomSubghzScreen(){
+    ContainerHelper containerHelper;  
+    CC1101_CLASS CC1101SM;
+    
+    SubGHzCustomScreen_ = new SubGHzScreen;
+    SubGHzCustomScreen_->screen = lv_obj_create(NULL);
+
+    
+    lv_scr_load(SubGHzCustomScreen_->screen);
+    lv_obj_delete(previous_screen);
+    
+    previous_screen = SubGHzCustomScreen_->screen;
+    lv_obj_set_flex_flow(SubGHzCustomScreen_->screen, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(SubGHzCustomScreen_->screen, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+
+    lv_obj_set_style_pad_column(SubGHzCustomScreen_->screen, 1, LV_PART_MAIN);
+    lv_obj_set_style_pad_row(SubGHzCustomScreen_->screen, 1, LV_PART_MAIN);
+ 
+    text_area_SubGHzCustom = lv_textarea_create(SubGHzCustomScreen_->screen);
+    lv_obj_set_size(text_area_SubGHzCustom, 240, 75);
+    lv_obj_align(text_area_SubGHzCustom, LV_ALIGN_CENTER, 0, -20);
+    lv_textarea_set_text(text_area_SubGHzCustom, "Custom SubGhz tool.\nHelp On Long Touch\nIllegal settings can kill the CC1101.");
+    lv_obj_set_scrollbar_mode(text_area_SubGHzCustom, LV_SCROLLBAR_MODE_OFF); 
+    lv_textarea_set_cursor_click_pos(text_area_SubGHzCustom, false);
+
+    lv_obj_t *settingContainer;
+    containerHelper.createContainer(&settingContainer, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
+    lv_obj_t* label1 = lv_label_create(settingContainer);	
+    lv_label_set_text(label1, "Bandwith ");
+    int32_t valueBW = CC1101SM.CC1101_RX_BW;
+    SubGHzCustomScreen_->spinbox = SpinBox::createSpinbox(settingContainer, 0, valueBW, 812, 1, EVENTS::CustomSubGhzHelp_CB, "Bandwith");
+
+    lv_obj_t *settingContainer1;
+    containerHelper.createContainer(&settingContainer1, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
+    lv_obj_t* label2 = lv_label_create(settingContainer1);	
+    lv_label_set_text(label2, "Threshold ");
+    SubGHzCustomScreen_->spinbox1 = SpinBox::createSpinbox(settingContainer1, -50, -80 , 80, 10, EVENTS::CustomSubGhzHelp_CB, "Threshold");
+ 
+
+    lv_obj_t *settingContainer2;
+    containerHelper.createContainer(&settingContainer2, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
+    lv_obj_t* label3 = lv_label_create(settingContainer2);	
+    lv_label_set_text(label3, "SyncMode ");
+     int32_t valueSync = CC1101SM.CC1101_SYNC;
+    SubGHzCustomScreen_->spinbox2 = SpinBox::createSpinbox(settingContainer2, valueSync, 0, 5, 1, EVENTS::CustomSubGhzHelp_CB, "SYNC");
+   
+    lv_obj_add_event_cb(settingContainer2, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"SYNC");
+
+    lv_obj_t *settingContainer3;
+    containerHelper.createContainer(&settingContainer3, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
+    lv_obj_t* label4 = lv_label_create(settingContainer3);	
+    lv_label_set_text(label4, "PktFormat ");
+    int32_t valuePTK = CC1101SM.CC1101_PKT_FORMAT;
+    SubGHzCustomScreen_->spinbox3 = SpinBox::createSpinbox(settingContainer3, valuePTK, 0, 3, 1, EVENTS::CustomSubGhzHelp_CB, "PktFormat");
+    lv_obj_add_event_cb(settingContainer3, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"PktFormat");
+
+    lv_obj_t *settingContainer4;
+    containerHelper.createContainer(&settingContainer4, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
+    lv_obj_t* label5 = lv_label_create(settingContainer4);	
+    lv_label_set_text(label5, "Modulatio ");
+    int32_t valueMOD = CC1101SM.CC1101_MODULATION;
+    SubGHzCustomScreen_->spinbox4 = SpinBox::createSpinbox(settingContainer4, valueMOD, 1, 4, 1, EVENTS::CustomSubGhzHelp_CB, "Modulatio");
+    lv_obj_add_event_cb(settingContainer4, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"Modulatio");
+
+    lv_obj_t *settingContainer5;
+    containerHelper.createContainer(&settingContainer5, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
+    lv_obj_t* label6 = lv_label_create(settingContainer5);	
+    lv_label_set_text(label6, "Deviation:  ");
+    int32_t valueDEV = CC1101SM.CC1101_DEVIATION;
+    SubGHzCustomScreen_->spinbox5 = SpinBox::createSpinbox(settingContainer5, valueDEV, 0, 200, 1, EVENTS::CustomSubGhzHelp_CB, "Deviation");
+    lv_obj_add_event_cb(settingContainer5, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"Deviation");
+
+
+    lv_obj_t *settingContainer6;
+    containerHelper.createContainer(&settingContainer6, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
+    lv_obj_t* label7 = lv_label_create(settingContainer6);	
+    lv_label_set_text(label7, "Data  rate:");
+    int32_t DRATE = CC1101SM.CC1101_DRATE;
+    SubGHzCustomScreen_->spinbox6 = SpinBox::createSpinbox(settingContainer6, DRATE, 1, 10, 1, EVENTS::CustomSubGhzHelp_CB, "DataRate");
+    lv_obj_add_event_cb(settingContainer6, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"DataRate");
+
+    lv_obj_t *button_container;
+
+    containerHelper.createContainer(&button_container, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 30, 240);
+
+    lv_obj_t* listenButton = ButtonHelper::createButton(button_container, "Listen");
+    lv_obj_add_event_cb(listenButton, EVENTS::btn_event_CUSTOM_REC_run, LV_EVENT_CLICKED, nullptr);
+
+    
+    lv_obj_t* saveButton = ButtonHelper::createButton(button_container, "Save");
+   // lv_obj_add_event_cb(saveButton, EVENTS::save_signal_event, LV_EVENT_CLICKED, nullptr);
+
+    lv_obj_t *button_container2;
+    containerHelper.createContainer(&button_container2, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 30, 240);
+
+    
+    lv_obj_t* playButton = ButtonHelper::createButton(button_container2, "Play");
+    lv_obj_add_event_cb(playButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, nullptr);
+
+    lv_obj_t* exitButton = ButtonHelper::createButton(button_container2, "Exit");
+    lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, nullptr);
 
 }
 
@@ -560,11 +564,11 @@ void ScreenManager::createmainMenu()
     lv_obj_t *btn_NFC_menu = lv_btn_create(mainMenu);
     lv_obj_set_pos(btn_NFC_menu, 25, 190);
     lv_obj_set_size(btn_NFC_menu, 200, 50);
-    lv_obj_add_event_cb(btn_NFC_menu, EVENTS::btn_event_NFC_menu_run, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(btn_NFC_menu, EVENTS::btn_event_NFC_menu_run, LV_EVENT_CLICKED, NULL);
     ScreenManager::apply_neon_theme_button(btn_NFC_menu); 
 
     lv_obj_t *label_NFC_menu = lv_label_create(btn_NFC_menu);
-    lv_label_set_text(label_NFC_menu, "TEST NFC");
+    lv_label_set_text(label_NFC_menu, "TEST rtl");
     lv_obj_center(label_NFC_menu);
 
     lv_obj_t *btn_RF24_menu = lv_btn_create(mainMenu);

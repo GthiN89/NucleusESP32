@@ -2,6 +2,8 @@
 #include <SdFat.h>
 #include <map>
 #include <string>
+#include "sdios.h"
+
 
 #define SPI_DRIVER_SELECT 2
 #define SD_FAT_TYPE 1

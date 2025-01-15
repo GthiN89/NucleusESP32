@@ -1,55 +1,74 @@
-// #include "Radio.h"
+#include <ArduinoJson.h>
+#include <ArduinoLog.h>
+#include <rtl_433_ESP.h>
+#include "Radio.h"
+
+#ifndef RF_MODULE_FREQUENCY
+#  define RF_MODULE_FREQUENCY 433.92
+#endif
+
+#define JSON_MSG_BUFFER 512
 
 
-// SPISettings SetSPI(2000000, MSBFIRST, SPI_MODE0);
+
+char messageBuffer[JSON_MSG_BUFFER];
+
+rtl_433_ESP rf;
+
+void logJson(JsonObject& jsondata) {
+#if defined(ESP8266) || defined(ESP32) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__)
+  char JSONmessageBuffer[jsondata.measureLength() + 1];
+#else
+  char JSONmessageBuffer[JSON_MSG_BUFFER];
+#endif
+  jsondata.printTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
+#if defined(setBitrate) || defined(setFreqDev) || defined(setRxBW)
+  Log.setShowLevel(false);
+  Log.notice(F("."));
+  Log.setShowLevel(true);
+#else
+  Log.notice(F("Received message : %s" CR), JSONmessageBuffer);
+#endif
+}
+int count = 0;
+
+void rtl_433_Callback(char* message) {
+  DynamicJsonBuffer jsonBuffer2(JSON_MSG_BUFFER);
+  JsonObject& RFrtl_433_ESPdata = jsonBuffer2.parseObject(message);
+  logJson(RFrtl_433_ESPdata);
+  count++;
+}
+
+void RadioReceiver::setup() {
+
+   // SPI.begin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
 
 
-// Module radioModule(CC1101_CS, CC1101_CCGDO0A, -1, CC1101_CCGDO2A, SPI, SetSPI);
+  Log.begin(LOG_LEVEL_SILENT, &Serial);
+  Log.notice(F(" " CR));
+  Log.notice(F("****** setup ******" CR));
+  rf.initReceiver(RF_MODULE_RECEIVER_GPIO, RF_MODULE_FREQUENCY);
+  rf.setCallback(rtl_433_Callback, messageBuffer, JSON_MSG_BUFFER);
+  rf.enableReceiver();
+  Log.notice(F("****** setup complete ******" CR));
+  rf.getModuleStatus();
+}
 
+unsigned long uptime() {
+  static unsigned long lastUptime = 0;
+  static unsigned long uptimeAdd = 0;
+  unsigned long uptime = millis() / 1000 + uptimeAdd;
+  if (uptime < lastUptime) {
+    uptime += 4294967;
+    uptimeAdd += 4294967;
+  }
+  lastUptime = uptime;
+  return uptime;
+}
 
-// CC1101 radio433(&radioModule);
+int next = uptime() + 30;
 
-// void RadioReceiver::setup() {
+void RadioReceiver::loop() {
 
-//     SPI.begin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
-
-
-//     Serial.begin(115200);
-//     Serial.print(F("CC1101 Initializing ... "));
-//     int state = radio433.begin();
-//     radio433.setPromiscuousMode(true);  // Set to promiscuous mode for listening to all packets
-
-//     if (state == RADIOLIB_ERR_NONE) {
-//         Serial.println(F("CC1101 initialized successfully!"));
-//     } else {
-//         Serial.print(F("CC1101 initialization failed with error code: "));
-//         Serial.println(state);
-//     }
-// }
-
-// void RadioReceiver::loop() {
-//     if (radio433.available()) {
-//         // Create a buffer to store the received data (e.g., 255 bytes)
-//         uint8_t receivedBuffer[255];  
-
-
-//         // Check if data was received successfully
-//             // Assuming received data is available in the radio's internal buffer
-//             // You would need to implement a way to access the data from the buffer
-//             // or use the `receive()` method to capture the received bytes.
-
-//             int len = radio433.readData(receivedBuffer, sizeof(receivedBuffer));
-
-//             if (len > 0) {
-//                 // Convert the data to a string
-//                 String receivedData = "";
-//                 for (int i = 0; i < len; i++) {
-//                     receivedData += (char)receivedBuffer[i];
-//                 }
-//                 // Print the received data to Serial
-//                 Serial.println(receivedData);
-//             }
-//         } else {
-//             Serial.println("No valid data received.");
-//         }
-// }
+  rf.loop();
+}

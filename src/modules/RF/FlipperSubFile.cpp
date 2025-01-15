@@ -2,7 +2,6 @@
 #include <sstream>  
 
 
-// Initialize the preset mapping (if this is not done elsewhere)
 const std::map<CC1101_PRESET, std::string> FlipperSubFile::presetMapping = {
     {AM270, "FuriHalSubGhzPresetOok270Async"},
     {AM650, "FuriHalSubGhzPresetOok650Async"},

@@ -3,23 +3,9 @@
 
 #include "../../globals.h"
 #include "RCSwitch.h"
-#include "Arduino.h"
-#include "ELECHOUSE_CC1101_SRC_DRV.h"
-#include "GUI/ScreenManager.h"
-#include <sstream>
-#include <ctime>
-#include <vector>
-#include <string> 
-#include "GUI/events.h"
-#include "SPI.h"
-#include "modules/ETC/SDcard.h"
 #include "ESPiLight.h"
-#include <esp_timer.h>
-#include <esp_attr.h>
-#include <driver/gpio.h>
-#include <esp_intr_alloc.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/portmacro.h>
+
+#include "SPI.h"
 #define SAMPLE_SIZE 2048
 #define MAX_SIGNAL_LENGTH 10000000  
 
@@ -38,7 +24,6 @@
  extern uint16_t  sample[];
  extern uint8_t samplecount;
  extern bool startLow;
- extern int CC1101_MODULATION;
  extern uint32_t actualFreq;
 extern float strongestASKFreqs[4];  // Store the four strongest ASK/OOK frequencies
 extern int strongestASKRSSI[4]; // Initialize with very low RSSI values
@@ -56,6 +41,15 @@ public:
     int CC1101_PKT_FORMAT = 0;
     int CC1101_SYNC = 2;
     float CC1101_FREQ = 433.92;
+    int CC1101_MODULATION;
+    typedef struct
+{
+  std::vector<unsigned long> samples;
+  volatile unsigned long lastReceiveTime = 0;
+  volatile unsigned long sampleCount = 0;
+  volatile unsigned long normalizedCount = 0;
+  std::vector<uint16_t> pulseTrainVec;
+} recievedData;
 
     
     bool init();
@@ -63,6 +57,7 @@ public:
     void setCC1101Preset(CC1101_PRESET preset);
     void loadPreset();
     void disableReceiver();
+    void enableReceiverCustom();
     void setFrequency(float freq);
     void enableReceiver();
     void setSync(int sync);
@@ -81,7 +76,7 @@ public:
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
    
     void enableScanner(float start, float stop);
-
+ static recievedData receivedData;
 private:
     size_t smoothcount;
     uint16_t samplesmooth[SAMPLE_SIZE];
@@ -90,7 +85,8 @@ private:
 
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
-   void decodeWithESPiLight(uint16_t *pulseTrain, size_t length);
+   void decode(uint16_t *pulseTrain, size_t length);
+   
 };
 
-#endif 
+#endif
