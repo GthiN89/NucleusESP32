@@ -87,14 +87,14 @@ void setup() {
  void CC1101Loop() {
     if(C1101CurrentState == STATE_ANALYZER) {
                     delay(50);
-             //       Serial.println(digitalRead(CC1101_CCGDO2A));
+                    Serial.println(digitalRead(CC1101_CCGDO2A));
         if (CC1101.CheckReceived()) {
             Serial.println("Received");
             CC1101.disableReceiver();
             Serial.println("Receiver disabled.");
             delay(50);
             Serial.println("Analyzing signal...");
-            CC1101.signalanalyse();
+            CC1101.signalAnalyse();
             Serial.println("Signal analyzed.");
 
             delay(50);
@@ -103,7 +103,7 @@ void setup() {
         }
     }
     if(C1101CurrentState == STATE_PLAYBACK) {
-        CC1101.initrRaw();
+        CC1101.initRaw();
         CC1101.sendRaw();
         CC1101.disableTransmit();
         C1101CurrentState = STATE_IDLE;

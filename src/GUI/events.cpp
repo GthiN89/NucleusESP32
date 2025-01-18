@@ -92,7 +92,7 @@ void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {
         CC1101EV.CC1101_MODULATION = 2;
         CC1101EV.CC1101_FREQ = 433.92;
         CC1101EV.CC1101_PKT_FORMAT = 3;
-        CC1101EV.initrRaw();
+        CC1101EV.initRaw();
     }
 }
 
@@ -381,7 +381,7 @@ void EVENTS::exitReplayEvent(lv_event_t * e) {
 void EVENTS::sendCapturedEvent(lv_event_t * e) {
         lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-    CC1101EV.sendRaw();
+        CC1101EV.sendRaw();
     }
 }
 
@@ -622,7 +622,7 @@ void EVENTS::btn_event_detect_run(lv_event_t* e) {
     CC1101EV.loadPreset();
     CC1101EV.enableScanner(300, 925);
     Serial.println("Scanner2");
-    CC1101EV.startSignalanalyseTask();
+    CC1101EV.startSignalAnalyseTask();
  //   delay(5);
     C1101CurrentState = STATE_DETECT;
     runningModule = MODULE_CC1101;
@@ -955,7 +955,7 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
     detachInterrupt(CC1101_CCGDO0A);
     detachInterrupt(CC1101_CCGDO2A);
     digitalWrite(CC1101_CS, LOW);
-    CC1101EV.initrRaw();
+    CC1101EV.initRaw();
     ELECHOUSE_cc1101.setCCMode(0); 
     ELECHOUSE_cc1101.setPktFormat(3);
     ELECHOUSE_cc1101.SetTx();

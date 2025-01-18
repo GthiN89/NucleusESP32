@@ -14,7 +14,7 @@ void FlipperSubFile::generateRaw(
     File32& file,
     CC1101_PRESET presetName,
     const std::vector<byte>& customPresetData,
-    String& samples,
+    std::ostringstream & samples,
     float frequency
 ) {
     if (!file) {
@@ -53,17 +53,17 @@ void FlipperSubFile::writePresetInfo(File32& file, CC1101_PRESET presetName, con
     }
 }
 
-void FlipperSubFile::writeRawProtocolData(File32& file, String& samples) {
+#include <sstream>
+
+void FlipperSubFile::writeRawProtocolData(File32& file, std::ostringstream& samples) {
     file.println("Protocol: RAW");
     file.print("RAW_Data: ");
 
+    std::istringstream stream(samples.str());  
     std::string sample;
     int wordCount = 0;
-    
-    std::string cppString(samples.c_str());
-    std::istringstream stream(cppString);
 
-    while (std::getline(stream, sample, ' ')) {
+    while (std::getline(stream, sample, ' ')) { 
         if (wordCount > 0 && wordCount % 512 == 0) {
             file.println();
             file.print("RAW_Data: ");
@@ -74,6 +74,7 @@ void FlipperSubFile::writeRawProtocolData(File32& file, String& samples) {
     }
     file.println();
 }
+
 
 std::string FlipperSubFile::getPresetName(CC1101_PRESET preset) {
     auto it = presetMapping.find(preset);

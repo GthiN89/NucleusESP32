@@ -141,6 +141,8 @@
   { 200,  0, { 0, 0 }, 0, {   0,  0 }, { 1,  3 }, { 3, 1} , false, 20},	  // 37 DEWENWILS Power Strip
   
   { 500,  0, { 0, 0 }, 1, {   0,  7 }, { 1,  2 }, { 1, 4},  false,  0 }, // 38 (Nexus weather, 36 bit)
+  { 400, 4, { 2, 2 }, 1, { 3, 30 }, { 1, 3 }, { 3, 1 }, false, 40 }  // Custom protocol
+
 //{ 20,  16, { 14, 30 }, 1, { 510,  30 }, { 14,  30 }, { 30, 14 }, false,  230 }  // 39 (Louvolite) with premable
 };
 

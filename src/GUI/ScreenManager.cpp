@@ -245,8 +245,10 @@ void ScreenManager::createCustomSubghzScreen(){
     containerHelper.createContainer(&settingContainer, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
     lv_obj_t* label1 = lv_label_create(settingContainer);	
     lv_label_set_text(label1, "Bandwith ");
+    Serial.println("Bandwith ");
+    Serial.println(CC1101SM.CC1101_RX_BW);
     int32_t valueBW = CC1101SM.CC1101_RX_BW;
-    SubGHzCustomScreen_->spinbox = SpinBox::createSpinbox(settingContainer, 0, valueBW, 812, 1, EVENTS::CustomSubGhzHelp_CB, "Bandwith");
+    SubGHzCustomScreen_->spinbox = SpinBox::createSpinbox(settingContainer, 0, valueBW, 812, 10, EVENTS::CustomSubGhzHelp_CB, "Bandwith");
 
     lv_obj_t *settingContainer1;
     containerHelper.createContainer(&settingContainer1, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
@@ -259,6 +261,8 @@ void ScreenManager::createCustomSubghzScreen(){
     containerHelper.createContainer(&settingContainer2, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
     lv_obj_t* label3 = lv_label_create(settingContainer2);	
     lv_label_set_text(label3, "SyncMode ");
+    Serial.println("SyncMode ");    
+    Serial.println(CC1101SM.CC1101_SYNC);
      int32_t valueSync = CC1101SM.CC1101_SYNC;
     SubGHzCustomScreen_->spinbox2 = SpinBox::createSpinbox(settingContainer2, valueSync, 0, 5, 1, EVENTS::CustomSubGhzHelp_CB, "SYNC");
    
@@ -268,6 +272,8 @@ void ScreenManager::createCustomSubghzScreen(){
     containerHelper.createContainer(&settingContainer3, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
     lv_obj_t* label4 = lv_label_create(settingContainer3);	
     lv_label_set_text(label4, "PktFormat ");
+    Serial.println("PktFormat ");
+    Serial.println(CC1101SM.CC1101_PKT_FORMAT);
     int32_t valuePTK = CC1101SM.CC1101_PKT_FORMAT;
     SubGHzCustomScreen_->spinbox3 = SpinBox::createSpinbox(settingContainer3, valuePTK, 0, 3, 1, EVENTS::CustomSubGhzHelp_CB, "PktFormat");
     lv_obj_add_event_cb(settingContainer3, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"PktFormat");
@@ -276,6 +282,8 @@ void ScreenManager::createCustomSubghzScreen(){
     containerHelper.createContainer(&settingContainer4, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
     lv_obj_t* label5 = lv_label_create(settingContainer4);	
     lv_label_set_text(label5, "Modulatio ");
+    Serial.println("Modulatio ");   
+    Serial.println(CC1101SM.CC1101_MODULATION);
     int32_t valueMOD = CC1101SM.CC1101_MODULATION;
     SubGHzCustomScreen_->spinbox4 = SpinBox::createSpinbox(settingContainer4, valueMOD, 1, 4, 1, EVENTS::CustomSubGhzHelp_CB, "Modulatio");
     lv_obj_add_event_cb(settingContainer4, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"Modulatio");
@@ -284,8 +292,10 @@ void ScreenManager::createCustomSubghzScreen(){
     containerHelper.createContainer(&settingContainer5, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
     lv_obj_t* label6 = lv_label_create(settingContainer5);	
     lv_label_set_text(label6, "Deviation:  ");
+    Serial.println("Deviation:  ");
+    Serial.println(CC1101SM.CC1101_DEVIATION);
     int32_t valueDEV = CC1101SM.CC1101_DEVIATION;
-    SubGHzCustomScreen_->spinbox5 = SpinBox::createSpinbox(settingContainer5, valueDEV, 0, 200, 1, EVENTS::CustomSubGhzHelp_CB, "Deviation");
+    SubGHzCustomScreen_->spinbox5 = SpinBox::createSpinbox(settingContainer5, valueDEV, 0, 200, 5, EVENTS::CustomSubGhzHelp_CB, "Deviation");
     lv_obj_add_event_cb(settingContainer5, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"Deviation");
 
 
@@ -293,8 +303,10 @@ void ScreenManager::createCustomSubghzScreen(){
     containerHelper.createContainer(&settingContainer6, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
     lv_obj_t* label7 = lv_label_create(settingContainer6);	
     lv_label_set_text(label7, "Data  rate:");
+    Serial.println("Data  rate:");
+    Serial.println(CC1101SM.CC1101_DRATE);
     int32_t DRATE = CC1101SM.CC1101_DRATE;
-    SubGHzCustomScreen_->spinbox6 = SpinBox::createSpinbox(settingContainer6, DRATE, 1, 10, 1, EVENTS::CustomSubGhzHelp_CB, "DataRate");
+    SubGHzCustomScreen_->spinbox6 = SpinBox::createSpinbox(settingContainer6, DRATE, 1, 250, 5, EVENTS::CustomSubGhzHelp_CB, "DataRate");
     lv_obj_add_event_cb(settingContainer6, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"DataRate");
 
     lv_obj_t *button_container;
@@ -316,7 +328,7 @@ void ScreenManager::createCustomSubghzScreen(){
     lv_obj_add_event_cb(playButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, nullptr);
 
     lv_obj_t* exitButton = ButtonHelper::createButton(button_container2, "Exit");
-    lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, nullptr);
+    lv_obj_add_event_cb(exitButton, EVENTS::btn_event_Replay_run, LV_EVENT_CLICKED, nullptr);
 
 }
 
@@ -366,7 +378,6 @@ void ScreenManager::createIRRecScreen() {
     lv_obj_t* exitButton = ButtonHelper::createButton(button_container_IR_REC2_, "Exit");
 //lv_obj_add_event_cb(exitButton, EVENTS::exit_event, LV_EVENT_CLICKED, nullptr);
 }
-
 
 void ScreenManager::createRFdetectScreen() {
     ContainerHelper containerHelper;
@@ -490,8 +501,6 @@ void ScreenManager::createBTSPamScreen() {
     // lv_obj_t *saveButton = ButtonHelper::createButton(buttonContainer, "Stop");
     // lv_obj_add_event_cb(saveButton, EVENTS::btn_event_SourApple_Stop, LV_EVENT_CLICKED, NULL); 
 }
-
-
 
 void ScreenManager::createIRMenuScreen() {
     lv_obj_t *IRMenu = lv_obj_create(NULL);                                        
