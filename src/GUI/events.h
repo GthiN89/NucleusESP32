@@ -14,6 +14,7 @@ extern bool stopTransmit;
 extern int SpamDevice;
 extern lv_obj_t* label_sub;
 extern bool stopTransmiting;
+
 class EVENTS {
 
 public:

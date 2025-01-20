@@ -12,14 +12,12 @@
 #include <cstdio>   
 #include "modules/dataProcessing/SubGHzParser.h"
 using namespace std;
-#include "modules/ETC/SDcard.h"
-#include "modules/IR/TV-B-Gone.h"
-#include "modules/IR/ir.h"
+
 #include "lvgl.h"
 #include "modules/nfc/nfc.h"
 #include "modules/RF/Radio.h"
 #include "main.h"
-
+#include "modules/IR/ir.h"
 #define MAX_PATH_LENGTH 256
 CC1101_CLASS CC1101EV;
 SDcard& SD_EVN = SDcard::getInstance();
@@ -52,6 +50,8 @@ String EVENTS::sel_fn = "nothing";
 char* EVENTS::fullPath;
 lv_obj_t* label_sub;
 static char buffer[256];
+
+
 
 TaskHandle_t taskHandle = NULL; 
 
@@ -106,13 +106,19 @@ void EVENTS::btn_event_IR_menu_run(lv_event_t* e) {
 void EVENTS::btn_event_NFC_menu_run(lv_event_t* e) {
      lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-    RadioReceiver radio;
-    Serial.println("Test");
-    radio.setup();
-    while (true)
-    {
-           radio.loop();
-    }    
+        setupIR();
+        SendAll();
+    //         disableLEDFeedback(); // Disable feedback LED at default feedback LED pin
+    // IrSender.begin(26); 
+
+    // IrSender.sendRC6(0x0, 0x1, 1);
+    // delay(500);
+    //  IrSender.sendRC6(0x0, 0x2, 1);
+    // delay(500);
+    //  IrSender.sendRC6(0x0, 0x3, 1);
+    // delay(500);
+    //  IrSender.sendRC6(0x0, 0x3, 10);
+    // delay(500);
 
     }
 }
@@ -388,7 +394,7 @@ void EVENTS::sendCapturedEvent(lv_event_t * e) {
 void EVENTS::sendCapturedIREvent(lv_event_t * e) {
         lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-    sendReceived();
+    //sendReceived();
     }
 }
 
@@ -580,12 +586,7 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     lv_textarea_add_text(text_area, "Decoder active.\n");
      }
      CC1101EV.setFrequency(CC1101_MHZ);
-         ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL1, 0x98);
-    //setting GPIO behavior
-    uint8_t iocfg0 = ELECHOUSE_cc1101.SpiReadReg(CC1101_IOCFG2);
-    iocfg0 |= (1 << 6); 
-    ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, iocfg0);
-   //  delay(20);
+   
     runningModule = MODULE_CC1101;
     C1101CurrentState = STATE_ANALYZER;
     

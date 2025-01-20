@@ -8,9 +8,6 @@
 #include <FFat.h>
 #include "lv_fs_if.h"
 #include "modules/dataProcessing/SubGHzParser.h"
-#include "modules/ir/TV-B-Gone.h"
-#include "modules/ir/WORLD_IR_CODES.h"
-#include "modules/IR/ir.h"
 
 
 #include <Wire.h>
@@ -78,28 +75,29 @@ void setup() {
         Serial.println(F("Failed to initialize CC1101."));
     }
 
-    pinMode(IR_RX, INPUT_PULLUP);
+   // pinMode(IR_RX, INPUT_PULLUP);
 
-    pinMode(IR_TX, OUTPUT);
+    pinMode(26, OUTPUT);
+    
 
 }
  
  void CC1101Loop() {
     if(C1101CurrentState == STATE_ANALYZER) {
-                    delay(50);
-                    Serial.println(digitalRead(CC1101_CCGDO2A));
+            //        delay(50);
+                    Serial.println(gpio_get_level(CC1101_CCGDO2A));
         if (CC1101.CheckReceived()) {
             Serial.println("Received");
             CC1101.disableReceiver();
             Serial.println("Receiver disabled.");
             delay(50);
             Serial.println("Analyzing signal...");
-            CC1101.signalAnalyse();
-            Serial.println("Signal analyzed.");
+        //    CC1101.signalAnalyse();
+        //    Serial.println("Signal analyzed.");
 
             delay(50);
             C1101CurrentState = STATE_IDLE;
-            runningModule = MODULE_NONE;
+         //   runningModule = MODULE_NONE;
         }
     }
     if(C1101CurrentState == STATE_PLAYBACK) {

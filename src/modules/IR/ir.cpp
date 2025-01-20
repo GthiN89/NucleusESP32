@@ -1,159 +1,105 @@
+#include <Arduino.h>
 
-#include "ir.h"
-#include "main.h"
+/*
+ * Set library modifiers first to set output pin etc.
+ */
+#include "PinDefinitionsAndMore.h"
+#define IRSND_IR_FREQUENCY          38000
 
-// Define the IR transmitter pin
-#define IR_TX_PIN IR_TX
-// IRsend irsend(IR_TX_PIN); // IRsend object for transmitting IR signals
-// IRState IRCurrentState;
-// decode_results results;  
+#if ! (defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__))
+#define IRSND_PROTOCOL_NAMES        1
+#endif
+//#define IRSND_GENERATE_NO_SEND_RF // for back to back tests
 
+#include <irsndSelectAllProtocols.h>
+/*
+ * After setting the definitions we can include the code and compile it.
+ */
+#include <irsnd.hpp>
 
-   
+IRMP_DATA irsnd_data;
 
-void sendReceived() {
+void setupIR()
+{
+    Serial.begin(115200);
+#if defined(__AVR_ATmega32U4__) || defined(SERIAL_PORT_USBVIRTUAL) || defined(SERIAL_USB) /*stm32duino*/|| defined(USBCON) /*STM32_stm32*/ \
+    || defined(SERIALUSB_PID)  || defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_attiny3217)
+    delay(4000); // To be able to connect Serial monitor after reset or power up and before first print out. Do not wait for an attached Serial Monitor!
+#endif
+#if defined(ESP8266)
+    Serial.println(); // to separate it from the internal boot output
+#endif
 
-        // irsend.begin();
-        // irsend.send(lastResults.decode_type, lastResults.value, lastResults.bits);
+    // Just to know which program is running on my Arduino
+    Serial.println(F("START " __FILE__ " from " __DATE__ "\r\nUsing library version " VERSION_IRMP));
 
+    Serial.print(F("Send sample frequency="));
+    Serial.print(F_INTERRUPTS);
+    Serial.println(F(" Hz"));
 
+    irsnd_init();
+    irmp_irsnd_LEDFeedback(true); // Enable send signal feedback at LED_BUILTIN
+
+    Serial.println(F("Send IR signals at pin " STR(IRSND_OUTPUT_PIN)));
+    delay(1000);
 }
 
-bool txIrFile(File32 *fs, String filepath) {
-  // // SPAM all codes of the file
+void SendAll()
+{
+//     static uint8_t sAddress = 1;
+//     static uint8_t sCommand = 1;
+//     static uint8_t sRepeats = 0;
 
-  // int total_codes = 0;
-  // String line;
-  
-  // SD databaseFile = fs->o ->open(filepath, FILE_READ);
+    irsnd_data.protocol = IRMP_RC6_PROTOCOL;
+        irsnd_data.address = 0x0;
+        irsnd_data.command = 0x1;
+        irsnd_data.flags = 5;
 
-  // pinMode(IR_TX, OUTPUT);
-  // //digitalWrite(IrTx, LED_ON);
-
-  // if (!databaseFile) {
-  //   Serial.println("Failed to open database file.");
-  //   delay(2000);
-  //   return false;
-  // }
-  // Serial.println("Opened database file.");
-  
-  // bool endingEarly;
-  // int codes_sent=0;
-  // uint16_t frequency = 0;
-  // String rawData = "";
-  // String protocol = "";
-  // String address = "";
-  // String command = "";
-  // String value = "";
-  // String bits = "32";
-    
-  // databaseFile.seek(0); // comes back to first position
-  
-  // // count the number of codes to replay
-  // while (databaseFile.available()) {
-  //   line = databaseFile.readStringUntil('\n');
-  //   if(line.startsWith("type:")) total_codes++;
-  // }
-
-  // Serial.printf("\nStarted SPAM all codes with: %d codes", total_codes);
-  // // comes back to first position, beggining of the file
-  // databaseFile.seek(0);
-  // while (databaseFile.available()) {
-  //   line = databaseFile.readStringUntil('\n');
-  //   if (line.endsWith("\r")) line.remove(line.length() - 1);
-
-  //   if (line.startsWith("type:")) {
-  //     codes_sent++;
-  //     String type = line.substring(5);
-  //     type.trim();
-  //     Serial.println("Type: "+type);
-  //     if (type == "raw") {
-  //       Serial.println("RAW code");
-  //       while (databaseFile.available()) {
-  //         line = databaseFile.readStringUntil('\n');
-  //         if (line.endsWith("\r")) line.remove(line.length() - 1);
-
-  //         if (line.startsWith("frequency:")) {
-  //           line = line.substring(10);
-  //           line.trim();
-  //           frequency = line.toInt();
-  //           Serial.println("Frequency: " + String(frequency));
-  //         } else if (line.startsWith("data:")) {
-  //           rawData = line.substring(5);
-  //           rawData.trim();
-  //           Serial.println("RawData: "+rawData);
-  //         } else if ((frequency != 0 && rawData != "") || line.startsWith("#")) {
-  //           sendRaw(frequency, rawData);
-  //           rawData = "";
-  //           frequency = 0;
-  //           type = "";
-  //           line = "";
-  //           break;
-  //         }
-  //       }
-  //     } else if (type == "parsed") {
-  //       Serial.println("PARSED");
-  //       while (databaseFile.available()) {
-  //         line = databaseFile.readStringUntil('\n');
-  //         if (line.endsWith("\r")) line.remove(line.length() - 1);
-
-  //         if (line.startsWith("protocol:")) {
-  //           protocol = line.substring(9);
-  //           protocol.trim();
-  //           Serial.println("Protocol: "+protocol);
-  //         } else if (line.startsWith("address:")) {
-  //           address = line.substring(8);
-  //           address.trim();
-  //           Serial.println("Address: "+address);
-  //         } else if (line.startsWith("command:")) {
-  //           command = line.substring(8);
-  //           command.trim();
-  //           Serial.println("Command: "+command);
-  //         } else if (line.startsWith("value:") || line.startsWith("state:")) {
-  //           value = line.substring(6);
-  //           value.trim();
-  //           Serial.println("Value: "+value);
-  //         } else if (line.startsWith("bits:")) {
-  //           bits = line.substring(strlen("bits:"));
-  //           bits.trim();
-  //           Serial.println("bits: "+bits);
-  //         } else if (line.indexOf("#") != -1) {  // TODO: also detect EOF
-  //           if (protocol.startsWith("NEC")) {
-  //             sendNEC(address, command);
-  //           } else if (protocol.startsWith("RC5")) {
-  //             sendRC5(address, command);
-  //           } else if (protocol.startsWith("RC6")) {
-  //             sendRC6(address, command);
-  //           } else if (protocol.startsWith("Samsung")) {
-  //             sendSamsung(address, command);
-  //           } else if (protocol.startsWith("SIRC")) {
-  //             sendSony(address, command);
-  //           //} else if (protocol.startsWith("Panasonic")) {
-  //           //  sendPanasonicCommand(address, command);
-  //           } else if (protocol!="" && value!="") {
-  //             sendDecoded(protocol, value, bits);
-  //           }
-  //           protocol = "";
-  //           address = "";
-  //           command = "";
-  //           protocol = "";
-  //           value = "";
-  //           type = "";
-  //           line = "";
-  //           break;
-  //         }
-  //       }
-  //     }
-  //   }
-  //   // if user is pushing (holding down) TRIGGER button, stop transmission early
-
-  // databaseFile.close();
-  // Serial.println("closed");
-  // Serial.println("EXTRA finished");
+irsnd_send_data(&irsnd_data, true);
 
 
-  // digitalWrite(IR_TX, LOW);
-   return true;
+    irsnd_data.protocol = IRMP_RC6_PROTOCOL;
+        irsnd_data.address = 0x0;
+        irsnd_data.command = 0x2;
+        irsnd_data.flags = 5;
+
+irsnd_send_data(&irsnd_data, true);
+
+
+    irsnd_data.protocol = IRMP_RC6_PROTOCOL;
+        irsnd_data.address = 0x0;
+        irsnd_data.command = 0x3;
+        irsnd_data.flags = 5;
+
+irsnd_send_data(&irsnd_data, true);
+
+//     for (uint_fast8_t i = 0; i < sizeof(irsnd_used_protocol_index); ++i)
+//     {
+//         irsnd_data.protocol = pgm_read_byte(&irsnd_used_protocol_index[i]);
+//         irsnd_data.address = sAddress;
+//         irsnd_data.command = sCommand;
+//         irsnd_data.flags = sRepeats;
+
+//         // true = wait for frame and trailing space/gap to end. This stores timer state and restores it after sending.
+//         if (!irsnd_send_data(&irsnd_data, true))
+//         {
+//             Serial.println(F("Protocol not found")); // name of protocol is printed by irsnd_data_print()
+//         }
+
+//         irsnd_data_print(&Serial, &irsnd_data);
+
+//         sAddress++;
+//         sCommand++;
+//         delay(2000);
+//     }
+//     Serial.println();
+//     Serial.println();
+
+//     sRepeats++;
+
+//     // we have 0x27 protocols now start with next number range
+//     sAddress = (sAddress & 0xC0) + 0x40;
+//     sCommand = sAddress;
+//     Serial.print(F("Now sending all with number of repeats="));
+//     Serial.println(sRepeats);
 }
-
-

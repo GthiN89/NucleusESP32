@@ -20,7 +20,7 @@
 #include <freertos/portmacro.h>
 #include "soc/gpio_struct.h"
 #include <driver/timer.h>
-
+#include <typeinfo>
 
 
 
@@ -162,7 +162,7 @@ void IRAM_ATTR InterruptHandler(void *arg) {
     }
 
     // Simple noise filtering
-    if (std::abs(duration) > 80 * 240) { // 80µs minimum
+    if (std::abs(duration) > 50 * 240) { // 80µs minimum
         noInterrupts();
         if (CC1101_CLASS::receivedData.samples.size() < SAMPLE_SIZE) {
             CC1101_CLASS::receivedData.samples.push_back(duration / 240);
@@ -251,50 +251,49 @@ void CC1101_CLASS::enableReceiver() {
         CC1101_CLASS::init();
     }
     CC1101_CLASS::loadPreset();
-    ELECHOUSE_cc1101.SpiStrobe(0x3C);//SWORRST
-     ELECHOUSE_cc1101.SpiStrobe(CC1101_SCAL);
 
-    samplecount = 0;
+    // ELECHOUSE_cc1101.SpiStrobe(0x30); // Reset CC1101
+    // delay(50);
 
-    ELECHOUSE_cc1101.setSidle();
+    // ELECHOUSE_cc1101.setSidle();
+    // delay(10);
+
+    // ELECHOUSE_cc1101.SpiWriteReg(CC1101_MCSM0, 0x18); // Auto-calibrate on idle-to-RX/TX
+    // delay(10);
+
+   // ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, 0x0D); // Set GP2
+    ELECHOUSE_cc1101.SpiWriteReg(CC1101_PKTCTRL0, 0x32); // Async mode
+    delay(10);
+
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);
     ELECHOUSE_cc1101.setDcFilterOff(1);
-    ELECHOUSE_cc1101.setSyncMode(0);
     ELECHOUSE_cc1101.setPktFormat(3);
-    // ELECHOUSE_cc1101.SpiWriteReg(0x18, 0x50);
-    // ELECHOUSE_cc1101.SpiWriteReg(0x1B, 0x07);
-    // ELECHOUSE_cc1101.SpiWriteReg(0x1D, 0x91);
     ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);
-    //ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL1, 0x98);
-    //setting GPIO behavior
-    // uint8_t iocfg0 = ELECHOUSE_cc1101.SpiReadReg(CC1101_IOCFG2);
-    // iocfg0 |= (1 << 6); 
-    // ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, iocfg0);
-
     ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
     ELECHOUSE_cc1101.setDRate(115.051);
-    
+    ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL1, 0xA0);
+    delay(10);
+
     gpio_config_t io_conf = {
-        .pin_bit_mask = (1ULL << CC1101_CCGDO2A),
+        .pin_bit_mask = (1ULL << GPIO_NUM_4),
         .mode = GPIO_MODE_INPUT,
         .intr_type = GPIO_INTR_ANYEDGE
     };
     gpio_config(&io_conf);
-    gpio_set_pull_mode(CC1101_CCGDO2A, GPIO_FLOATING);
+    gpio_pulldown_en(GPIO_NUM_4);
     gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
-    gpio_isr_handler_add(CC1101_CCGDO2A, InterruptHandler, NULL);
+    gpio_isr_handler_add(GPIO_NUM_4, InterruptHandler, NULL);
+ //   ELECHOUSE_cc1101.SpiStrobe(0x34);  //receiver mode, perform calibration
 
-    ELECHOUSE_cc1101.SpiStrobe(0x3A); // Flush RX
-    ELECHOUSE_cc1101.SpiStrobe(0x3B); // Flush TX
-    ELECHOUSE_cc1101.SpiStrobe(0x33); // Calibrate
     ELECHOUSE_cc1101.SetRx();
-
     receiverEnabled = true;
 
     receivedData.samples.clear();
     receivedData.lastReceiveTime = 0;
+    interrupts();
 }
+
 
 void CC1101_CLASS::enableReceiverCustom() {
     Serial.println("Custom Receiver enabled");
@@ -372,9 +371,9 @@ void CC1101_CLASS::disableReceiver()
 {
     detachInterrupt((uint8_t)receiverGPIO);
     ELECHOUSE_cc1101.setSidle();
-    ELECHOUSE_cc1101.goSleep();
-    ELECHOUSE_cc1101.SpiEnd();
-    digitalWrite(CC1101_CS, HIGH);  
+   // ELECHOUSE_cc1101.goSleep();
+  //  ELECHOUSE_cc1101.SpiEnd();
+ //   digitalWrite(CC1101_CS, HIGH);  
 }
 
 void CC1101_CLASS::loadPreset() {
@@ -498,20 +497,23 @@ bool CC1101_CLASS::CheckReceived() {
     constexpr uint16_t LONG_PULSE_MAX = 1500;  // Maximum duration for long pulse
     constexpr uint16_t TOLERANCE_PERCENT = 30;  // Tolerance percentage for pulse width
 
+    // Serial.println("samplecount: ");
+
+
     // Ensure atomic read of samplecount
     uint32_t localSampleCount = 0;
     noInterrupts();
     localSampleCount = samplecount;
     interrupts();
 
-    if (localSampleCount < 24) return false;
+    if (localSampleCount < 10) return false;
 
     uint64_t currentTime = esp_timer_get_time();
     uint64_t signalDuration = currentTime - CC1101_CLASS::receivedData.lastReceiveTime;
         if (CC1101_CLASS::receivedData.samples.size() > 0) {
         if (CC1101_CLASS::receivedData.samples[0] > 2500 or CC1101_CLASS::receivedData.samples[0] < -2500) {
             CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin());
-            Serial.println("First pulse removed");
+            Serial.println(F("First pulse removed"));
             CC1101_CLASS::receivedData.startstate = !CC1101_CLASS::receivedData.startstate;
         }
     }
@@ -519,7 +521,7 @@ bool CC1101_CLASS::CheckReceived() {
     if (signalDuration > SIGNAL_TIMEOUT || localSampleCount >= SAMPLE_SIZE) {
         if (CC1101_CLASS::receivedData.samples[0] > 2500 or CC1101_CLASS::receivedData.samples[0] < -2500) {
             CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin());
-            Serial.println("First pulse removed");
+            Serial.println(F("First pulse removed"));
             CC1101_CLASS::receivedData.startstate = !CC1101_CLASS::receivedData.startstate;
         }
         receiverEnabled = false;
@@ -534,9 +536,9 @@ bool CC1101_CLASS::CheckReceived() {
         // First pass: separate short and long pulses
         for (const auto& sample : CC1101_CLASS::receivedData.samples) {
             if (sample < SHORT_PULSE_MIN or sample < -SHORT_PULSE_MIN) continue; // Skip noise
-            if ((sample > 20000 || sample < -20000)) continue;  // Skip too long pulses
+            if ((sample > 20000 or sample < -20000)) continue;  // Skip too long pulses
 
-            if (shortPulses.empty() && longPulses.empty()) {
+            if (shortPulses.empty() and longPulses.empty()) {
                 // First valid pulse becomes reference for short pulse
                 shortPulses.push_back(sample);
                 continue;
@@ -555,10 +557,10 @@ bool CC1101_CLASS::CheckReceived() {
 
             // Categorize pulse
              // Categorize pulse
-            if (abs(static_cast<int>(sample - shortPulseAvg)) <= shortTolerance) {
+            if (static_cast<int>(sample - shortPulseAvg) <= shortTolerance) {
                 shortPulses.push_back(sample);
             } else if (longPulses.empty() || 
-                      abs(static_cast<int>(sample - longPulseAvg)) <= longTolerance) {
+                      static_cast<int>(sample - longPulseAvg) <= longTolerance) {
                 longPulses.push_back(sample);
             }
         }
@@ -577,9 +579,9 @@ bool CC1101_CLASS::CheckReceived() {
         }
 
         // Print debug information
-        Serial.println("Pulse Analysis:");
-        Serial.print("Short pulses avg: "); Serial.println(shortPulseAvg);
-        Serial.print("Long pulses avg: "); Serial.println(longPulseAvg);
+        Serial.println(F("Pulse Analysis:"));
+        Serial.print(F("Short pulses avg: ")); Serial.println(shortPulseAvg);
+        Serial.print(F("Long pulses avg: ")); Serial.println(longPulseAvg);
             const int threshold = -longPulseAvg * 1.3; // Define the threshold for splitting pauses
 
         auto &samples = CC1101_CLASS::receivedData.samples;
@@ -592,33 +594,14 @@ for (size_t i = 1; i < samples.size(); ++i) {
 }
         
         // Print raw samples
-        Serial.print("Raw samples: ");
+        Serial.println(F("Raw samples: "));
         for (const auto& sample : CC1101_CLASS::receivedData.samples) {
             Serial.print(sample);
             Serial.print(" ");
             CC1101_CLASS::receivedData.sampleCount = CC1101_CLASS::receivedData.sampleCount + 1;
         }
-        Serial.println();
 
 
-    // for (size_t i = 1; i < CC1101_CLASS::receivedData.samples.size(); ++i) {
-    //     // Check if the current value and the previous one are both above the threshold
-    //     if (std::abs(CC1101_CLASS::receivedData.samples[i - 1]) > threshold && std::abs(CC1101_CLASS::receivedData.samples[i]) > threshold) {
-    //         CC1101_CLASS::receivedData.samples[i - 1] += CC1101_CLASS::receivedData.samples[i];
-    //         CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin() + i);
-    //         --i; 
-    //     }
-    // }
-
-    //     Serial.print("Fixed space samples: ");
-    //     CC1101_CLASS::receivedData.sampleCount = 0;
-    //     for (const auto& sample : CC1101_CLASS::receivedData.samples) {
-    //         Serial.print(sample);
-    //         Serial.print(" ");
-    //         CC1101_CLASS::receivedData.samples[CC1101_CLASS::receivedData.sampleCount] = sample;
-    //         CC1101_CLASS::receivedData.sampleCount = CC1101_CLASS::receivedData.sampleCount + 1;
-    //     }
-    //     Serial.println();
 
     //     const int thresholdSignal = longPulseAvg * 3;
     //     Signal currentData; // This is the current data array being filled
@@ -637,22 +620,14 @@ for (size_t i = 1; i < samples.size(); ++i) {
 
 
 
-Signal data;
+    Signal data;
 
-for (size_t i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++)
-{
-   data.addSample(CC1101_CLASS::receivedData.samples[i]);
-}
+    for (size_t i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++)
+    {
+        data.addSample(CC1101_CLASS::receivedData.samples[i]);
+    }
 
-CC1101_CLASS::allData.addSignal(data);
-    
-    std::cout << std::endl;
-
-
-
-    //}
-
-
+    CC1101_CLASS::allData.addSignal(data);
 
         return true;
     }

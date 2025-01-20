@@ -7,7 +7,7 @@
 #include "SPI.h"
 #include <driver/timer.h>
 
-#define SAMPLE_SIZE 2048
+#define SAMPLE_SIZE 4092
 #define MAX_SIGNAL_LENGTH 10000000  
 
 //---------------------------------------------------------------------------//
