@@ -15,9 +15,13 @@
 
 #include "GUI/logo.h"
 
-// IRrecv irrecv(IR_RX);   
+#include <IRrecv.h>
+#include <IRutils.h>
+#include "modules/IR/ir.h"
+IRrecv Irrecv(IR_RX);
 
-// decode_results lastResults;
+decode_results results;
+
 
 SDcard& SD_CARD = SDcard::getInstance();
 
@@ -139,6 +143,19 @@ void setup() {
     //     }
     //     break;
     
+    if(IRCurrentState == IR_STATE_LISTENING) {
+        
+        if (Irrecv.decode(&results)) {
+            IRCurrentState = IR_STATE_IDLE;
+            runningModule = MODULE_NONE;
+            Serial.println(results.value, HEX);
+            lv_textarea_set_text(screenMgrM.text_area_IR, "Received\n");
+            lv_textarea_add_text(screenMgrM.text_area_IR, String(results.value, HEX).c_str());
+         //   lastResults = results; 
+            Irrecv.resume();
+        }
+    }
+
     // case IR_STATE_LISTENING:
     //     // if (irrecv.decode(&results)) {
     //     //     IRCurrentState = IR_STATE_IDLE;

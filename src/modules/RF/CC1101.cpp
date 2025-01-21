@@ -251,20 +251,8 @@ void CC1101_CLASS::enableReceiver() {
         CC1101_CLASS::init();
     }
     CC1101_CLASS::loadPreset();
-
-    // ELECHOUSE_cc1101.SpiStrobe(0x30); // Reset CC1101
-    // delay(50);
-
-    // ELECHOUSE_cc1101.setSidle();
-    // delay(10);
-
-    // ELECHOUSE_cc1101.SpiWriteReg(CC1101_MCSM0, 0x18); // Auto-calibrate on idle-to-RX/TX
-    // delay(10);
-
-   // ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, 0x0D); // Set GP2
     ELECHOUSE_cc1101.SpiWriteReg(CC1101_PKTCTRL0, 0x32); // Async mode
     delay(10);
-
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);
     ELECHOUSE_cc1101.setDcFilterOff(1);
     ELECHOUSE_cc1101.setPktFormat(3);
@@ -326,15 +314,16 @@ void CC1101_CLASS::enableReceiverCustom() {
     ELECHOUSE_cc1101.setDcFilterOff(1);
     ELECHOUSE_cc1101.setSyncMode(SYNC);
     ELECHOUSE_cc1101.setPktFormat(PTK);
-    // ELECHOUSE_cc1101.SpiWriteReg(0x18, 0x50);
-    // ELECHOUSE_cc1101.SpiWriteReg(0x1B, 0x07);
-    // ELECHOUSE_cc1101.SpiWriteReg(0x1D, 0x91);
+
     ELECHOUSE_cc1101.setModulation(MOD);
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);
     
     ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL1, TRS + 128);
     //setting GPIO behavior
-    // uint8_t iocfg0 = ELECHOUSE_cc1101.SpiReadReg(CC1101_IOCFG2);
+     uint8_t iocfg2 = ELECHOUSE_cc1101.SpiReadReg(CC1101_IOCFG2);
+    bool isInverted = iocfg2 & (1 << 6);
+    iocfg2 &= ~(1 << 6);
+    ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, iocfg2);
     // iocfg0 |= (1 << 6); 
     // ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, iocfg0);
 
@@ -587,38 +576,18 @@ bool CC1101_CLASS::CheckReceived() {
         auto &samples = CC1101_CLASS::receivedData.samples;
 for (size_t i = 1; i < samples.size(); ++i) {
     if ((samples[i - 1] < threshold && samples[i - 1] < 0) && (samples[i] < threshold && samples[i] < 0)) {
-        samples[i - 1] += samples[i]; // Combine the two samples
-        samples.erase(samples.begin() + i); // Remove the second sample
-        --i; // Adjust index to check the new pair
+        samples[i - 1] += samples[i]; 
+        samples.erase(samples.begin() + i); 
+        --i;
     }
 }
         
-        // Print raw samples
         Serial.println(F("Raw samples: "));
         for (const auto& sample : CC1101_CLASS::receivedData.samples) {
             Serial.print(sample);
             Serial.print(" ");
             CC1101_CLASS::receivedData.sampleCount = CC1101_CLASS::receivedData.sampleCount + 1;
         }
-
-
-
-    //     const int thresholdSignal = longPulseAvg * 3;
-    //     Signal currentData; // This is the current data array being filled
-
-    // for (size_t i = 0; i < CC1101_CLASS::receivedData.samples.size(); ++i) {
-    //     if (std::abs(CC1101_CLASS::receivedData.samples[i]) < thresholdSignal) {
-    //         currentData.addSample(CC1101_CLASS::receivedData.samples[i]);
-    //     } else {
-    //         // If the sample exceeds the threshold and currentData is not empty, save it as a new array
-    //         if (!currentData.empty()) {
-    //             CC1101_CLASS::allData.addSignal(currentData);
-    //             currentData.clear(); // Clear currentData to start a new array
-    //         }
-    //     }
-    // }
-
-
 
     Signal data;
 

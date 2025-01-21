@@ -105,20 +105,10 @@ void EVENTS::btn_event_IR_menu_run(lv_event_t* e) {
 
 void EVENTS::btn_event_NFC_menu_run(lv_event_t* e) {
      lv_event_code_t code = lv_event_get_code(e);
+     IR_CLASS ir;
     if (code == LV_EVENT_CLICKED) {
-        setupIR();
-        SendAll();
-    //         disableLEDFeedback(); // Disable feedback LED at default feedback LED pin
-    // IrSender.begin(26); 
-
-    // IrSender.sendRC6(0x0, 0x1, 1);
-    // delay(500);
-    //  IrSender.sendRC6(0x0, 0x2, 1);
-    // delay(500);
-    //  IrSender.sendRC6(0x0, 0x3, 1);
-    // delay(500);
-    //  IrSender.sendRC6(0x0, 0x3, 10);
-    // delay(500);
+      //   ir.setupIR();
+         ir.sendPower();
 
     }
 }
@@ -408,7 +398,7 @@ void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
 void EVENTS::btn_event_UR_BGONE(lv_event_t * e) {
         lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-  //  IRCurrentState = IR_STATE_BGONE;
+    IRCurrentState = IR_STATE_BGONE;
     runningModule = MODULE_IR;
     }
 }
@@ -515,8 +505,10 @@ void EVENTS::btn_event_IR_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
      if (code == LV_EVENT_CLICKED) {
 
-  //  IRCurrentState = IR_STATE_LISTENING;
+    IRCurrentState = IR_STATE_LISTENING;
         runningModule = MODULE_IR;
+        IR_CLASS ir;
+        ir.receiveIR();
 
      }
 }

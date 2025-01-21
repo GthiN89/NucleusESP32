@@ -33,7 +33,7 @@ SubGHzData SubGHzParser::parseContent() {
         } else if (line.startsWith("Preset:")) {
             data.preset = line.substring(7);
             C1101preset =  convert_str_to_enum(data.preset.c_str());
-            SubGHzParser::setRegisters();
+           // SubGHzParser::setRegisters();
         } else if (line.startsWith("Custom_preset_data:")) {
             data.custom_preset_data = parseCustomPresetData(line.substring(19));            
         } else if (line.startsWith("Protocol:")) {
@@ -87,17 +87,16 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
         }
         start = end + 1;
     }
-    String text = "Transmitting\n Codes send: " + String(codesSend);
-    lv_label_set_text(label_sub, text.c_str());
     return result;
 }
 
 
 
   void SubGHzParser::sendRawData(const std::vector<RawDataElement>& rawData) {
-    if(stopTransmit) {
-        return;
-    }
+    // if(stopTransmit) {
+    //     return;
+    // }
+    digitalWrite(CC1101_CS, LOW);
 
     int tempSampleCount = rawData.size();
     if (tempSampleCount % 2 == 0) {
@@ -138,15 +137,13 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
     Serial.print(SD_SUB.tempFreq);
     CC1101.setFrequency(SD_SUB.tempFreq);
     CC1101.setCC1101Preset(C1101preset);
-    CC1101.loadPreset();
     Serial.println(presetToString(C1101preset));   
 
    
     CC1101.sendSamples(samplesClean, tempSampleCount);
 
     C1101CurrentState = STATE_IDLE;
-    runningModule = MODULE_NONE;
-
+    digitalWrite(CC1101_CS, HIGH);
   }
 
 void SubGHzParser::setRegisters(){
@@ -176,7 +173,7 @@ void SubGHzParser::setRegisters(){
     if (index + 8 <= regs.size()) {
         std::array<uint8_t, 8> paValue;
         std::copy(regs.begin() + index, regs.begin() + index + paValue.size(), paValue.begin());
-        ELECCC1101.SpiWriteBurstReg(CC1101_PATABLE, paValue.data(), paValue.size());
+        ELECHOUSE_cc1101.SpiWriteBurstReg(CC1101_PATABLE, paValue.data(), paValue.size());
     }
  
     }
@@ -209,7 +206,7 @@ std::vector<CustomPresetElement> SubGHzParser::parseCustomPresetData(const Strin
 bool SubGHzParser::loadFile(const char* filename) {
   Serial.print("Read Flipper File");
   Serial.print(filename);
-
+    digitalWrite(SD_CS, LOW);
     File32* file = SD_SUB.createOrOpenFile(filename, O_RDONLY);
     if (!file)
     {
@@ -227,13 +224,17 @@ bool SubGHzParser::loadFile(const char* filename) {
         line.trim();
 
         if (line.startsWith("RAW_Data:")) {
-            if (parsingRawData) {
-                sendRawData(raw_data_sequence);  
-                raw_data_sequence.clear();       
-            }
-            // Start a new RAW_Data section
             raw_data_sequence = parseRawData(line.substring(9));
             parsingRawData = true;
+
+            if (parsingRawData) {
+                digitalWrite(SD_CS, HIGH);
+                sendRawData(raw_data_sequence);  
+                raw_data_sequence.clear(); 
+                digitalWrite(SD_CS, LOW);      
+            }
+            // Start a new RAW_Data section
+            
         
         } else if (parsingRawData && (line[0] == '-' || isDigit(line[0]))) {
             Serial.print(line);
@@ -253,7 +254,9 @@ bool SubGHzParser::loadFile(const char* filename) {
         }
     }
     if (parsingRawData) {
+        digitalWrite(SD_CS, LOW);
         sendRawData(raw_data_sequence);
+        digitalWrite(SD_CS, HIGH);
     }
 
     file->close();
@@ -263,11 +266,10 @@ bool SubGHzParser::loadFile(const char* filename) {
 
 
 void SubGHzParser::clearData() {
-    data = SubGHzData();  // Reset data to a new instance (clears all fields)
-    SD_SUB.tempFreq = 0;
-    SD_SUB.tempSampleCount = 0;
-    C1101CurrentState = STATE_IDLE;
-    runningModule = MODULE_NONE;
-    codesSend = 0;
+ //   data = SubGHzData();  // Reset data to a new instance (clears all fields)
+   // SD_SUB.tempFreq = 0;
+//    SD_SUB.tempSampleCount = 0;
+  //  C1101CurrentState = STATE_IDLE;
+ //   codesSend = 0;
     SD_SUB.FlipperFileFlag = false;
 }

@@ -110,6 +110,7 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 
 //ir tx = pin 26 rx 34
 
+
 class Jammer; // Forward declaration if needed
 
 extern bool teslaSucessFlag;
