@@ -129,15 +129,6 @@ void EVENTS::ta_freq_event_cb(lv_event_t *e) {
         if(strcmp(user_data, "freq") == 0) {
             lv_keyboard_set_textarea(kb, screenMgr.customPreset); // Link the textarea to the keyboard
         }
-        if(strcmp(user_data, "drate") == 0) {
-            lv_keyboard_set_textarea(kb, screenMgr.input_datarate); // Link the textarea to the keyboard
-        }
-        if(strcmp(user_data, "BW") == 0) {
-            lv_keyboard_set_textarea(kb, screenMgr.input_bandwidth); // Link the textarea to the keyboard
-        }
-        if(strcmp(user_data, "DEV") == 0) {
-            lv_keyboard_set_textarea(kb, screenMgr.input_deviation); // Link the textarea to the keyboard
-        }
         lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN); // Show the keyboard
         Serial.println("Keyboard linked and shown");
     } else if (code == LV_EVENT_DEFOCUSED || code == LV_EVENT_READY) {
@@ -157,22 +148,7 @@ void EVENTS::ta_freq_event_cb(lv_event_t *e) {
         } else {
             Serial.println("Frequency input is empty");
         }
-
-        if(strcmp(user_data, "drate") == 0) {
-            const char *drate_text = lv_textarea_get_text(screenMgr.input_datarate);
-            CC1101EV.CC1101_DRATE = atof(drate_text);
         }
-        if(strcmp(user_data, "BW") == 0) {
-            const char *drate_text = lv_textarea_get_text(screenMgr.input_bandwidth);
-            CC1101EV.CC1101_RX_BW = atof(drate_text);
-        }
-        if(strcmp(user_data, "DEV") == 0) {
-            const char *drate_text = lv_textarea_get_text(screenMgr.input_deviation);
-            CC1101EV.CC1101_DEVIATION = atof(drate_text);
-        }
-
-        }
-
     }
 }
 
@@ -197,83 +173,6 @@ enum InputType {
     DEVIATION,
     NONVALID
 };
-
-// Helper function to identify the input type
-InputType get_input_type(lv_obj_t *textarea) {
-    if (textarea == screenMgr.input_datarate) {
-        return DATARATE;
-    } else if (textarea == screenMgr.input_bandwidth) {
-        return BANDWIDTH;
-    } else if (textarea == screenMgr.input_deviation) {
-        return DEVIATION;
-    } else {
-        return NONVALID;
-    }
-}
-
-void EVENTS::ok_button_event_cb(lv_event_t *e) {
-        lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-    lv_obj_t *container = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
-    lv_obj_t *textareas[] = { screenMgr.input_datarate, screenMgr.input_bandwidth, screenMgr.input_deviation };
-    const char *messages[] = {
-        "Data rate must be between 1-500 kbps and cannot be empty.",
-        "Bandwidth must be between 50-600 kHz and cannot be empty.",
-        "Deviation must be between 1-200 kHz and cannot be empty."
-    };
-
-    bool valid = true;
-    char message[128];
-
-    // Validate each input
-    for (lv_obj_t *textarea : textareas) {
-        const char *input = lv_textarea_get_text(textarea);
-        int value = atoi(input);
-
-        switch (get_input_type(textarea)) {
-            case DATARATE:
-                if (strlen(input) == 0 || value < 1 || value > 500) {
-                    valid = false;
-                    snprintf(message, sizeof(message), "%s", messages[DATARATE]);
-                }
-                break;
-            case BANDWIDTH:
-                if (strlen(input) == 0 || value < 50 || value > 600) {
-                    valid = false;
-                    snprintf(message, sizeof(message), "%s", messages[BANDWIDTH]);
-                }
-                break;
-            case DEVIATION:
-                if (strlen(input) == 0 || value < 1 || value > 200) {
-                    valid = false;
-                    snprintf(message, sizeof(message), "%s", messages[DEVIATION]);
-                }
-                break;
-            default:
-                valid = false;
-                snprintf(message, sizeof(message), "Unknown input field.");
-                break;
-        }
-
-        if (!valid) {
-            lv_obj_t *msgbox = lv_msgbox_create(NULL);
-            lv_obj_center(msgbox);
-            return; // Prevent hiding the container
-        }
-    }
-
-    if (container) {
-        lv_obj_add_flag(container, LV_OBJ_FLAG_HIDDEN); // Hide the container
-        Serial.printf("Saving values: Data Rate = %s kbps, Bandwidth = %s kHz, Deviation = %s kHz\n",
-                      lv_textarea_get_text(screenMgr.input_datarate),
-                      lv_textarea_get_text(screenMgr.input_bandwidth),
-                      lv_textarea_get_text(screenMgr.input_deviation));
-        lv_msgbox_create(NULL);
-    }
-    }
-
-}
-
 
 
 void EVENTS::ta_filename_event_cb(lv_event_t * e) {
@@ -344,30 +243,6 @@ void EVENTS::closeCC1101scanner(lv_event_t * e){
     }
 }
 
-void EVENTS::replayEvent(lv_event_t * e) {
-    lv_obj_t * text_area = screenMgr.getTextArea();
-    lv_textarea_set_text(text_area, "Sending signal from buffer");
-    lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-      Serial.print("event_playback_rec_play");
-
-  if (C1101CurrentState == STATE_IDLE)
-  {     
-    lv_obj_t *ta = screenMgr.getTextArea();
-    float freq = String(lv_textarea_get_text(ta)).toFloat();
-    CC1101EV.setFrequency(freq);
-
-    C1101CurrentState = STATE_PLAYBACK;
-    runningModule = MODULE_CC1101;
-  }
-  else
-  {
-    Serial.print("NOT IDLE");
-  }
-    lv_textarea_add_text(text_area, "Signal has been send");
-    }
-}
-
 void EVENTS::exitReplayEvent(lv_event_t * e) {
         lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
@@ -381,59 +256,52 @@ void EVENTS::sendCapturedEvent(lv_event_t * e) {
     }
 }
 
-void EVENTS::sendCapturedIREvent(lv_event_t * e) {
-        lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-    //sendReceived();
-    }
-}
 
 void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
      lv_event_code_t code = lv_event_get_code(e);
      if (code == LV_EVENT_CLICKED) {
-    screenMgr.createRFMenu();
+        screenMgr.createRFMenu();
      }
 }
 
 void EVENTS::btn_event_UR_BGONE(lv_event_t * e) {
         lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
+
+        // lv_obj_t *mbox = lv_msgbox_create(lv_scr_act());
+        // lv_obj_set_size(mbox, 220, 120);
+        // lv_obj_align(mbox, LV_ALIGN_CENTER, 0, 0);
+        // lv_obj_clear_flag(mbox, LV_OBJ_FLAG_SCROLLABLE); 
+
+
+
+        // lv_obj_t *content_container = lv_obj_create(mbox);
+        // lv_obj_set_size(content_container, LV_PCT(100), LV_PCT(100));  
+        // lv_obj_set_flex_flow(content_container, LV_FLEX_FLOW_COLUMN);
+        // lv_obj_set_style_pad_all(content_container, 10, 0);  
+        // lv_obj_clear_flag(content_container, LV_OBJ_FLAG_SCROLLABLE); 
+
+
+
+        // label_sub = lv_label_create(content_container);
+        // lv_label_set_text(label_sub, String("Turning of TV's").c_str());
+        // lv_obj_align(label_sub, LV_ALIGN_TOP_MID, 0, 10); 
+
+        // button_container = lv_obj_create(content_container);
+        // lv_obj_set_size(button_container, LV_PCT(100), LV_SIZE_CONTENT);
+        // lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW);
+        // lv_obj_set_flex_align(button_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        // lv_obj_clear_flag(button_container, LV_OBJ_FLAG_SCROLLABLE); 
+
+        // lv_obj_t *yes_btn = lv_btn_create(button_container);
+        // lv_obj_set_size(yes_btn, 60, 60);
+        // lv_obj_t *yes_label = lv_label_create(yes_btn);
+        // lv_label_set_text(yes_label, "cancel");
+
+        // lv_obj_set_user_data(mbox, yes_btn); 
+        // lv_obj_add_event_cb(yes_btn, EVENTS::confirm__explorer_play_sub_cb, LV_EVENT_CLICKED, mbox);
     IRCurrentState = IR_STATE_BGONE;
     runningModule = MODULE_IR;
-
-        lv_obj_t *mbox = lv_msgbox_create(lv_scr_act());
-        lv_obj_set_size(mbox, 220, 120);
-        lv_obj_align(mbox, LV_ALIGN_CENTER, 0, 0);
-        lv_obj_clear_flag(mbox, LV_OBJ_FLAG_SCROLLABLE); 
-
-
-
-        lv_obj_t *content_container = lv_obj_create(mbox);
-        lv_obj_set_size(content_container, LV_PCT(100), LV_PCT(100));  
-        lv_obj_set_flex_flow(content_container, LV_FLEX_FLOW_COLUMN);
-        lv_obj_set_style_pad_all(content_container, 10, 0);  
-        lv_obj_clear_flag(content_container, LV_OBJ_FLAG_SCROLLABLE); 
-
-
-
-        label_sub = lv_label_create(content_container);
-        lv_label_set_text(label_sub, String("Turning of TV's").c_str());
-        lv_obj_align(label_sub, LV_ALIGN_TOP_MID, 0, 10); 
-
-        button_container = lv_obj_create(content_container);
-        lv_obj_set_size(button_container, LV_PCT(100), LV_SIZE_CONTENT);
-        lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW);
-        lv_obj_set_flex_align(button_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        lv_obj_clear_flag(button_container, LV_OBJ_FLAG_SCROLLABLE); 
-
-        lv_obj_t *yes_btn = lv_btn_create(button_container);
-        lv_obj_set_size(yes_btn, 60, 60);
-        lv_obj_t *yes_label = lv_label_create(yes_btn);
-        lv_label_set_text(yes_label, "cancel");
-
-        lv_obj_set_user_data(mbox, yes_btn); 
-        lv_obj_add_event_cb(yes_btn, EVENTS::confirm__explorer_play_sub_cb, LV_EVENT_CLICKED, mbox);
-
     }
 }
 
@@ -611,18 +479,9 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text_type, sizeof(selected_text_type)); 
 
     lv_textarea_set_text(text_area, "Waiting for signal.\n");
-
- //    CC1101EV.setCC1101Preset(convert_str_to_enum(selected_text));
- //    CC1101EV.loadPreset();
-     if(strcmp(selected_text_type, "Raw") == 0){
-     CC1101EV.enableReceiver();
-     } else {
-
-      //  CC1101EV.enableRCSwitch();
-    lv_textarea_add_text(text_area, "Decoder active.\n");
-     }
+    
      CC1101EV.setFrequency(CC1101_MHZ);
-   
+     CC1101EV.enableReceiver();
     runningModule = MODULE_CC1101;
     C1101CurrentState = STATE_ANALYZER;
     

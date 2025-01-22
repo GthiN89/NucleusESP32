@@ -19,6 +19,7 @@ IRsend irsend(IR_TX);
 IRrecv irrecv(IR_RX);
 
 
+
 IRState IRCurrentState = IR_STATE_IDLE;
 void IR_CLASS::setupIR()
 {
@@ -73,7 +74,7 @@ void IR_CLASS::TVbGONE() {
   uint16_t codesNum = NUM_ELEM(EUpowerCodes);
 
       for (i=0 ; i< codesNum; i++) {
-        if(IRCurrentState == IR_STATE_IDLE)  return;
+
 
         const uint8_t freq = powerCode->timer_val;
         const uint8_t numpairs = powerCode->numpairs;
@@ -91,9 +92,9 @@ void IR_CLASS::TVbGONE() {
         irsend.sendRaw(rawData, (numpairs*2) , freq);
         delayMicroseconds(20500);
 
-        }  
-}
 
+        }
+}
 
 void sendVolumeUp() {
 

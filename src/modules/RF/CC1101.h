@@ -144,6 +144,7 @@ public:
     void enableScanner(float start, float stop);
 
 private:
+    uint16_t spaceAvg = 0;
     size_t smoothcount;
     uint16_t sampleSmooth[SAMPLE_SIZE];
     String generateFilename(float frequency, int modulation, float bandwidth);
