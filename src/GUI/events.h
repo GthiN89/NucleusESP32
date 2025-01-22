@@ -75,6 +75,7 @@ static void replayEvent(lv_event_t * e);
 static void exitReplayEvent(lv_event_t * e);
 static void sendCapturedEvent(lv_event_t * e);
 static void save_RF_to_sd_event(lv_event_t * e);
+static void cancelBgone(lv_event_t * e);
 
 //file Explorer
 static void confirm_delete_event_handler(lv_event_t * e);

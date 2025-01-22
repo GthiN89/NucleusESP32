@@ -21,6 +21,8 @@
 IRrecv Irrecv(IR_RX);
 
 decode_results results;
+IRsend Irsend(IR_TX);
+
 
 
 SDcard& SD_CARD = SDcard::getInstance();
@@ -132,45 +134,35 @@ void setup() {
 }
  
  void IRLoop() {
-    // switch (IRCurrentState)
-    // {
-    // case IR_STATE_BGONE:
-    //     {
-    //         // const uint8_t num_EUcodes = sizeof(EUpowerCodes) / sizeof(EUpowerCodes[0]);        
-    //         // sendAllCodes(EUpowerCodes, num_EUcodes);
-    //         // IRCurrentState = IR_STATE_IDLE;
-    //         // runningModule = MODULE_NONE;
-    //     }
-    //     break;
+   
+   if(IRCurrentState == IR_STATE_PLAYBACK) {
+        Irsend.send(
+            results.decode_type,
+            results.value,
+            results.bits,
+            1
+            );
+   }
     
+    if(IRCurrentState == IR_STATE_BGONE) {
+        IR_CLASS ir;
+        ir.TVbGONE();
+    }
+
     if(IRCurrentState == IR_STATE_LISTENING) {
         
         if (Irrecv.decode(&results)) {
             IRCurrentState = IR_STATE_IDLE;
             runningModule = MODULE_NONE;
-            Serial.println(results.value, HEX);
+            Serial.print(resultToHumanReadableBasic(&results));
             lv_textarea_set_text(screenMgrM.text_area_IR, "Received\n");
-            lv_textarea_add_text(screenMgrM.text_area_IR, String(results.value, HEX).c_str());
+            lv_textarea_add_text(screenMgrM.text_area_IR, String(resultToHumanReadableBasic(&results)).c_str());
          //   lastResults = results; 
             Irrecv.resume();
         }
     }
 
-    // case IR_STATE_LISTENING:
-    //     // if (irrecv.decode(&results)) {
-    //     //     IRCurrentState = IR_STATE_IDLE;
-    //     //     runningModule = MODULE_NONE;
-    //     //     Serial.println(results.value, HEX);
-    //     //     lv_textarea_set_text(screenMgrM.text_area_IR, "Received\n");
-    //     //     lv_textarea_add_text(screenMgrM.text_area_IR, String(results.value, HEX).c_str());
-    //     //     lastResults = results; 
-    //     //     irrecv.resume();
-    //     // }
-    //     break;
-    
-    // default:
-    //     break;
-    // }
+
 }
  
   ulong next_millis;

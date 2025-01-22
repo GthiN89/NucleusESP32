@@ -400,7 +400,51 @@ void EVENTS::btn_event_UR_BGONE(lv_event_t * e) {
     if (code == LV_EVENT_CLICKED) {
     IRCurrentState = IR_STATE_BGONE;
     runningModule = MODULE_IR;
+
+        lv_obj_t *mbox = lv_msgbox_create(lv_scr_act());
+        lv_obj_set_size(mbox, 220, 120);
+        lv_obj_align(mbox, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_clear_flag(mbox, LV_OBJ_FLAG_SCROLLABLE); 
+
+
+
+        lv_obj_t *content_container = lv_obj_create(mbox);
+        lv_obj_set_size(content_container, LV_PCT(100), LV_PCT(100));  
+        lv_obj_set_flex_flow(content_container, LV_FLEX_FLOW_COLUMN);
+        lv_obj_set_style_pad_all(content_container, 10, 0);  
+        lv_obj_clear_flag(content_container, LV_OBJ_FLAG_SCROLLABLE); 
+
+
+
+        label_sub = lv_label_create(content_container);
+        lv_label_set_text(label_sub, String("Turning of TV's").c_str());
+        lv_obj_align(label_sub, LV_ALIGN_TOP_MID, 0, 10); 
+
+        button_container = lv_obj_create(content_container);
+        lv_obj_set_size(button_container, LV_PCT(100), LV_SIZE_CONTENT);
+        lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(button_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_clear_flag(button_container, LV_OBJ_FLAG_SCROLLABLE); 
+
+        lv_obj_t *yes_btn = lv_btn_create(button_container);
+        lv_obj_set_size(yes_btn, 60, 60);
+        lv_obj_t *yes_label = lv_label_create(yes_btn);
+        lv_label_set_text(yes_label, "cancel");
+
+        lv_obj_set_user_data(mbox, yes_btn); 
+        lv_obj_add_event_cb(yes_btn, EVENTS::confirm__explorer_play_sub_cb, LV_EVENT_CLICKED, mbox);
+
     }
+}
+
+void EVENTS::cancelBgone(lv_event_t * e){
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * msgbox = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+
+        if (code == LV_EVENT_CLICKED) {
+            IRCurrentState = IR_STATE_IDLE;
+            lv_obj_delete(msgbox);
+        }
 }
 
 void EVENTS::btn_event_IR_START_READ(lv_event_t * e) {
