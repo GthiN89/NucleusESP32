@@ -126,28 +126,9 @@ RCSwitch CC1101_CLASS::getRCSwitch() {
 }
 
 
-#define CONFIG_CPU_FREQ_MHZ 240
-#define CYCLES_PER_MICROSECOND CONFIG_CPU_FREQ_MHZ
+
 
  std::vector<int64_t> CC1101_CLASS::samplesToSend;
-
-
-static inline uint32_t IRAM_ATTR getCycleCount() {
-    uint32_t ccount;
-    __asm__ __volatile__("rsr %0,ccount":"=a" (ccount));
-    return ccount;
-}
-
-// microseconds to CPU cycles
-static inline uint32_t IRAM_ATTR usToTicks(uint32_t us) {
-    return us * CYCLES_PER_MICROSECOND;
-}
-
-//CPU cycles to microseconds
-static inline uint32_t IRAM_ATTR ticksToUs(uint32_t ticks) {
-    return ticks / CYCLES_PER_MICROSECOND;
-}
-
 // Initialize static member
 CC1101_CLASS::ReceivedData CC1101_CLASS::receivedData;
 
@@ -157,19 +138,19 @@ void IRAM_ATTR InterruptHandler(void *arg) {
     int64_t  duration = time - lastTime;
     lastTime = time;
 
-    if (!gpio_get_level(CC1101_CCGDO2A)) {
+    if (gpio_get_level(CC1101_CCGDO2A)) {
         duration = -duration;
     }
 
     // Simple noise filtering
-    if (std::abs(duration) > 50 * 240) { // 80µs minimum
+    if (((duration > 22800) and (duration > 0)) or ((-duration > 22800) and (-duration > 0))) { // 95µs minimum
         noInterrupts();
         if (CC1101_CLASS::receivedData.samples.size() < SAMPLE_SIZE) {
             CC1101_CLASS::receivedData.samples.push_back(duration / 240);
             CC1101_CLASS::receivedData.lastReceiveTime = esp_timer_get_time();
             samplecount++;
         }
-        if ((duration / 240) > 20000 || (duration / 240) < -20000) {
+        if (duration > 4800000 || duration < -4800000) {
                 CC1101_CLASS::receivedData.samples.clear();
         }
         interrupts();
@@ -248,6 +229,18 @@ void CC1101_CLASS::setPTK(int ptk)
 
 void CC1101_CLASS::enableReceiver() {
         Serial.println("CC1101: enableReceiver");
+
+        if(receiverEnabled) {
+                gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
+                gpio_isr_handler_add(GPIO_NUM_4, InterruptHandler, NULL);
+
+                ELECHOUSE_cc1101.SetRx();
+
+                receivedData.samples.clear();
+                receivedData.lastReceiveTime = 0;
+                interrupts();
+                return;
+        }
 
      ELECHOUSE_cc1101.SpiStrobe(0x30); // Reset CC1101
      delay(50);
