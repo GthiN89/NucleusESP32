@@ -232,6 +232,7 @@ void CC1101_CLASS::setPTK(int ptk)
 
 void CC1101_CLASS::enableReceiver() {
         Serial.println("CC1101: enableReceiver");
+        CC1101_CLASS::allData.empty();
         // if(receiverEnabled) {
         //         Serial.println("CC1101: enableReceiver123");
         //         pinMode(35, INPUT);
@@ -561,12 +562,12 @@ bool CC1101_CLASS::CheckReceived() {
         shortPulseAvg = 0;
         longPulseAvg = 0;
 
-        // Separate pulses
-        for (const auto& sample : CC1101_CLASS::receivedData.samples) {
-            if (sample < SHORT_PULSE_MIN && sample > -SHORT_PULSE_MIN) continue; // Skip noise
-            if ((sample > 20000 || sample < -20000)) continue;
+         for (const auto& sample : CC1101_CLASS::receivedData.samples) {
+            if (sample < SHORT_PULSE_MIN or sample < -SHORT_PULSE_MIN) continue; // Skip noise
+            if ((sample > 20000 or sample < -20000)) continue;  // Skip too long pulses
 
-            if (shortPulses.empty() && longPulses.empty()) {
+            if (shortPulses.empty() and longPulses.empty()) {
+                // First valid pulse becomes reference for short pulse
                 shortPulses.push_back(sample);
                 continue;
             }
@@ -597,11 +598,16 @@ bool CC1101_CLASS::CheckReceived() {
         }
 
 
-        const int threshold = -longPulseAvg * 1.3;
+       // const int threshold = -longPulseAvg * 1.3;
 
         auto &samples = CC1101_CLASS::receivedData.samples;
         for (size_t i = 1; i < samples.size(); ++i) {
-            if ((samples[i - 1] < threshold && samples[i - 1] < 0) && (samples[i] < threshold && samples[i] < 0)) {
+            if ((samples[i - 1] < 0) && (samples[i] < 0)) {
+                samples[i - 1] += samples[i];
+                samples.erase(samples.begin() + i);
+                --i;
+            }
+            if ((samples[i - 1] > 0) && (samples[i] > 0)) {
                 samples[i - 1] += samples[i];
                 samples.erase(samples.begin() + i);
                 --i;
@@ -616,6 +622,8 @@ bool CC1101_CLASS::CheckReceived() {
         for (size_t i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++) {
             data.addSample(CC1101_CLASS::receivedData.samples[i]);
         }
+
+        
 
         CC1101_CLASS::allData.addSignal(data);
 
