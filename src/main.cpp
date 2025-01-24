@@ -90,9 +90,10 @@ void setup() {
  
  void CC1101Loop() {
     if(C1101CurrentState == STATE_ANALYZER) {
-                delay(50);
+               // delay(50);
                 Serial.println(gpio_get_level(CC1101_CCGDO2A));
         if (CC1101.CheckReceived()) {
+             delay(50);
             Serial.println("Received");
             CC1101.disableReceiver();
             Serial.println("Receiver disabled.");
