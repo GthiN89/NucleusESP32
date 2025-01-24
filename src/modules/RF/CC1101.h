@@ -79,7 +79,7 @@ struct SignalCollection {
         return signals.size();
     }
 
-    bool empty() const {
+    bool empty() const {        
         return signals.empty();
     }
 

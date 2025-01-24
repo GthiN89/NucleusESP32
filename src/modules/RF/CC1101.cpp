@@ -298,7 +298,7 @@ void CC1101_CLASS::enableReceiver() {
     gpio_pulldown_en(GPIO_NUM_4);
         ELECHOUSE_cc1101.SetRx();
         delay(20);
-        if(gpio_get_level(CC1101_CCGDO2A)) {
+    if(!gpio_get_level(CC1101_CCGDO2A)) {
         delay(10);
         uint8_t iocfg0 = ELECHOUSE_cc1101.SpiReadReg(CC1101_IOCFG2);
         iocfg0 |= (1 << 6); 
@@ -609,6 +609,12 @@ bool CC1101_CLASS::CheckReceived() {
             }
             if ((samples[i - 1] > 0) && (samples[i] > 0)) {
                 samples[i - 1] += samples[i];
+                samples.erase(samples.begin() + i);
+                --i;
+            }
+
+            if ((samples[i - 1] < 0) && (samples[i] > 10000)) {
+                samples[i - 1] += -samples[i];
                 samples.erase(samples.begin() + i);
                 --i;
             }
@@ -1247,7 +1253,7 @@ void CC1101_CLASS::sendRaw() {
             CC1101_CLASS::initRaw();
             Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
 
-            Signal samplesData = CC1101_CLASS::allData.getSignal(0);
+            Signal samplesData = CC1101_CLASS::allData.getSignal(CC1101_CLASS::allData.signals.size() - 1);
             CC1101_CLASS::levelFlag = samplesData.samples[0] > 0; 
             Serial.println(F("Transmitting"));
             Serial.println(samplesData.samples[0]);
