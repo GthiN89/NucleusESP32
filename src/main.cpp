@@ -134,11 +134,6 @@ void setup() {
         delay(20);
         runningModule = MODULE_NONE;
     }  
-    if(updatetransmitLabel) {
-        String text = "Transmitting\n Codes send: " + String(codesSend);
-        lv_label_set_text(label_sub, text.c_str());        
-    }
-
 }
  
  void IRLoop() {
@@ -195,7 +190,11 @@ void setup() {
    default:
     break;
    }
-   
+       if(updatetransmitLabel) {
+        String text = "Transmitting\n Codes send: " + String(codesSend);
+        lv_label_set_text(label_sub, text.c_str());        
+    }
+
 }
  
  bool touched() {
