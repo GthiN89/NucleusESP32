@@ -1,11 +1,11 @@
 #include "SubGHzParser.h"
-#include <SDfat.h>
 #include <SPI.h>
 #include <map>
 #include <string>
 #include "modules/RF/CC1101.h"
 #include "GUI/events.h"
 #include "modules/ETC/SDcard.h"
+#include "SD.h"
 
 SubGHzParser::SubGHzParser() {}
 CC1101_CLASS CC1101;
@@ -33,7 +33,7 @@ SubGHzData SubGHzParser::parseContent() {
         } else if (line.startsWith("Preset:")) {
             data.preset = line.substring(7);
             C1101preset =  convert_str_to_enum(data.preset.c_str());
-           // SubGHzParser::setRegisters();
+            SubGHzParser::setRegisters();
         } else if (line.startsWith("Custom_preset_data:")) {
             data.custom_preset_data = parseCustomPresetData(line.substring(19));            
         } else if (line.startsWith("Protocol:")) {
@@ -55,6 +55,7 @@ SubGHzData SubGHzParser::parseContent() {
                 }
             }
             data.raw_data_list.push_back(raw_data_sequence);
+            sendRawData(raw_data_sequence);
             continue; 
         } else if (line.startsWith("Bit:")) {
             data.bit = line.substring(4);
@@ -96,7 +97,7 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
     // if(stopTransmit) {
     //     return;
     // }
-    digitalWrite(CC1101_CS, LOW);
+    
 
     int tempSampleCount = rawData.size();
     if (tempSampleCount % 2 == 0) {
@@ -127,23 +128,24 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
         s++;
     }
     
-    
+    bool levelFlag = rawData[0] > 0;
 
     for (int i = 0; i < tempSampleCount; i++) {        
         Serial.print(String(samplesClean[i]).c_str());
             Serial.print(", ");
         }
-    codesSend++;
+    
     Serial.print(SD_SUB.tempFreq);
     CC1101.setFrequency(SD_SUB.tempFreq);
     CC1101.setCC1101Preset(C1101preset);
+    CC1101.loadPreset();
     Serial.println(presetToString(C1101preset));   
-
+    codesSend++;
    
-    CC1101.sendSamples(samplesClean, tempSampleCount);
+    CC1101.sendSamples(samplesClean, tempSampleCount, levelFlag);
 
     C1101CurrentState = STATE_IDLE;
-    digitalWrite(CC1101_CS, HIGH);
+
   }
 
 void SubGHzParser::setRegisters(){
@@ -173,7 +175,7 @@ void SubGHzParser::setRegisters(){
     if (index + 8 <= regs.size()) {
         std::array<uint8_t, 8> paValue;
         std::copy(regs.begin() + index, regs.begin() + index + paValue.size(), paValue.begin());
-        ELECHOUSE_cc1101.SpiWriteBurstReg(CC1101_PATABLE, paValue.data(), paValue.size());
+        ELECCC1101.SpiWriteBurstReg(CC1101_PATABLE, paValue.data(), paValue.size());
     }
  
     }
@@ -206,7 +208,7 @@ std::vector<CustomPresetElement> SubGHzParser::parseCustomPresetData(const Strin
 bool SubGHzParser::loadFile(const char* filename) {
   Serial.print("Read Flipper File");
   Serial.print(filename);
-    digitalWrite(SD_CS, LOW);
+
     File32* file = SD_SUB.createOrOpenFile(filename, O_RDONLY);
     if (!file)
     {
@@ -228,10 +230,8 @@ bool SubGHzParser::loadFile(const char* filename) {
             parsingRawData = true;
 
             if (parsingRawData) {
-                digitalWrite(SD_CS, HIGH);
                 sendRawData(raw_data_sequence);  
-                raw_data_sequence.clear(); 
-                digitalWrite(SD_CS, LOW);      
+                raw_data_sequence.clear();       
             }
             // Start a new RAW_Data section
             
@@ -254,9 +254,7 @@ bool SubGHzParser::loadFile(const char* filename) {
         }
     }
     if (parsingRawData) {
-        digitalWrite(SD_CS, LOW);
         sendRawData(raw_data_sequence);
-        digitalWrite(SD_CS, HIGH);
     }
 
     file->close();

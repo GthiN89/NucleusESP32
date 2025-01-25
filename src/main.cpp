@@ -123,14 +123,21 @@ void setup() {
         "Frequency: " + strongestASKFreqs[3] + " MHz | RSSI: " + strongestASKRSSI[3] + "\n\n")
         .c_str());
     }
+
     if(C1101CurrentState == STATE_SEND_FLIPPER) {
         SubGHzParser parser;
         parser.loadFile(EVENTS::fullPath);
         SubGHzData data = parser.parseContent();
     }
     if(C1101CurrentState == STATE_IDLE) {
+        updatetransmitLabel = false;
+        delay(20);
         runningModule = MODULE_NONE;
     }  
+    if(updatetransmitLabel) {
+        String text = "Transmitting\n Codes send: " + String(codesSend);
+        lv_label_set_text(label_sub, text.c_str());        
+    }
 
 }
  
@@ -188,6 +195,7 @@ void setup() {
    default:
     break;
    }
+   
 }
  
  bool touched() {

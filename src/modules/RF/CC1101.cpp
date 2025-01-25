@@ -233,42 +233,18 @@ void CC1101_CLASS::setPTK(int ptk)
 void CC1101_CLASS::enableReceiver() {
         Serial.println("CC1101: enableReceiver");
         CC1101_CLASS::allData.empty();
-        // if(receiverEnabled) {
-        //         Serial.println("CC1101: enableReceiver123");
-        //         pinMode(35, INPUT);
-
-        //         gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
-        //         gpio_isr_handler_add(GPIO_NUM_4, InterruptHandler, NULL);
-
-        //         ELECHOUSE_cc1101.SetRx();
-
-        //         CC1101_CLASS::receivedData.samples.clear();
-        //         CC1101_CLASS::receivedData.lastReceiveTime = 0;
-        //         CC1101_CLASS::receivedData.sampleCount = 0;
-        //         CC1101_CLASS::receivedData.signals.clear();
-        //         CC1101_CLASS::receivedData.normalizedCount = 0;
-        //         interrupts();
-        //         return;
-        // }
+      
 
      ELECHOUSE_cc1101.SpiStrobe(0x30); // Reset CC1101
      localSampleCount = 0;
      delay(50);
 
 
-   // if (!CC1101_is_initialized) {
         CC1101_CLASS::init();
-    // } else {
-    //     ELECHOUSE_cc1101.Init();
-    // }
+
     CC1101_CLASS::loadPreset();
 
 
-    // ELECHOUSE_cc1101.setSidle();
-    // delay(10);
-
-    // ELECHOUSE_cc1101.SpiWriteReg(CC1101_MCSM0, 0x18); // Auto-calibrate on idle-to-RX/TX
-    // delay(10);
 
     ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, 0x0D); // Set GP2
     ELECHOUSE_cc1101.SpiWriteReg(CC1101_PKTCTRL0, 0x32); // Async mode
@@ -281,13 +257,8 @@ void CC1101_CLASS::enableReceiver() {
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);
     ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
     ELECHOUSE_cc1101.setDRate(115.051);
-   // ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL1, 0xA0);
-    delay(10);
 
-    // uint8_t iocfg0 = ELECHOUSE_cc1101.SpiReadReg(CC1101_IOCFG2);
-    // iocfg0 |= (1 << 6); 
-    // ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, iocfg0);
-    // delay(20);
+    delay(10);
 
     gpio_config_t io_conf = {
         .pin_bit_mask = (1ULL << GPIO_NUM_4),
@@ -307,7 +278,6 @@ void CC1101_CLASS::enableReceiver() {
     }
     gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
     gpio_isr_handler_add(GPIO_NUM_4, InterruptHandler, NULL);
- //   ELECHOUSE_cc1101.SpiStrobe(0x34);  //receiver mode, perform calibration
 
     ELECHOUSE_cc1101.SetRx();
     receiverEnabled = true;
@@ -863,16 +833,6 @@ void CC1101_CLASS::signalAnalyse(){
     lv_textarea_add_text(textareaRC, String(longPulseAvg).c_str());
 
     std::ostringstream  rawString;
-   // rawString.reserve(SAMPLE_SIZE * 24); 
-
-
-    // if (rawString.capacity() >= SAMPLE_SIZE) {
-    //     rawString.resize(SAMPLE_SIZE, '\0'); 
-    // }
-
-
-
-
 
 std::vector<uint16_t> pulseTrainVec;
 Serial.println("");
@@ -881,24 +841,14 @@ Serial.println("");
                 CC1101_CLASS::receivedData.samples[i] = 25000;
             }
         }
-
-
-    for (int i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++) {
-            //  rawString += (i > 0 ? (logicState ? " " : " -") : "");
-            //  rawString += CC1101_CLASS::receivedData.samples[i];
-
-            // // std::string buffer = (i > 0 ? (logicState ? " " : " -") : "");
-            // // rawString.reserve(rawString.size() + buffer.size());
-            // // rawString += buffer;
-
-            // // buffer = std::to_string(CC1101_CLASS::receivedData.samples[i]);
-            // // rawString.reserve(rawString.size() + buffer.size());
-            // // rawString += buffer;
+    rawString << "RAW_Data " <<  ": ";
+    Signal samplesData = CC1101_CLASS::allData.getSignal(CC1101_CLASS::allData.signals.size() - 1);
+    for (int i = 0; i < samplesData.size(); i++) {
+            rawString << samplesData.getSample(i);
 
             pulseTrainVec.push_back(CC1101_CLASS::receivedData.samples[i]);
             Serial.print(CC1101_CLASS::receivedData.samples[i]);
             Serial.print(", ");
-         //   logicState = !logicState;
         }
 
 
@@ -993,61 +943,63 @@ lv_textarea_add_text(textareaRC, "\nCapture Complete.");
     
 
 // // }
-// //      FlipperSubFile subFile;
-// //          bool level = true;
-// // for (size_t i = 0; i < CC1101_CLASS::allData.size(); ++i) {
-// //     rawString << "RAW_Data " << i + 1 << ": ";
-// //     const auto& signal = CC1101_CLASS::allData.getSignal(i); 
+    //  FlipperSubFile subFile;
+    //      bool level = true;
+// for (size_t i = 0; i < CC1101_CLASS::allData.size(); ++i) {
+//     rawString << "RAW_Data " << i + 1 << ": ";
+//     const auto& signal = CC1101_CLASS::allData.getSignal(i); 
 
-// //     for (unsigned long sample : signal.samples) { 
-// //         rawString << sample;
+//     for (unsigned long sample : signal.samples) { 
+//         rawString << sample;
 
-// //         if (level) {
-// //             rawString << " -"; 
-// //         } else {
-// //             rawString << " "; 
-// //         }
+//         if (level) {
+//             rawString << " -"; 
+//         } else {
+//             rawString << " "; 
+//         }
 
-// //         level = !level; 
-// //     }
+//         level = !level; 
+//     }
 
-// //     rawString << "\n"; 
-// // }
-//  //    CC1101_CLASS::disableReceiver();
-// //     SD_RF.restartSD();
+//     rawString << "\n"; 
+// }
+    CC1101_CLASS::disableReceiver();
+    SD_RF.restartSD();
 
-// // if (!SD_RF.directoryExists("/recordedRF/")) {
-// //     SD_RF.createDirectory("/recordedRF/");
-// // }
+if (!SD_RF.directoryExists("/recordedRF/")) {
+    SD_RF.createDirectory("/recordedRF/");
+}
 
-// // String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
-// // String fullPath = "/recordedRF/" + filename;
-// // FlipperSubFile subFile;
-// // File32* outputFilePtr = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
-// // if (outputFilePtr) {
-// //     File32& outputFile = *outputFilePtr; 
-// //     std::vector<uint8_t> customPresetData;
-// // if (C1101preset == CUSTOM) {
-// //     customPresetData.insert(customPresetData.end(), {
-// //         CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
-// //         CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
-// //         CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
-// //         CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
-// //         CC1101_FREND0,  ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
-// //         0x00, 0x00
-// //     });
+String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
+String fullPath = "/recordedRF/" + filename;
+FlipperSubFile subFile;
+File32* outputFilePtr = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
+if (outputFilePtr) {
+    File32& outputFile = *outputFilePtr; 
+    std::vector<uint8_t> customPresetData;
+if (C1101preset == CUSTOM) {
+    customPresetData.insert(customPresetData.end(), {
+        CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
+        CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
+        CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
+        CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
+        CC1101_FREND0,  ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
+        0x00, 0x00
+    });
 
-// //     std::array<uint8_t, 8> paTable;
-// //     ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
-// //     customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
-// // }
-// // subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
-// // SD_RF.closeFile(outputFilePtr);
+    std::array<uint8_t, 8> paTable;
+    ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
+    customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
+}
+subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
+SD_RF.closeFile(outputFilePtr);
 
 // CC1101_CLASS::enableReceiver();
 // }
 // //}
 }
+}
+
 void CC1101_CLASS::decode(uint16_t *pulseTrain, size_t length) {
         if (length == 0) {
         Serial.println("No pulses to decode.");
@@ -1342,7 +1294,7 @@ String CC1101_CLASS::generateRandomString(int length)
     return String(ss.str().c_str());
 }
 
-void CC1101_CLASS::sendSamples(int timings[], int timingsLength)
+void CC1101_CLASS::sendSamples(int timings[], int timingsLength, bool levelFlag)
 {
     CC1101_CLASS::initRaw();
     
@@ -1354,17 +1306,19 @@ void CC1101_CLASS::sendSamples(int timings[], int timingsLength)
     Serial.print(timingsLength);
 
     Serial.print("\n----------------\n");
-    for (int i = 0; i < timingsLength - 1; i += 2)
-    {
-        unsigned long highTime = max((unsigned long)(timings[i]), 0UL);
-        unsigned long lowTime = max((unsigned long)(timings[i + 1]), 0UL);
 
-        GPIO.out_w1ts = (1 << CC1101_CCGDO0A);
-        ets_delay_us(highTime);
-        GPIO.out_w1tc = (1 << CC1101_CCGDO0A);
-        ets_delay_us(lowTime);
+    for (size_t i = 0; i < timingsLength; i++) {
 
+                
+        gpio_set_level(CC1101_CCGDO0A, levelFlag);
+        levelFlag = !levelFlag;
+        delayMicroseconds(timings[i]); 
+                
     }
+
+
+
+
     Serial.print("Transmitted\n");
 
     digitalWrite(CC1101_CCGDO0A, LOW); 

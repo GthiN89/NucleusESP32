@@ -787,7 +787,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
             Serial.println(EVENTS::fullPath);
             String text = "Transmitting\n Codes send: " + String(codesSend);
             lv_label_set_text(label_sub, text.c_str());
-         //   updatetransmitLabel = true;
+            updatetransmitLabel = true;
             lv_obj_clean(button_container);
             lv_obj_set_size(button_container, LV_PCT(100), LV_SIZE_CONTENT);
             lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW);
@@ -856,7 +856,7 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
     ELECHOUSE_cc1101.setPktFormat(3);
     ELECHOUSE_cc1101.SetTx();
     pinMode(CC1101_CCGDO0A, OUTPUT);
-    digitalWrite(CC1101_CS, HIGH);
+    //digitalWrite(CC1101_CS, HIGH);
     
     Serial.print("Loading file: ");
     Serial.println(fullPath);
@@ -865,6 +865,7 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
         SubGHzParser parser;
     parser.loadFile(fullPath);
     SubGHzData data = parser.parseContent();
+
    //   delay(1);
   } else {
       Serial.println("File does not exist.");

@@ -136,7 +136,7 @@ public:
     bool CheckReceived(void);
     void initRaw();
     void sendRaw();
-    void sendSamples(int samples[], int samplesLength);
+    void sendSamples(int timings[], int timingsLength, bool levelFlag);
     static void signalAnalyseTask(void* pvParameters);
     void startSignalAnalyseTask();
     void fskAnalyze();
