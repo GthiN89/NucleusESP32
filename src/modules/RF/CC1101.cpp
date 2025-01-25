@@ -6,6 +6,9 @@
 #include <ctime>
 #include <vector>
 #include <string> 
+#include <iostream>
+#include <numeric>
+#include <algorithm>
 #include "GUI/events.h"
 #include "SPI.h"
 #include "modules/ETC/SDcard.h"
@@ -16,8 +19,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/portmacro.h>
 #include "soc/gpio_struct.h"
-#include <numeric>
-#include <algorithm>
+#include <driver/timer.h>
+#include <typeinfo>
 
 
 
@@ -28,6 +31,9 @@ long compare_freq;
 float mark_freq;
 int rssi;
 int mark_rssi = -100;
+ uint32_t localSampleCount = 0;
+         uint16_t shortPulseAvg = 0;
+        uint16_t longPulseAvg = 0;
 
      String protDecode[]={
 "Unknown",
@@ -115,51 +121,45 @@ RCSwitch mySwitch;
     float strongestFSKFreqs[2] = {0}; // Store the two strongest FSK frequencies (F0 and F1)
     int strongestFSKRSSI[2] = {-200}; // Initialize FSK RSSI values
 
+    SignalCollection CC1101_CLASS::allData;
+
+
 RCSwitch CC1101_CLASS::getRCSwitch() {
  return mySwitch;
 }
 
 
-#define CONFIG_CPU_FREQ_MHZ 240
-#define CYCLES_PER_MICROSECOND CONFIG_CPU_FREQ_MHZ
 
 
-static inline uint32_t IRAM_ATTR getCycleCount() {
-    uint32_t ccount;
-    __asm__ __volatile__("rsr %0,ccount":"=a" (ccount));
-    return ccount;
-}
-
-// microseconds to CPU cycles
-static inline uint32_t IRAM_ATTR usToTicks(uint32_t us) {
-    return us * CYCLES_PER_MICROSECOND;
-}
-
-//CPU cycles to microseconds
-static inline uint32_t IRAM_ATTR ticksToUs(uint32_t ticks) {
-    return ticks / CYCLES_PER_MICROSECOND;
-}
-
+ std::vector<int64_t> CC1101_CLASS::samplesToSend;
 // Initialize static member
-CC1101_CLASS::recievedData CC1101_CLASS::receivedData;
+CC1101_CLASS::ReceivedData CC1101_CLASS::receivedData;
 
 void IRAM_ATTR InterruptHandler(void *arg) {
     static volatile uint64_t DRAM_ATTR lastTime = 0;
     const uint64_t time = xthal_get_ccount();
-    const uint64_t duration = time - lastTime;
+    int64_t  duration = time - lastTime;
     lastTime = time;
 
+    if (gpio_get_level(CC1101_CCGDO2A)) {
+        duration = -duration;
+    }
+
     // Simple noise filtering
-    if (duration > 20 * 240 ) { // 20µs minimum
+    if (((duration > 22800) and (duration > 0)) or ((-duration > 22800) and (-duration > 0))) { // 95µs minimum
         noInterrupts();
-        if(CC1101_CLASS::receivedData.samples.size() < SAMPLE_SIZE) {
+        if (CC1101_CLASS::receivedData.samples.size() < SAMPLE_SIZE) {
             CC1101_CLASS::receivedData.samples.push_back(duration / 240);
             CC1101_CLASS::receivedData.lastReceiveTime = esp_timer_get_time();
             samplecount++;
         }
+        if (duration > 4800000 || duration < -4800000) {
+                CC1101_CLASS::receivedData.samples.clear();
+        }
         interrupts();
     }
 }
+
 
 
 bool CC1101_CLASS::init() {
@@ -231,54 +231,68 @@ void CC1101_CLASS::setPTK(int ptk)
 */
 
 void CC1101_CLASS::enableReceiver() {
-    if (!CC1101_is_initialized) {
+        Serial.println("CC1101: enableReceiver");
+        CC1101_CLASS::allData.empty();
+      
+
+     ELECHOUSE_cc1101.SpiStrobe(0x30); // Reset CC1101
+     localSampleCount = 0;
+     delay(50);
+
+
         CC1101_CLASS::init();
-    }
+
     CC1101_CLASS::loadPreset();
-    ELECHOUSE_cc1101.SpiStrobe(0x3C);//SWORRST
-     ELECHOUSE_cc1101.SpiStrobe(CC1101_SCAL);
 
-    samplecount = 0;
 
-    ELECHOUSE_cc1101.setSidle();
+
+    ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, 0x0D); // Set GP2
+    ELECHOUSE_cc1101.SpiWriteReg(CC1101_PKTCTRL0, 0x32); // Async mode
+    delay(10);
+
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);
     ELECHOUSE_cc1101.setDcFilterOff(1);
-    ELECHOUSE_cc1101.setSyncMode(0);
     ELECHOUSE_cc1101.setPktFormat(3);
-    // ELECHOUSE_cc1101.SpiWriteReg(0x18, 0x50);
-    // ELECHOUSE_cc1101.SpiWriteReg(0x1B, 0x07);
-    // ELECHOUSE_cc1101.SpiWriteReg(0x1D, 0x91);
     ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);
-    //ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL1, 0x98);
-    //setting GPIO behavior
-    // uint8_t iocfg0 = ELECHOUSE_cc1101.SpiReadReg(CC1101_IOCFG2);
-    // iocfg0 |= (1 << 6); 
-    // ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, iocfg0);
-
     ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
-    ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
-    
+    ELECHOUSE_cc1101.setDRate(115.051);
+
+    delay(10);
+
     gpio_config_t io_conf = {
-        .pin_bit_mask = (1ULL << CC1101_CCGDO2A),
+        .pin_bit_mask = (1ULL << GPIO_NUM_4),
         .mode = GPIO_MODE_INPUT,
         .intr_type = GPIO_INTR_ANYEDGE
     };
     gpio_config(&io_conf);
-    gpio_set_pull_mode(CC1101_CCGDO2A, GPIO_FLOATING);
+    gpio_pulldown_en(GPIO_NUM_4);
+        ELECHOUSE_cc1101.SetRx();
+        delay(20);
+    if(!gpio_get_level(CC1101_CCGDO2A)) {
+        delay(10);
+        uint8_t iocfg0 = ELECHOUSE_cc1101.SpiReadReg(CC1101_IOCFG2);
+        iocfg0 |= (1 << 6); 
+        ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, iocfg0);
+        delay(20);
+    }
     gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
-    gpio_isr_handler_add(CC1101_CCGDO2A, InterruptHandler, NULL);
+    gpio_isr_handler_add(GPIO_NUM_4, InterruptHandler, NULL);
 
-    ELECHOUSE_cc1101.SpiStrobe(0x3A); // Flush RX
-    ELECHOUSE_cc1101.SpiStrobe(0x3B); // Flush TX
-    ELECHOUSE_cc1101.SpiStrobe(0x33); // Calibrate
     ELECHOUSE_cc1101.SetRx();
-
     receiverEnabled = true;
 
-    receivedData.samples.clear();
-    receivedData.lastReceiveTime = 0;
+        CC1101_CLASS::receivedData.samples.clear();
+        CC1101_CLASS::receivedData.lastReceiveTime = 0;
+        CC1101_CLASS::receivedData.sampleCount = 0;
+        CC1101_CLASS::receivedData.signals.clear();
+        CC1101_CLASS::receivedData.normalizedCount = 0;
+
+        delay(500);
+
+    interrupts();
 }
+
 
 void CC1101_CLASS::enableReceiverCustom() {
     Serial.println("Custom Receiver enabled");
@@ -318,7 +332,7 @@ void CC1101_CLASS::enableReceiverCustom() {
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);
     
     ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL1, TRS + 128);
-    //setting GPIO behavior
+    //this will set 0 on HIGH
     // uint8_t iocfg0 = ELECHOUSE_cc1101.SpiReadReg(CC1101_IOCFG2);
     // iocfg0 |= (1 << 6); 
     // ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, iocfg0);
@@ -475,99 +489,137 @@ void CC1101_CLASS::loadPreset() {
 }
 
 bool CC1101_CLASS::CheckReceived() {
-    constexpr unsigned long SIGNAL_TIMEOUT = 10000;
-    
+    constexpr unsigned long SIGNAL_TIMEOUT = 25000;
+
     // Timing windows for protocol detection
-    constexpr uint16_t SHORT_PULSE_MIN = 100;  // Minimum duration for short pulse
-    constexpr uint16_t LONG_PULSE_MAX = 2500;  // Maximum duration for long pulse
-    constexpr uint16_t TOLERANCE_PERCENT = 30;  // Tolerance percentage for pulse width
+    constexpr uint16_t SHORT_PULSE_MIN = 100;
+    constexpr uint16_t LONG_PULSE_MAX = 1500;
+    constexpr uint16_t TOLERANCE_PERCENT = 30;
 
     // Ensure atomic read of samplecount
-    uint32_t localSampleCount = 0;
+    localSampleCount = 0;
+
     noInterrupts();
     localSampleCount = samplecount;
     interrupts();
 
-    if (localSampleCount < 24) return false;
+    if (localSampleCount < 10) return false;
 
     uint64_t currentTime = esp_timer_get_time();
     uint64_t signalDuration = currentTime - CC1101_CLASS::receivedData.lastReceiveTime;
-        if (CC1101_CLASS::receivedData.samples.size() > 0) {
-        if (CC1101_CLASS::receivedData.samples[0] > 2000) {
+
+    // Check pointer validity before accessing receivedData.samples
+    if (!CC1101_CLASS::receivedData.samples.empty()) {
+        if (CC1101_CLASS::receivedData.samples[0] > 2500 || CC1101_CLASS::receivedData.samples[0] < -2500) {
             CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin());
-            Serial.println("First pulse removed");
+            Serial.println(F("First pulse removed"));
+            CC1101_CLASS::receivedData.startstate = !CC1101_CLASS::receivedData.startstate;
         }
     }
 
     if (signalDuration > SIGNAL_TIMEOUT || localSampleCount >= SAMPLE_SIZE) {
-                if (CC1101_CLASS::receivedData.samples[0] > 2000) {
+        if (!CC1101_CLASS::receivedData.samples.empty() && 
+            (CC1101_CLASS::receivedData.samples[0] > 2500 || CC1101_CLASS::receivedData.samples[0] < -2500)) {
             CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin());
-            Serial.println("First pulse removed");
+            Serial.println(F("First pulse removed"));
+            CC1101_CLASS::receivedData.startstate = !CC1101_CLASS::receivedData.startstate;
         }
-        receiverEnabled = false;
+
         CC1101_CLASS::receivedData.sampleCount = 0;
 
-        // Analyze pulse widths and group them
         std::vector<uint16_t> shortPulses;
         std::vector<uint16_t> longPulses;
-        uint16_t shortPulseAvg = 0;
-        uint16_t longPulseAvg = 0;
+        shortPulseAvg = 0;
+        longPulseAvg = 0;
 
-        // First pass: separate short and long pulses
-        for (const auto& sample : CC1101_CLASS::receivedData.samples) {
-            if (sample < SHORT_PULSE_MIN) continue; // Skip noise
-            if (sample > LONG_PULSE_MAX) continue;  // Skip too long pulses
+         for (const auto& sample : CC1101_CLASS::receivedData.samples) {
+            if (sample < SHORT_PULSE_MIN or sample < -SHORT_PULSE_MIN) continue; // Skip noise
+            if ((sample > 20000 or sample < -20000)) continue;  // Skip too long pulses
 
-            if (shortPulses.empty() && longPulses.empty()) {
+            if (shortPulses.empty() and longPulses.empty()) {
                 // First valid pulse becomes reference for short pulse
                 shortPulses.push_back(sample);
                 continue;
             }
 
-            // Calculate current averages
             shortPulseAvg = std::accumulate(shortPulses.begin(), shortPulses.end(), 0) / 
                            (shortPulses.size() > 0 ? shortPulses.size() : 1);
             longPulseAvg = std::accumulate(longPulses.begin(), longPulses.end(), 0) / 
                           (longPulses.size() > 0 ? longPulses.size() : 1);
 
-            // Calculate tolerance windows
             uint16_t shortTolerance = (shortPulseAvg * TOLERANCE_PERCENT) / 100;
             uint16_t longTolerance = (longPulseAvg * TOLERANCE_PERCENT) / 100;
 
-            // Categorize pulse
-            if (abs(static_cast<int>(sample - shortPulseAvg)) <= shortTolerance) {
+            if (static_cast<int>(sample - shortPulseAvg) <= shortTolerance) {
                 shortPulses.push_back(sample);
             } else if (longPulses.empty() || 
-                      abs(static_cast<int>(sample - longPulseAvg)) <= longTolerance) {
+                      static_cast<int>(sample - longPulseAvg) <= longTolerance) {
                 longPulses.push_back(sample);
             }
         }
 
-        // Calculate final averages
         shortPulseAvg = std::accumulate(shortPulses.begin(), shortPulses.end(), 0) / 
                        (shortPulses.size() > 0 ? shortPulses.size() : 1);
         longPulseAvg = std::accumulate(longPulses.begin(), longPulses.end(), 0) / 
                        (longPulses.size() > 0 ? longPulses.size() : 1);
 
-        // Print debug information
-        Serial.println("Pulse Analysis:");
-        Serial.print("Short pulses avg: "); Serial.println(shortPulseAvg);
-        Serial.print("Long pulses avg: "); Serial.println(longPulseAvg);
+        if (longPulseAvg < shortPulseAvg) {
+            std::swap(longPulseAvg, shortPulseAvg);
+        }
+
+
+       // const int threshold = -longPulseAvg * 1.3;
+
+        auto &samples = CC1101_CLASS::receivedData.samples;
+        for (size_t i = 1; i < samples.size(); ++i) {
+            if ((samples[i - 1] < 0) && (samples[i] < 0)) {
+                samples[i - 1] += samples[i];
+                samples.erase(samples.begin() + i);
+                --i;
+            }
+            if ((samples[i - 1] > 0) && (samples[i] > 0)) {
+                samples[i - 1] += samples[i];
+                samples.erase(samples.begin() + i);
+                --i;
+            }
+
+            if ((samples[i - 1] < 0) && (samples[i] > 10000)) {
+                samples[i - 1] += -samples[i];
+                samples.erase(samples.begin() + i);
+                --i;
+            }
+        }
+
+        if(CC1101_CLASS::receivedData.samples.size() < 1){
+        return false;
+        }
+
+        Signal data;
+        for (size_t i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++) {
+            data.addSample(CC1101_CLASS::receivedData.samples[i]);
+        }
+
         
-        // Print raw samples
-        Serial.print("Raw samples: ");
+
+        CC1101_CLASS::allData.addSignal(data);
+
+        
+        Serial.println(F("Pulse Analysis:"));
+        Serial.print(F("Short pulses avg: ")); Serial.println(shortPulseAvg);
+        Serial.print(F("Long pulses avg: ")); Serial.println(longPulseAvg);
+
+                Serial.println(F("Raw samples: "));
         for (const auto& sample : CC1101_CLASS::receivedData.samples) {
             Serial.print(sample);
             Serial.print(" ");
-            CC1101_CLASS::receivedData.sampleCount = CC1101_CLASS::receivedData.sampleCount + 1;
+            CC1101_CLASS::receivedData.sampleCount++;
         }
-        Serial.println();
-
         return true;
     }
 
     return false;
 }
+
 
 void CC1101_CLASS::fskAnalyze() {
     Serial.println("ana run");         
@@ -667,7 +719,7 @@ void CC1101_CLASS::enableScanner(float start, float stop) {
     pinMode(CCGDO2A, INPUT);
 
     // Start scanning on second core
-    startSignalanalyseTask();
+    CC1101_CLASS::startSignalAnalyseTask();
 }
 void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength) {
     uint8_t dataByte;
@@ -682,7 +734,7 @@ void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pul
         }
     }    
 }
-void CC1101_CLASS::signalanalyseTask(void *pvParameters) {
+ void CC1101_CLASS::signalAnalyseTask(void* pvParameters) {
     //CC1101_CLASS *cc1101 = static_cast<CC1101_CLASS *>(pvParameters);
 
     // Initialize scanning parameters
@@ -747,9 +799,9 @@ ELECHOUSE_cc1101.SetRx();
 }
 
 
-void CC1101_CLASS::startSignalanalyseTask() {
+void CC1101_CLASS::startSignalAnalyseTask() {
     xTaskCreatePinnedToCore(
-        CC1101_CLASS::signalanalyseTask,  // Function to run
+        CC1101_CLASS::signalAnalyseTask,  // Function to run
         "SignalAnalyseTask",              // Task name
         8192,                             // Stack size
         this,                             // Task parameter (pass instance)
@@ -759,121 +811,159 @@ void CC1101_CLASS::startSignalanalyseTask() {
     );
 }
 
-void CC1101_CLASS::signalanalyse(){
 
+void CC1101_CLASS::signalAnalyse(){
 
-Serial.println("Signal AnalyseIN");
+//Serial.println("Signal AnalyseIN");
      lv_obj_t * textareaRC;
     lv_obj_t * container = screenMgr1.getSquareLineContainer();
     if(C1101preset == CUSTOM){
         textareaRC = screenMgr1.text_area_SubGHzCustom;        
     } else {
-        Serial.println("Signal preset");
+       // Serial.println("Signal preset");
         textareaRC = screenMgr1.getTextArea();
     }
 
     lv_textarea_add_text(textareaRC, "\nNew RAW signal, \nCount: ");
     lv_textarea_add_text(textareaRC, String(CC1101_CLASS::receivedData.sampleCount).c_str());
-    String rawString = "";
+    
+    lv_textarea_add_text(textareaRC, "\nShort pulses avg: \n");
+    lv_textarea_add_text(textareaRC, String(shortPulseAvg).c_str());
+    lv_textarea_add_text(textareaRC, "\nLong pulses avg: \n");
+    lv_textarea_add_text(textareaRC, String(longPulseAvg).c_str());
+
+    std::ostringstream  rawString;
+
 std::vector<uint16_t> pulseTrainVec;
 Serial.println("");
-    for (int i = 0; i < CC1101_CLASS::receivedData.sampleCount; i++) {
-            rawString += (i > 0 ? (i % 2 == 1 ? " -" : " ") : "");
-            rawString += CC1101_CLASS::receivedData.samples[i];
+        for (int i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++) {
+            if(CC1101_CLASS::receivedData.samples[i] > 25000){
+                CC1101_CLASS::receivedData.samples[i] = 25000;
+            }
+        }
+    rawString << "RAW_Data " <<  ": ";
+    Signal samplesData = CC1101_CLASS::allData.getSignal(CC1101_CLASS::allData.signals.size() - 1);
+    for (int i = 0; i < samplesData.size(); i++) {
+            rawString << samplesData.getSample(i);
+
             pulseTrainVec.push_back(CC1101_CLASS::receivedData.samples[i]);
             Serial.print(CC1101_CLASS::receivedData.samples[i]);
             Serial.print(", ");
         }
+
+
 Serial.println("");
 
 lv_textarea_add_text(textareaRC, "\nCapture Complete.");
 
-decode(pulseTrainVec.data(), CC1101_CLASS::receivedData.sampleCount);
+//decode(pulseTrainVec.data(), CC1101_CLASS::receivedData.sampleCount);
 
 
 
 
 
-if (C1101preset != CUSTOM) {
-Serial.println("draw");
-lv_obj_set_scroll_dir(container, LV_DIR_HOR);
-lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
+// if (C1101preset != CUSTOM) {
+// //Serial.println("draw");
+// lv_obj_set_scroll_dir(container, LV_DIR_HOR);
+// lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
 
-lv_obj_t *chart = lv_chart_create(container);
-lv_obj_set_size(chart, 1000, 100);  
-lv_chart_set_type(chart, LV_CHART_TYPE_SCATTER);  
+// lv_obj_t *chart = lv_chart_create(container);
+// lv_obj_set_size(chart, 1000, 100);  
+// lv_chart_set_type(chart, LV_CHART_TYPE_SCATTER);  
 
 
-lv_chart_series_t *ser1 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
+// lv_chart_series_t *ser1 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
 
-lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, -10, 40);  
+// lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, -10, 40);  
 
-size_t num_elements = sizeof(pulseTrainVec.data()) / sizeof(pulseTrainVec.data()[0]);
-std::vector<unsigned long> filtered_values;
+// size_t num_elements = sizeof(pulseTrainVec.data()) / sizeof(pulseTrainVec.data()[0]);
+// std::vector<unsigned long> filtered_values;
 
-bool found_first = false;
-size_t i_sec = 0;
-size_t num_elements_f = 0;
+// bool found_first = false;
+// size_t i_sec = 0;
+// size_t num_elements_f = 0;
 
-for (size_t i = 0; i < num_elements; ++i) {
-    if (pulseTrainVec.data()[i] > 1000) {
-        if (found_first) break;         
-        found_first = true;
-        i_sec = i;                       
-        continue;                      
-    }
+// for (size_t i = 0; i < num_elements; ++i) {
+//     if (pulseTrainVec.data()[i] > 1000) {
+//         if (found_first) break;         
+//         found_first = true;
+//         i_sec = i;                       
+//         continue;                      
+//     }
     
-    if (found_first) {    
-        if (pulseTrainVec.data()[i] > 1000) break;          
-        if (i - i_sec > 20) break;                 
+//     if (found_first) {    
+//         if (pulseTrainVec.data()[i] > 1000) break;          
+//         if (i - i_sec > 20) break;                 
 
-        filtered_values.push_back(pulseTrainVec.data()[i] / 100);
-        Serial.println(pulseTrainVec.data()[i] / 100);
-        num_elements_f++;
-        continue;
-    }
+//         filtered_values.push_back(pulseTrainVec.data()[i] / 100);
+//         Serial.println(pulseTrainVec.data()[i] / 100);
+//         num_elements_f++;
+//         continue;
+//     }
     
     
-}
+// }
 
 
-int x_pos = 5;           
-int high_value = 25;     
-int low_value = 5;       
-int pulse_width;    
+// int x_pos = 5;           
+// int high_value = 25;     
+// int low_value = 5;       
+// int pulse_width;    
 
-lv_chart_set_point_count(chart, 100);  
-Serial.println("yes");
+// lv_chart_set_point_count(chart, 100);  
+// Serial.println("yes");
 
-for (int i = 0; i < num_elements_f; i++) {  
-pulse_width = filtered_values[i];
+// for (int i = 0; i < num_elements_f; i++) {  
+// pulse_width = filtered_values[i];
 
 
 
-    lv_chart_set_next_value2(chart, ser1, x_pos, high_value);
-    lv_chart_set_next_value2(chart, ser1, x_pos + pulse_width, high_value);
+//     lv_chart_set_next_value2(chart, ser1, x_pos, high_value);
+//     lv_chart_set_next_value2(chart, ser1, x_pos + pulse_width, high_value);
     
 
-    x_pos += pulse_width;
+//     x_pos += pulse_width;
 
 
-    lv_chart_set_next_value2(chart, ser1, x_pos, low_value);
-    lv_chart_set_next_value2(chart, ser1, x_pos + pulse_width, low_value);
+//     lv_chart_set_next_value2(chart, ser1, x_pos, low_value);
+//     lv_chart_set_next_value2(chart, ser1, x_pos + pulse_width, low_value);
 
 
-    x_pos += pulse_width;
+//     x_pos += pulse_width;
 
-}
+// }
 
-lv_obj_set_style_line_width(chart, 2, LV_PART_ITEMS); 
+// lv_obj_set_style_line_width(chart, 2, LV_PART_ITEMS); 
 
 
-lv_obj_scroll_to_x(container, 0, LV_ANIM_OFF);
+// lv_obj_scroll_to_x(container, 0, LV_ANIM_OFF);
 
-lv_chart_refresh(chart);
-}
-     FlipperSubFile subFile;
-     CC1101_CLASS::disableReceiver();
+// lv_chart_refresh(chart);
+
+    
+
+// // }
+    //  FlipperSubFile subFile;
+    //      bool level = true;
+// for (size_t i = 0; i < CC1101_CLASS::allData.size(); ++i) {
+//     rawString << "RAW_Data " << i + 1 << ": ";
+//     const auto& signal = CC1101_CLASS::allData.getSignal(i); 
+
+//     for (unsigned long sample : signal.samples) { 
+//         rawString << sample;
+
+//         if (level) {
+//             rawString << " -"; 
+//         } else {
+//             rawString << " "; 
+//         }
+
+//         level = !level; 
+//     }
+
+//     rawString << "\n"; 
+// }
+    CC1101_CLASS::disableReceiver();
     SD_RF.restartSD();
 
 if (!SD_RF.directoryExists("/recordedRF/")) {
@@ -882,7 +972,7 @@ if (!SD_RF.directoryExists("/recordedRF/")) {
 
 String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
 String fullPath = "/recordedRF/" + filename;
-
+FlipperSubFile subFile;
 File32* outputFilePtr = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
 if (outputFilePtr) {
     File32& outputFile = *outputFilePtr; 
@@ -904,7 +994,9 @@ if (C1101preset == CUSTOM) {
 subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
 SD_RF.closeFile(outputFilePtr);
 
-CC1101_CLASS::enableReceiver();
+// CC1101_CLASS::enableReceiver();
+// }
+// //}
 }
 }
 
@@ -1097,54 +1189,71 @@ if (receivedValue <= 0x7F) {
     Serial.println("Failed to decode signal with all methods.");
 }
 }
+#include <driver/timer.h>
+#include <soc/rtc.h>
+
+    std::vector<uint32_t> samplesToSend;   // Holds the durations of high/low states
+
+
 
 
 void CC1101_CLASS::sendRaw() {
-    detachInterrupt(CC1101_CCGDO0A);
-    CC1101_CLASS::initrRaw();
-    Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
 
-    Serial.print("Transmitting\n");
-    Serial.print(CC1101_CLASS::receivedData.sampleCount);
-    Serial.print("\n----------------\n");
+            detachInterrupt(CC1101_CCGDO0A);
+            detachInterrupt(CC1101_CCGDO2A);
 
-    for (int i = 1; i < CC1101_CLASS::receivedData.sampleCount - 1; i += 2)
-    {
-        unsigned long highTime = max((unsigned long)(CC1101_CLASS::receivedData.samples[i]), 0UL);
-        unsigned long lowTime = max((unsigned long)(CC1101_CLASS::receivedData.samples[i + 1]), 0UL);
+            CC1101_CLASS::initRaw();
+            Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
 
-        GPIO.out_w1ts = (1 << CC1101_CCGDO0A);
-        ets_delay_us(highTime);
-        GPIO.out_w1tc = (1 << CC1101_CCGDO0A);
-        ets_delay_us(lowTime);
+            Signal samplesData = CC1101_CLASS::allData.getSignal(CC1101_CLASS::allData.signals.size() - 1);
+            CC1101_CLASS::levelFlag = samplesData.samples[0] > 0; 
+            Serial.println(F("Transmitting"));
+            Serial.println(samplesData.samples[0]);
+            levelFlag ? Serial.println(F("true")) : Serial.println(F("False"));
 
-    }
+            CC1101_CLASS::samplesToSend.clear();
+            for (size_t j = 0; j < samplesData.samples.size(); ++j) {
+                if (samplesData.samples[j] > 0){
+                CC1101_CLASS::samplesToSend.push_back(samplesData.samples[j]);
+                } else {
+                    CC1101_CLASS::samplesToSend.push_back(-samplesData.samples[j]);
+                }
 
-    //   for (int i = 1; i < CC1101_CLASS::receivedData.sampleCount - 1; i += 2)
-    // {
-    //     unsigned long highTime = max((unsigned long)(CC1101_CLASS::receivedData.samples[i]), 0UL);
-    //     unsigned long lowTime = max((unsigned long)(CC1101_CLASS::receivedData.samples[i + 1]), 0UL);
+                if (samplesData.samples[j] > 20000 || samplesData.samples[j] < -20000) {
+                CC1101_CLASS::samplesToSend.clear();
+                }
+            }
 
-    //     GPIO.out_w1tc = (1 << CC1101_CCGDO0A);
-    //     ets_delay_us(highTime);
-    //     GPIO.out_w1ts = (1 << CC1101_CCGDO0A);
-    //     ets_delay_us(lowTime);
+            for (size_t i = 0; i < CC1101_CLASS::samplesToSend.size(); ++i){
+                Serial.print(CC1101_CLASS::samplesToSend[i]);
+                Serial.print(", ");
+            }
 
-    // }
-    Serial.print("Transmitted\n");
+            Serial.println("do send");
 
-    ELECHOUSE_cc1101.setSidle();
+            for (size_t i = 0; i < CC1101_CLASS::samplesToSend.size(); i++) {
 
-    Serial.print(F("\r\nReplaying RAW data complete.\r\n\r\n"));
+                
+                gpio_set_level(CC1101_CCGDO0A, CC1101_CLASS::levelFlag);
+                CC1101_CLASS::levelFlag = !CC1101_CLASS::levelFlag;
+                delayMicroseconds(CC1101_CLASS::samplesToSend[i]); 
+                
+            }
+            Serial.println(F("Transmission complete"));
+            CC1101_CLASS::disableTransmit();
+
 }
 
 
-void CC1101_CLASS::initrRaw() {
+
+void CC1101_CLASS::initRaw() {
   Serial.print("Init CC1101 raw");
 
     if(!CC1101_is_initialized) {
         CC1101_CLASS::init();
         CC1101_is_initialized = true;
+    } else {
+        ELECHOUSE_cc1101.setSidle();
     }
 
     ELECHOUSE_cc1101.Init();                // must be set to initialize the cc1101!
@@ -1152,12 +1261,11 @@ void CC1101_CLASS::initrRaw() {
     ELECHOUSE_cc1101.setCCMode(0);          // set config for internal transmission mode. value 0 is for RAW recording/replaying
     ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
     ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);   // Set the Frequency deviation in kHz. Value from 1.58 to 380.85. Default is 47.60 kHz.
-    ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
+    ELECHOUSE_cc1101.setDRate(99.97);
     ELECHOUSE_cc1101.setPktFormat(3);
     ELECHOUSE_cc1101.SetTx();
     
-    pinMode(CC1101_CCGDO0A, OUTPUT); 
-    gpio_set_pull_mode(CC1101_CCGDO0A, GPIO_FLOATING); 
+    gpio_set_direction(CC1101_CCGDO0A, GPIO_MODE_OUTPUT); 
 }
    
 String CC1101_CLASS::generateFilename(float frequency, int modulation, float bandwidth)
@@ -1186,9 +1294,9 @@ String CC1101_CLASS::generateRandomString(int length)
     return String(ss.str().c_str());
 }
 
-void CC1101_CLASS::sendSamples(int timings[], int timingsLength)
+void CC1101_CLASS::sendSamples(int timings[], int timingsLength, bool levelFlag)
 {
-    CC1101_CLASS::initrRaw();
+    CC1101_CLASS::initRaw();
     
 
     
@@ -1198,17 +1306,19 @@ void CC1101_CLASS::sendSamples(int timings[], int timingsLength)
     Serial.print(timingsLength);
 
     Serial.print("\n----------------\n");
-    for (int i = 1; i < timingsLength - 1; i += 2)
-    {
-        unsigned long highTime = max((unsigned long)(timings[i]), 0UL);
-        unsigned long lowTime = max((unsigned long)(timings[i + 1]), 0UL);
 
-        GPIO.out_w1ts = (1 << CC1101_CCGDO0A);
-        ets_delay_us(highTime);
-        GPIO.out_w1tc = (1 << CC1101_CCGDO0A);
-        ets_delay_us(lowTime);
+    for (size_t i = 0; i < timingsLength; i++) {
 
+                
+        gpio_set_level(CC1101_CCGDO0A, levelFlag);
+        levelFlag = !levelFlag;
+        delayMicroseconds(timings[i]); 
+                
     }
+
+
+
+
     Serial.print("Transmitted\n");
 
     digitalWrite(CC1101_CCGDO0A, LOW); 

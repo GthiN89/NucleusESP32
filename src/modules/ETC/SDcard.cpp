@@ -155,7 +155,7 @@ bool SDcard::read_sd_card_flipper_file(String filename) {
         Serial.println(F("SD mounting failed!"));
         return false;
     }
-    Serial.print(F("Read Flipper File: "));
+    Serial.print(F("sd/Read Flipper File: "));
     Serial.println(filename);
 
     File32* file = createOrOpenFile(filename.c_str(), FILE_READ);

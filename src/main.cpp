@@ -8,9 +8,6 @@
 #include <FFat.h>
 #include "lv_fs_if.h"
 #include "modules/dataProcessing/SubGHzParser.h"
-#include "modules/ir/TV-B-Gone.h"
-#include "modules/ir/WORLD_IR_CODES.h"
-#include "modules/IR/ir.h"
 
 
 #include <Wire.h>
@@ -18,9 +15,15 @@
 
 #include "GUI/logo.h"
 
-// IRrecv irrecv(IR_RX);   
+#include <IRrecv.h>
+#include <IRutils.h>
+#include "modules/IR/ir.h"
+IRrecv Irrecv(IR_RX);
 
-// decode_results lastResults;
+decode_results results;
+IRsend Irsend(IR_TX);
+
+
 
 SDcard& SD_CARD = SDcard::getInstance();
 
@@ -78,23 +81,25 @@ void setup() {
         Serial.println(F("Failed to initialize CC1101."));
     }
 
-    pinMode(IR_RX, INPUT_PULLUP);
+   // pinMode(IR_RX, INPUT_PULLUP);
 
-    pinMode(IR_TX, OUTPUT);
+    pinMode(26, OUTPUT);
+    
 
 }
  
  void CC1101Loop() {
     if(C1101CurrentState == STATE_ANALYZER) {
-                    delay(50);
-             //       Serial.println(digitalRead(CC1101_CCGDO2A));
+               // delay(50);
+                Serial.println(gpio_get_level(CC1101_CCGDO2A));
         if (CC1101.CheckReceived()) {
+             delay(50);
             Serial.println("Received");
             CC1101.disableReceiver();
             Serial.println("Receiver disabled.");
             delay(50);
             Serial.println("Analyzing signal...");
-            CC1101.signalanalyse();
+            CC1101.signalAnalyse();
             Serial.println("Signal analyzed.");
 
             delay(50);
@@ -103,7 +108,7 @@ void setup() {
         }
     }
     if(C1101CurrentState == STATE_PLAYBACK) {
-        CC1101.initrRaw();
+        CC1101.initRaw();
         CC1101.sendRaw();
         CC1101.disableTransmit();
         C1101CurrentState = STATE_IDLE;
@@ -118,44 +123,49 @@ void setup() {
         "Frequency: " + strongestASKFreqs[3] + " MHz | RSSI: " + strongestASKRSSI[3] + "\n\n")
         .c_str());
     }
+
     if(C1101CurrentState == STATE_SEND_FLIPPER) {
         SubGHzParser parser;
         parser.loadFile(EVENTS::fullPath);
         SubGHzData data = parser.parseContent();
     }
     if(C1101CurrentState == STATE_IDLE) {
+        updatetransmitLabel = false;
+        delay(20);
         runningModule = MODULE_NONE;
     }  
-
 }
  
  void IRLoop() {
-    // switch (IRCurrentState)
-    // {
-    // case IR_STATE_BGONE:
-    //     {
-    //         // const uint8_t num_EUcodes = sizeof(EUpowerCodes) / sizeof(EUpowerCodes[0]);        
-    //         // sendAllCodes(EUpowerCodes, num_EUcodes);
-    //         // IRCurrentState = IR_STATE_IDLE;
-    //         // runningModule = MODULE_NONE;
-    //     }
-    //     break;
+   
+   if(IRCurrentState == IR_STATE_PLAYBACK) {
+        Irsend.send(
+            results.decode_type,
+            results.value,
+            results.bits,
+            1
+            );
+   }
     
-    // case IR_STATE_LISTENING:
-    //     // if (irrecv.decode(&results)) {
-    //     //     IRCurrentState = IR_STATE_IDLE;
-    //     //     runningModule = MODULE_NONE;
-    //     //     Serial.println(results.value, HEX);
-    //     //     lv_textarea_set_text(screenMgrM.text_area_IR, "Received\n");
-    //     //     lv_textarea_add_text(screenMgrM.text_area_IR, String(results.value, HEX).c_str());
-    //     //     lastResults = results; 
-    //     //     irrecv.resume();
-    //     // }
-    //     break;
-    
-    // default:
-    //     break;
-    // }
+    if(IRCurrentState == IR_STATE_BGONE) {
+        IR_CLASS ir;
+        ir.TVbGONE();
+    }
+
+    if(IRCurrentState == IR_STATE_LISTENING) {
+        
+        if (Irrecv.decode(&results)) {
+            IRCurrentState = IR_STATE_IDLE;
+            runningModule = MODULE_NONE;
+            Serial.print(resultToHumanReadableBasic(&results));
+            lv_textarea_set_text(screenMgrM.text_area_IR, "Received\n");
+            lv_textarea_add_text(screenMgrM.text_area_IR, String(resultToHumanReadableBasic(&results)).c_str());
+         //   lastResults = results; 
+            Irrecv.resume();
+        }
+    }
+
+
 }
  
   ulong next_millis;
@@ -180,6 +190,11 @@ void setup() {
    default:
     break;
    }
+       if(updatetransmitLabel) {
+        String text = "Transmitting\n Codes send: " + String(codesSend);
+        lv_label_set_text(label_sub, text.c_str());        
+    }
+
 }
  
  bool touched() {

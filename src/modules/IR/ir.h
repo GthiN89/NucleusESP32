@@ -1,36 +1,24 @@
 #ifndef IR_H
 #define IR_H
 
+#include <string>
 #include <stdint.h>
+#include <IRremoteESP8266.h>
+#include <IRsend.h>
+#include <IRrecv.h>
+#include <IRutils.h>
+#include "codes.h"
 
-#include "modules/ETC/SDcard.h"
+#define IR_TX 26
+#define IR_RX 34
 
-// IR TX and RX Pins
-#define IR_TX 26        // The IR sender LED
-#define IR_RX 34       // The IR receiver (if used)
-
-// EU/NA region settings
-#define EU 1  // Set by a HIGH on REGIONSWITCH pin
-#define NA 0  // Set by a LOW on REGIONSWITCH pin
-
-// Macro to calculate the size of the NA/EU databases
-#define NUM_ELEM(x) (sizeof(x) / sizeof(*(x)))
-
-// Debugging
-#define DEBUG 0
-#define DEBUGP(x) if (DEBUG == 1) { x ; }
-
-// Frequency to timer value conversion (in milliseconds)
 #define freq_to_timerval(x) (x / 1000)
+//Codes captured from Generation 3 TV-B-Gone by Limor Fried & Mitch Altman
+//table of POWER codes
 
-// IR code structure definition
-struct IrCode {
-  uint8_t timer_val;
-  uint8_t numpairs;
-  uint8_t bitcompression;
-  uint16_t const *times;
-  uint8_t const *codes;
-};
+// The structure of compressed code entries
+
+
 
 
 enum IRState {
@@ -41,11 +29,47 @@ enum IRState {
     IR_STATE_PLAYBACK,
     IR_STATE_BGONE
 };
-// extern IRState IRCurrentState;
-// extern decode_results results;  
-//extern decode_results lastResults;
-void sendReceived();
-bool txIrFile(String * filepath);
-void sendRaw(uint16_t frequency, String rawData);
-void sendNEC(String address, String command);
-#endif // IR_H
+
+extern IRState IRCurrentState;
+
+class IR_CLASS {
+public:
+
+    struct irSignal {
+        std::string signal;
+        std::uint16_t protocol;
+        std::uint16_t TYPE;
+        std::uint16_t address;
+        std::uint16_t command;
+    };
+
+    struct allSignals {
+        std::vector<irSignal> signals;
+    };
+    uint8_t i;
+
+    uint8_t bitsleft_r = 0;
+    uint8_t bits_r = 0;
+    uint8_t code_ptr;
+
+    const IrCode * powerCode = EUpowerCodes[i];
+
+
+    void setupIR();
+    void receiveIR();
+
+    void TVbGONE();
+    void sendPower();
+    void sendVolumeUp();
+    void sendVolumeDown();
+    void sendMute();
+    void sendChannelUp();
+    void sendChannelDown();
+    
+
+private:
+    uint8_t read_bits(uint8_t count);
+
+};
+
+#endif
