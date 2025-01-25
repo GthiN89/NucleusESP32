@@ -826,6 +826,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
 
 
 void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
+    updatetransmitLabel = false;
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
     stopTransmit = true;
@@ -856,7 +857,7 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
     ELECHOUSE_cc1101.setPktFormat(3);
     ELECHOUSE_cc1101.SetTx();
     pinMode(CC1101_CCGDO0A, OUTPUT);
-    //digitalWrite(CC1101_CS, HIGH);
+    digitalWrite(CC1101_CCGDO0A, LOW);
     
     Serial.print("Loading file: ");
     Serial.println(fullPath);
