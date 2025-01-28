@@ -89,6 +89,58 @@ struct SignalCollection {
     }
 };
 
+struct pulseTrain {
+    std::vector<uint16_t> pulseTrainVec;
+    uint16_t size = 0;
+    void addPulse(uint16_t pulse) {
+        pulseTrainVec.push_back(pulse);
+        size++;
+    }
+    uint16_t getPulse(uint16_t i) {
+        return pulseTrainVec[i];
+    }
+    void clear() {
+        pulseTrainVec.clear();
+        size = 0;
+    }
+    uint16_t getSize() {
+        // if(size > 0) {
+        //     return size;
+        // } else {
+        //     return 1;
+        // }
+       return pulseTrainVec.size();
+    }
+};
+
+
+struct pulseTrains {
+    std::vector<pulseTrain> pulseTrainVec;
+    uint16_t size = 0; 
+    void addPulseTrain(const pulseTrain& pt) { 
+        pulseTrainVec.push_back(pt);
+        size++;
+    }
+    pulseTrain getPulseTrain(uint16_t i) {
+       return pulseTrainVec[i];
+    } 
+    pulseTrain* getPulseTrainPointer(uint16_t i) {
+       return &pulseTrainVec[i];
+    }
+    void clear() {
+        pulseTrainVec.clear();
+        size = 0;
+    }
+    uint16_t getSize() {
+        // if(size > 0) {
+        //     return size;
+        // } else {
+        //     return 1;
+        // }
+    return    pulseTrainVec.size();
+    }
+};
+
 
 
 class CC1101_CLASS {
@@ -142,6 +194,7 @@ public:
     void fskAnalyze();
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
     void enableScanner(float start, float stop);
+    void emptyReceive();
 
 private:
     uint16_t spaceAvg = 0;
@@ -149,7 +202,7 @@ private:
     uint16_t sampleSmooth[SAMPLE_SIZE];
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
-    void decode(uint16_t* pulseTrain, size_t length);
+    bool decode(pulseTrain* pulseTrain, size_t length);
     bool levelFlag;                         // Current GPIO level
     timer_idx_t timerIndex = TIMER_0;               // Timer index
 };

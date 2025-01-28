@@ -77,6 +77,7 @@ void setup() {
 
     if (CC1101.init()) {
         Serial.println(F("CC1101 initialized."));
+        CC1101.emptyReceive();
     } else {
         Serial.println(F("Failed to initialize CC1101."));
     }
@@ -84,6 +85,7 @@ void setup() {
    // pinMode(IR_RX, INPUT_PULLUP);
 
     pinMode(26, OUTPUT);
+    
     
 
 }
