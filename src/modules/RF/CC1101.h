@@ -9,6 +9,11 @@
 
 #define SAMPLE_SIZE 4092
 #define MAX_SIGNAL_LENGTH 10000000  
+#define RAW_BUF_SIZE   2048     // Maximum number of raw samples
+#define TE_MIN_COUNT   5        // Minimum number of high pulses required to calculate TE
+#define GAP_MULTIPLIER 10       // A low pulse longer than GAP_MULTIPLIER * TE is considered a gap
+const float BIN_RAW_GAP_MULTIPLIER = 10.0;  // A low pulse longer than (TE * GAP_MULTIPLIER) is considered a gap
+const uint16_t BIN_RAW_TE_MIN_COUNT = 5;  // Minimum number of high pulses to compute TE
 
 //---------------------------------------------------------------------------//
 //-----------------------------Presets-Variables-----------------------------//
@@ -141,6 +146,37 @@ struct pulseTrains {
     }
 };
 
+struct CC1101TH {
+    std::map<int, uint8_t> valueMap = {
+        {-70, 0x88},
+        {-60, 0x90},
+        {-50, 0x98},
+        {-40, 0xA0},
+        {-30, 0xA8},
+        {-20, 0xB0},
+        {-10, 0xB8},
+        {  0, 0xC0},
+        { 10, 0xC8},
+        { 20, 0xD0},
+        { 30, 0xD8},
+        { 40, 0xE0},
+        { 50, 0xE8},
+        { 60, 0xF0},
+        { 70, 0xF8},
+        { 80, 0xFF}
+    };
+
+    uint8_t getRegValue(int input) const {
+        auto it = valueMap.find(input);
+        if (it != valueMap.end()) {
+            return it->second;
+        }
+        return 0; // Default or error value
+    }
+};
+
+
+
 
 
 class CC1101_CLASS {
@@ -177,6 +213,7 @@ public:
     void loadPreset();
     void disableReceiver();
     void enableReceiverCustom();
+    void enableRCSwitch();
     void setFrequency(float freq);
     void enableReceiver();
     void setSync(int sync);
@@ -195,6 +232,12 @@ public:
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
     void enableScanner(float start, float stop);
     void emptyReceive();
+    bool decodeCameProtocol(const long long int* data, size_t size);
+    bool decodeCameAtomoProtocol(const long long int* data, size_t size);
+    bool decodeCameTweeProtocol(const long long int* data, size_t size);
+    bool decodeNiceFloProtocol(const long long int* data, size_t size);
+    bool decodeNiceFlorSProtocol(const long long int* data, size_t size);
+
 
 private:
     uint16_t spaceAvg = 0;

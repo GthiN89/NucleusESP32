@@ -8,6 +8,8 @@
 #include <IRrecv.h>
 #include <IRutils.h>
 #include "codes.h"
+#include <vector>
+
 
 #define IR_TX 26
 #define IR_RX 34

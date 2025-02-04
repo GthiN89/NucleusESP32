@@ -76,6 +76,15 @@ void EVENTS::btn_event_Replay_run(lv_event_t* e) {
     }
 }
 
+void EVENTS::btn_event_Brute_run(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+                 
+          screenMgr.createReplayScreen();
+    }
+}
+
+
 void EVENTS::btn_event_detectForce_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {          
@@ -252,7 +261,21 @@ void EVENTS::exitReplayEvent(lv_event_t * e) {
 void EVENTS::sendCapturedEvent(lv_event_t * e) {
         lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-        CC1101EV.sendRaw();
+            char selected_text_type[32];
+            lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text_type, sizeof(selected_text_type)); 
+         if(strcmp(selected_text_type, "Raw") == 0) {
+        CC1101EV.sendRaw();   
+    } else if(strcmp(selected_text_type, "RC-Switch") == 0) {
+        CC1101EV.initRaw();
+        RCSwitch mySwitch3;
+        Serial.println("RCSwitch");
+        CC1101EV.setFrequency(CC1101_MHZ);
+        mySwitch3.setProtocol(mySwitch3.getReceivedProtocol());
+        mySwitch3.setPulseLength(mySwitch3.getReceivedDelay());
+        mySwitch3.enableTransmit(17);
+        mySwitch3.send("11111100");
+    }
+        
     }
 }
 
@@ -479,12 +502,18 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text_type, sizeof(selected_text_type)); 
 
     lv_textarea_set_text(text_area, "Waiting for signal.\n");
-    
-     CC1101EV.setFrequency(CC1101_MHZ);
-     CC1101EV.enableReceiver();
-    runningModule = MODULE_CC1101;
-    C1101CurrentState = STATE_ANALYZER;
-    
+    if(strcmp(selected_text_type, "Raw") == 0) {
+        CC1101EV.setFrequency(CC1101_MHZ);
+        CC1101EV.enableReceiver();
+        runningModule = MODULE_CC1101;
+        C1101CurrentState = STATE_ANALYZER;   
+    } else if(strcmp(selected_text_type, "RC-Switch") == 0) {
+        Serial.println("RCSwitch");
+        CC1101EV.setFrequency(CC1101_MHZ);
+        CC1101EV.enableRCSwitch(); 
+        runningModule = MODULE_CC1101;
+        C1101CurrentState = STATE_RCSWITCH;   
+    }
     }
 }
 

@@ -1,9 +1,9 @@
 static const char* bin2tristate(const char* bin);
 static char * dec2binWzerofill(unsigned long Dec, unsigned int bitLength);
 
-void output(unsigned long decimal, unsigned int length, unsigned int delay, unsigned int* raw, unsigned int protocol) {
+ output(unsigned long decimal, unsigned int length, unsigned int delay, unsigned int* raw, unsigned int protocol) {
 
-  const char* b = dec2binWzerofill(decimal, length);
+  const char* b = dvoidec2binWzerofill(decimal, length);
   Serial.print("Decimal: ");
   Serial.print(decimal);
   Serial.print(" (");
