@@ -168,6 +168,447 @@ void IRAM_ATTR InterruptHandler() {
     }
 }
 
+
+bool CC1101_CLASS::decodeHormannHSMProtocol(const long long int* data, size_t size) {
+    if (size == 0) {
+        Serial.println("No pulse data provided.");
+        return false;
+    }
+
+    // Protocol constants for Hormann HSM
+    const uint32_t te_short = 500;      // expected short pulse duration (µs)
+    const uint32_t te_long  = 1000;     // expected long pulse duration (µs)
+    const uint32_t te_delta = 200;      // tolerance (µs)
+    const uint32_t min_bits = 44;       // minimum bit count required
+    const uint32_t header_threshold = te_short * 24; // ~500*24 = 12000 µs
+
+    // Step 1: Locate header (a HIGH pulse >= header_threshold)
+    size_t headerIndex = 0;
+    bool headerFound = false;
+    for (size_t i = 0; i < size; i++) {
+        if (data[i] > 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
+            headerIndex = i;
+            headerFound = true;
+            break;
+        }
+    }
+    if (!headerFound) {
+        Serial.println("Header not found.");
+        return false;
+    }
+
+    // Step 2: Verify expected start pattern.
+    // Expect a LOW pulse after header with a duration near te_short.
+    if (headerIndex + 1 >= size) {
+        Serial.println("Not enough pulses after header.");
+        return false;
+    }
+    uint32_t firstLow = (uint32_t)llabs(data[headerIndex + 1]);
+    if (!(firstLow >= (te_short - te_delta) && firstLow <= (te_short + te_delta))) {
+        Serial.println("Start bit pattern not found.");
+        return false;
+    }
+
+    // Step 3: Decode key bits
+    size_t i = headerIndex + 2; // Start decoding after header and start bit
+    uint64_t decodedValue = 0;
+    int bitCount = 0;
+
+    while (i + 1 < size) {
+        long long int highPulse = data[i];      // expected HIGH pulse
+        long long int lowPulse = data[i + 1];   // expected LOW pulse
+
+        // Verify polarity: HIGH then LOW.
+        if (highPulse <= 0 || lowPulse >= 0) {
+            i++; // Skip and try next
+            continue;
+        }
+
+        uint32_t absHigh = (uint32_t)llabs(highPulse);
+        uint32_t absLow = (uint32_t)llabs(lowPulse);
+        bool bit;
+
+        // If HIGH pulse is near te_long and LOW pulse near te_short → bit 1.
+        if ((absHigh >= te_long - te_delta && absHigh <= te_long + te_delta) &&
+            (absLow >= te_short - te_delta && absLow <= te_short + te_delta)) {
+            bit = true;
+        }
+        // If HIGH pulse is near te_short and LOW pulse near te_long → bit 0.
+        else if ((absHigh >= te_short - te_delta && absHigh <= te_short + te_delta) &&
+                 (absLow >= te_long - te_delta && absLow <= te_long + te_delta)) {
+            bit = false;
+        }
+        else {
+            // Unrecognized pulse pair; skip it.
+            i += 2;
+            continue;
+        }
+
+        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
+        bitCount++;
+        i += 2;
+    }
+
+    if (bitCount >= (int)min_bits) {
+        lv_obj_t * textareaRC;
+        lv_obj_t * container = screenMgr1.getSquareLineContainer();
+        if (C1101preset == CUSTOM) {
+            textareaRC = screenMgr1.text_area_SubGHzCustom;        
+        } else {
+            textareaRC = screenMgr1.getTextArea();
+        }
+
+        lv_textarea_add_text(textareaRC, "\n Hormann HSM decoded (" );
+        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
+        lv_textarea_add_text(textareaRC, "\n bits): 0x");
+        lv_textarea_add_text(textareaRC, String(decodedValue).c_str());
+
+        Serial.print("Hormann HSM decoded (");
+        Serial.print(bitCount);
+        Serial.print(" bits): 0x");
+        Serial.println(decodedValue, HEX);
+        return true;
+    } else {
+        Serial.print("Not enough bits decoded: ");
+        Serial.println(bitCount);
+        return false;
+    }
+}
+
+bool CC1101_CLASS::decodeSecPlusV1Protocol(const long long int* data, size_t size) {
+    if (size == 0) {
+        Serial.println("No pulse data provided.");
+        return false;
+    }
+
+    // Protocol constants for Security+ 1.0
+    const uint32_t te_short = 500;      // expected short pulse duration (µs)
+    const uint32_t te_long  = 1500;     // expected long pulse duration (µs)
+    const uint32_t te_delta = 100;      // tolerance (µs)
+    const uint32_t min_bits = 42;       // minimum bit count required (21 per packet)
+    const uint32_t header_threshold = te_short * 120; // ~500*120 = 60000 µs
+
+    // Step 1: Locate header (a LOW pulse >= header_threshold)
+    size_t headerIndex = 0;
+    bool headerFound = false;
+    for (size_t i = 0; i < size; i++) {
+        if (data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
+            headerIndex = i;
+            headerFound = true;
+            break;
+        }
+    }
+    if (!headerFound) {
+        Serial.println("Header not found.");
+        return false;
+    }
+
+    // Step 2: Verify expected start pattern.
+    // Expect a HIGH pulse after header with a duration near te_short.
+    if (headerIndex + 1 >= size) {
+        Serial.println("Not enough pulses after header.");
+        return false;
+    }
+    uint32_t firstHigh = (uint32_t)llabs(data[headerIndex + 1]);
+    if (!(firstHigh >= (te_short - te_delta) && firstHigh <= (te_short + te_delta))) {
+        Serial.println("Start bit pattern not found.");
+        return false;
+    }
+
+    // Step 3: Decode key bits
+    size_t i = headerIndex + 2; // Start decoding after header and start bit
+    uint8_t data_array[44] = {0}; // Stores decoded bits
+    int bitCount = 0;
+
+    while (i + 1 < size) {
+        long long int lowPulse = data[i];     // expected LOW pulse
+        long long int highPulse = data[i + 1]; // expected HIGH pulse
+
+        // Verify polarity: LOW then HIGH.
+        if (lowPulse >= 0 || highPulse <= 0) {
+            i++; // Skip and try next
+            continue;
+        }
+
+        uint32_t absLow = (uint32_t)llabs(lowPulse);
+        uint32_t absHigh = (uint32_t)llabs(highPulse);
+        uint8_t bitValue = 0xFF;
+
+        // If LOW is ~3×te_short and HIGH is ~te_short → bit 0.
+        if ((absLow >= 3 * te_short - te_delta * 3 && absLow <= 3 * te_short + te_delta * 3) &&
+            (absHigh >= te_short - te_delta && absHigh <= te_short + te_delta)) {
+            bitValue = 0; // SECPLUS_V1_BIT_0
+        }
+        // If LOW is ~2×te_short and HIGH is ~2×te_short → bit 1.
+        else if ((absLow >= 2 * te_short - te_delta * 2 && absLow <= 2 * te_short + te_delta * 2) &&
+                 (absHigh >= 2 * te_short - te_delta * 2 && absHigh <= 2 * te_short + te_delta * 2)) {
+            bitValue = 1; // SECPLUS_V1_BIT_1
+        }
+        // If LOW is ~te_short and HIGH is ~3×te_short → bit 2.
+        else if ((absLow >= te_short - te_delta && absLow <= te_short + te_delta) &&
+                 (absHigh >= 3 * te_short - te_delta * 3 && absHigh <= 3 * te_short + te_delta * 3)) {
+            bitValue = 2; // SECPLUS_V1_BIT_2
+        }
+        else {
+            // Unrecognized pulse pair; skip it.
+            i += 2;
+            continue;
+        }
+
+        data_array[bitCount] = bitValue;
+        bitCount++;
+        i += 2;
+    }
+
+    if (bitCount >= (int)min_bits) {
+        lv_obj_t * textareaRC;
+        lv_obj_t * container = screenMgr1.getSquareLineContainer();
+        if (C1101preset == CUSTOM) {
+            textareaRC = screenMgr1.text_area_SubGHzCustom;        
+        } else {
+            textareaRC = screenMgr1.getTextArea();
+        }
+
+        lv_textarea_add_text(textareaRC, "\n SecPlus V1 decoded (" );
+        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
+        lv_textarea_add_text(textareaRC, "\n bits): 0x");
+
+        String decodedString = "";
+        for (int j = 0; j < bitCount; j++) {
+            decodedString += String(data_array[j]);
+        }
+
+        lv_textarea_add_text(textareaRC, decodedString.c_str());
+
+        Serial.print("SecPlus V1 decoded (");
+        Serial.print(bitCount);
+        Serial.print(" bits): ");
+        Serial.println(decodedString);
+        return true;
+    } else {
+        Serial.print("Not enough bits decoded: ");
+        Serial.println(bitCount);
+        return false;
+    }
+}
+
+bool CC1101_CLASS::decodeSecPlusV2Protocol(const long long int* data, size_t size) {
+    if (size == 0) {
+        Serial.println("No pulse data provided.");
+        return false;
+    }
+
+    // Protocol constants for Security+ 2.0
+    const uint32_t te_short = 250;      // expected short pulse duration (µs)
+    const uint32_t te_long  = 500;      // expected long pulse duration (µs)
+    const uint32_t te_delta = 110;      // tolerance (µs)
+    const uint32_t min_bits = 62;       // minimum bits required
+    const uint32_t header_threshold = te_long * 130; // ~500*130 = 65000 µs
+
+    // Step 1: Locate header (a LOW pulse >= header_threshold)
+    size_t headerIndex = 0;
+    bool headerFound = false;
+    for (size_t i = 0; i < size; i++) {
+        if (data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
+            headerIndex = i;
+            headerFound = true;
+            break;
+        }
+    }
+    if (!headerFound) {
+        Serial.println("Header not found.");
+        return false;
+    }
+
+    // Step 2: Verify expected start pattern.
+    // Expect a HIGH pulse after header with a duration near te_long.
+    if (headerIndex + 1 >= size) {
+        Serial.println("Not enough pulses after header.");
+        return false;
+    }
+    uint32_t firstHigh = (uint32_t)llabs(data[headerIndex + 1]);
+    if (!(firstHigh >= (te_long - te_delta) && firstHigh <= (te_long + te_delta))) {
+        Serial.println("Start bit pattern not found.");
+        return false;
+    }
+
+    // Step 3: Decode key bits using Manchester encoding
+    size_t i = headerIndex + 2; // Start decoding after header and start bit
+    uint64_t decodedValue = 0;
+    int bitCount = 0;
+
+    while (i + 1 < size) {
+        long long int lowPulse = data[i];     // expected LOW pulse
+        long long int highPulse = data[i + 1]; // expected HIGH pulse
+
+        // Verify polarity: LOW then HIGH.
+        if (lowPulse >= 0 || highPulse <= 0) {
+            i++; // Skip and try next
+            continue;
+        }
+
+        uint32_t absLow = (uint32_t)llabs(lowPulse);
+        uint32_t absHigh = (uint32_t)llabs(highPulse);
+        bool bit;
+
+        // Manchester encoding: Long HIGH + Short LOW = '1', Short HIGH + Long LOW = '0'
+        if ((absLow >= te_short - te_delta && absLow <= te_short + te_delta) &&
+            (absHigh >= te_long - te_delta && absHigh <= te_long + te_delta)) {
+            bit = false; // Bit 0
+        }
+        else if ((absLow >= te_long - te_delta && absLow <= te_long + te_delta) &&
+                 (absHigh >= te_short - te_delta && absHigh <= te_short + te_delta)) {
+            bit = true; // Bit 1
+        }
+        else {
+            // Unrecognized pulse pair; skip it.
+            i += 2;
+            continue;
+        }
+
+        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
+        bitCount++;
+        i += 2;
+    }
+
+    if (bitCount >= (int)min_bits) {
+        lv_obj_t * textareaRC;
+        lv_obj_t * container = screenMgr1.getSquareLineContainer();
+        if (C1101preset == CUSTOM) {
+            textareaRC = screenMgr1.text_area_SubGHzCustom;        
+        } else {
+            textareaRC = screenMgr1.getTextArea();
+        }
+
+        lv_textarea_add_text(textareaRC, "\n SecPlus V2 decoded (" );
+        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
+        lv_textarea_add_text(textareaRC, "\n bits): 0x");
+        lv_textarea_add_text(textareaRC, String(decodedValue).c_str());
+
+        Serial.print("SecPlus V2 decoded (");
+        Serial.print(bitCount);
+        Serial.print(" bits): 0x");
+        Serial.println(decodedValue, HEX);
+        return true;
+    } else {
+        Serial.print("Not enough bits decoded: ");
+        Serial.println(bitCount);
+        return false;
+    }
+}
+
+bool CC1101_CLASS::decodeKiaProtocol(const long long int* data, size_t size) {
+    if (size == 0) {
+        Serial.println("No pulse data provided.");
+        return false;
+    }
+
+    // Protocol constants for Kia Remote
+    const uint32_t te_short = 250;      // expected short pulse duration (µs)
+    const uint32_t te_long  = 500;      // expected long pulse duration (µs)
+    const uint32_t te_delta = 100;      // tolerance (µs)
+    const uint32_t min_bits = 61;       // minimum bits required
+    const uint32_t header_threshold = te_short * 15; // Threshold to detect the header
+
+    // Step 1: Locate header (sequence of short pulses)
+    size_t headerCount = 0;
+    size_t headerIndex = 0;
+    bool headerFound = false;
+    for (size_t i = 0; i < size; i++) {
+        if (data[i] > 0 && (uint32_t)llabs(data[i]) >= te_short - te_delta &&
+            (uint32_t)llabs(data[i]) <= te_short + te_delta) {
+            headerCount++;
+            if (headerCount >= 15) {
+                headerIndex = i;
+                headerFound = true;
+                break;
+            }
+        } else {
+            headerCount = 0;
+        }
+    }
+    if (!headerFound) {
+        Serial.println("Header not found.");
+        return false;
+    }
+
+    // Step 2: Verify expected start pattern.
+    // Expect a HIGH pulse after header with a duration near te_long.
+    if (headerIndex + 1 >= size) {
+        Serial.println("Not enough pulses after header.");
+        return false;
+    }
+    uint32_t firstHigh = (uint32_t)llabs(data[headerIndex + 1]);
+    if (!(firstHigh >= (te_long - te_delta) && firstHigh <= (te_long + te_delta))) {
+        Serial.println("Start bit pattern not found.");
+        return false;
+    }
+
+    // Step 3: Decode key bits
+    size_t i = headerIndex + 2; // Start decoding after header and start bit
+    uint64_t decodedValue = 0;
+    int bitCount = 0;
+
+    while (i + 1 < size) {
+        long long int firstPulse = data[i];  // expected HIGH pulse
+        long long int secondPulse = data[i + 1]; // expected LOW pulse
+
+        // Verify polarity: first should be HIGH, second LOW.
+        if (firstPulse <= 0 || secondPulse >= 0) {
+            i++; // skip and try next
+            continue;
+        }
+
+        uint32_t absFirst = (uint32_t)llabs(firstPulse);
+        uint32_t absSecond = (uint32_t)llabs(secondPulse);
+        bool bit;
+
+        // Kia Encoding: Short HIGH + Short LOW = '0', Long HIGH + Long LOW = '1'
+        if ((absFirst >= te_short - te_delta && absFirst <= te_short + te_delta) &&
+            (absSecond >= te_short - te_delta && absSecond <= te_short + te_delta)) {
+            bit = false; // Bit 0
+        }
+        else if ((absFirst >= te_long - te_delta && absFirst <= te_long + te_delta) &&
+                 (absSecond >= te_long - te_delta && absSecond <= te_long + te_delta)) {
+            bit = true; // Bit 1
+        }
+        else {
+            // Unrecognized pulse pair; skip it.
+            i += 2;
+            continue;
+        }
+
+        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
+        bitCount++;
+        i += 2;
+    }
+
+    if (bitCount >= (int)min_bits) {
+        lv_obj_t * textareaRC;
+        lv_obj_t * container = screenMgr1.getSquareLineContainer();
+        if (C1101preset == CUSTOM) {
+            textareaRC = screenMgr1.text_area_SubGHzCustom;        
+        } else {
+            textareaRC = screenMgr1.getTextArea();
+        }
+
+        lv_textarea_add_text(textareaRC, "\n Kia RF decoded (" );
+        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
+        lv_textarea_add_text(textareaRC, "\n bits): 0x");
+        lv_textarea_add_text(textareaRC, String(decodedValue).c_str());
+
+        Serial.print("Kia RF decoded (");
+        Serial.print(bitCount);
+        Serial.print(" bits): 0x");
+        Serial.println(decodedValue, HEX);
+        return true;
+    } else {
+        Serial.print("Not enough bits decoded: ");
+        Serial.println(bitCount);
+        return false;
+    }
+}
+
 bool CC1101_CLASS::init() {
     ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
     ELECHOUSE_cc1101.Init();
@@ -790,6 +1231,20 @@ void CC1101_CLASS::decodeWithESPiLight(uint16_t *pulseTrain, size_t length) {
         Serial.println(decodedData);
         return;
     }
+    if(CC1101.decodeHormannHSMProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        return true;
+    }
+    if(CC1101.decodeSecPlusV1Protocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        return true;
+    }
+    if(CC1101.decodeSecPlusV2Protocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        return true;
+    }
+    if(CC1101.decodeKiaProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        return true;
+    }
+
+    
 
     Serial.println("Failed to decode signal with ESPiLight. Trying RC Switch...");
 
