@@ -2,6 +2,8 @@
 
 
 #include "ir.h"
+#include "globals.h"
+#include <lvgl.h>
 #define NUM_ELEM(x) (sizeof (x) / sizeof (*(x)));
 
 
@@ -17,6 +19,32 @@ IR_DATA* IRData;
 
 IRsend irsend(IR_TX);
 IRrecv irrecv(IR_RX);
+
+String protDecode[] = {
+    "Unknown",
+    "01 Princeton, PT-2240",
+    "02 AT-Motor?",
+    "03",
+    "04",
+    "05",
+    "06 HT6P20B",
+    "07 HS2303-PT, i. e. used in AUKEY Remote",
+    "08 Conrad RS-200 RX",
+    "09 Conrad RS-200 TX",
+    "10 1ByOne Doorbell",
+    "11 HT12E",
+    "12 SM5212",
+    "13 Mumbi RC-10",
+    "14 Blyss Doorbell Ref. DC6-FR-WH 656185",
+    "15 sc2260R4",
+    "16 Home NetWerks Bathroom Fan Model 6201-500",
+    "17 ORNO OR-GB-417GD",
+    "18 CLARUS BHC993BF-3",
+    "19 NEC",
+    "20 CAME 12bit",
+    "21 FAAC 12bit",
+    "22 NICE 12bit"
+};
 
 
 
@@ -95,6 +123,77 @@ void IR_CLASS::TVbGONE() {
 
         }
 }
+
+char * IR_CLASS::dec2binWzerofill(unsigned long Dec, unsigned int bitLength) {
+  static char bin[64]; 
+  unsigned int i=0;
+
+  while (Dec > 0) {
+    bin[32+i++] = ((Dec & 1) > 0) ? '1' : '0';
+    Dec = Dec >> 1;
+  }
+
+  for (unsigned int j = 0; j< bitLength; j++) {
+    if (j >= bitLength - i) {
+      bin[j] = bin[ 31 + i - (j - (bitLength - i)) ];
+    } else {
+      bin[j] = '0';
+    }
+  }
+  bin[bitLength] = '\0';
+  
+  return bin;
+}
+
+ void IR_CLASS::output(unsigned long decimal, unsigned int length, unsigned int delay, unsigned int* raw, unsigned int protocol, lv_obj_t * textareaRC) {
+
+  const char* b = dec2binWzerofill(decimal, length);
+//    lv_obj_t * textareaRC;
+
+  lv_textarea_set_text(textareaRC, "\nDecimal: ");
+  lv_textarea_add_text(textareaRC, String(decimal).c_str());
+  lv_textarea_add_text(textareaRC, "\n (");
+  lv_textarea_add_text(textareaRC,  String(length).c_str() );
+  lv_textarea_add_text(textareaRC, "Bit) Binary: ");
+  lv_textarea_add_text(textareaRC,  b );
+  lv_textarea_add_text(textareaRC, "\nTri-State: ");
+  lv_textarea_add_text(textareaRC,  IR_CLASS::bin2tristate( b) );
+  lv_textarea_add_text(textareaRC, "\nPulseLength: ");
+  lv_textarea_add_text(textareaRC, String(delay).c_str());
+  lv_textarea_add_text(textareaRC, " micro");
+  lv_textarea_add_text(textareaRC, "\nProtocol: ");
+  lv_textarea_add_text(textareaRC, String(IR_CLASS::protDecode[protocol - 1]).c_str());
+  
+  Serial.print("Raw data: ");
+  for (unsigned int i=0; i<= length*2; i++) {
+    Serial.print(raw[i]);
+    Serial.print(",");
+  }
+  Serial.println();
+  Serial.println();
+}
+
+const char* IR_CLASS::bin2tristate(const char* bin) {
+  static char returnValue[50];
+  int pos = 0;
+  int pos2 = 0;
+  while (bin[pos]!='\0' && bin[pos+1]!='\0') {
+    if (bin[pos]=='0' && bin[pos+1]=='0') {
+      returnValue[pos2] = '0';
+    } else if (bin[pos]=='1' && bin[pos+1]=='1') {
+      returnValue[pos2] = '1';
+    } else if (bin[pos]=='0' && bin[pos+1]=='1') {
+      returnValue[pos2] = 'F';
+    } else {
+      return "not applicable";
+    }
+    pos = pos+2;
+    pos2++;
+  }
+  returnValue[pos2] = '\0';
+  return returnValue;
+}
+
 
 void sendVolumeUp() {
 

@@ -232,12 +232,34 @@ public:
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
     void enableScanner(float start, float stop);
     void emptyReceive();
+
+    //decoders
     bool decodeCameProtocol(const long long int* data, size_t size);
     bool decodeCameAtomoProtocol(const long long int* data, size_t size);
     bool decodeCameTweeProtocol(const long long int* data, size_t size);
     bool decodeNiceFloProtocol(const long long int* data, size_t size);
     bool decodeNiceFlorSProtocol(const long long int* data, size_t size);
+    bool decodeHormannHSMProtocol(const long long int* data, size_t size);
+    bool decodeSecPlusV1Protocol(const long long int* data, size_t size);
+    bool decodeSecPlusV2Protocol(const long long int* data, size_t size);
+    bool decodeKiaProtocol(const long long int* data, size_t size);
+    bool decodeAlutechAT4N(const long long int* data, size_t size);
+    bool decodeAnsonic(const long long int* data, size_t size);
+    bool decodeBETT(const long long int* data, size_t size);
+    bool decodeChamberlain(const long long int* data, size_t size);
+    bool decodeClemsa(const long long int* data, size_t size);
+    bool decodeDickertMAHS(const long long int* data, size_t size);
+    bool decodeDoitrandProtocol(const long long int* data, size_t size);
+    bool decodeDooyaProtocol(const long long int* data, size_t size);
+    bool decodeFaacSLHProtocol(const long long int* data, size_t size);
+    bool decodeGangQiProtocol(const long long int* data, size_t size);
+    bool decodeHay21Protocol(const long long int* data, size_t size);
+    bool decodeHoltekHT12X(const long long int* data, size_t size);
+    bool decodeHoltekHT640(const long long int* data, size_t size);
 
+
+    //encoders
+    bool encodeCame(uint64_t key, uint8_t bitCount);
 
 private:
     uint16_t spaceAvg = 0;
@@ -245,7 +267,7 @@ private:
     uint16_t sampleSmooth[SAMPLE_SIZE];
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
-    bool decode(pulseTrain* pulseTrain, size_t length);
+    bool decode();
     bool levelFlag;                         // Current GPIO level
     timer_idx_t timerIndex = TIMER_0;               // Timer index
 };

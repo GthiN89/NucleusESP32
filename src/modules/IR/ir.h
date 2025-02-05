@@ -9,6 +9,7 @@
 #include <IRutils.h>
 #include "codes.h"
 #include <vector>
+#include <LVGL.h>
 
 
 #define IR_TX 26
@@ -54,6 +55,8 @@ public:
     uint8_t bits_r = 0;
     uint8_t code_ptr;
 
+    String protDecode[23];
+
     const IrCode * powerCode = EUpowerCodes[i];
 
 
@@ -61,6 +64,9 @@ public:
     void receiveIR();
 
     void TVbGONE();
+    static char * dec2binWzerofill(unsigned long Dec, unsigned int bitLength);
+    static const char* bin2tristate(const char* bin);
+    void output(unsigned long decimal, unsigned int length, unsigned int delay, unsigned int* raw, unsigned int protocol, lv_obj_t * textareaRC);
     void sendPower();
     void sendVolumeUp();
     void sendVolumeDown();

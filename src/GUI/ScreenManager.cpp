@@ -132,7 +132,7 @@ void ScreenManager::createReplayScreen() {
 
     lv_scr_load(ReplayScreen_);
 
-    lv_obj_delete(previous_screen);
+  //  lv_obj_delete(previous_screen);
     
     previous_screen = ReplayScreen_;
     lv_obj_set_flex_flow(ReplayScreen_, LV_FLEX_FLOW_COLUMN);

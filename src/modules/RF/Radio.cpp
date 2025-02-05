@@ -47,7 +47,7 @@ void RadioReceiver::setup() {
   Log.begin(LOG_LEVEL_SILENT, &Serial);
   Log.notice(F(" " CR));
   Log.notice(F("****** setup ******" CR));
-  rf.initReceiver(RF_MODULE_RECEIVER_GPIO, RF_MODULE_FREQUENCY);
+  rf.initReceiver(4, RF_MODULE_FREQUENCY);
   rf.setCallback(rtl_433_Callback, messageBuffer, JSON_MSG_BUFFER);
   rf.enableReceiver();
   Log.notice(F("****** setup complete ******" CR));
