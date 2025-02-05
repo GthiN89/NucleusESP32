@@ -188,7 +188,6 @@ void smartdisplay_init()
   // Setup backlight
 
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
-  ledcAttach(GPIO_BCKL, PWM_FREQ_BCKL, PWM_BITS_BCKL);
 #else
  // ledcSetup(PWM_CHANNEL_BCKL, PWM_FREQ_BCKL, PWM_BITS_BCKL);
 #endif

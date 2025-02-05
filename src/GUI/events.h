@@ -14,6 +14,7 @@ extern bool stopTransmit;
 extern int SpamDevice;
 extern lv_obj_t* label_sub;
 extern bool stopTransmiting;
+
 class EVENTS {
 
 public:
@@ -63,16 +64,19 @@ static void sendCapturedIREvent(lv_event_t* e);
 static void btn_event_NFC_menu_run(lv_event_t* e);
 static void btn_event_RF24_menu_run(lv_event_t* e);
 static void btn_event_IR_replay(lv_event_t* e);
-
+static void btn_event_CUSTOM_REC_run(lv_event_t* e);
+static void CustomSubGhzHelp_CB(lv_event_t * e);
 static void ta_freq_event_cb(lv_event_t * e);
 static void ta_filename_event_cb(lv_event_t * e);
 static void kb_event_cb(lv_event_t * e);
 static void kb_qwert_event_cb(lv_event_t * e);
 static void saveSignal(lv_event_t * e);
+static void btn_event_Brute_run(lv_event_t * e);
 static void replayEvent(lv_event_t * e);
 static void exitReplayEvent(lv_event_t * e);
 static void sendCapturedEvent(lv_event_t * e);
 static void save_RF_to_sd_event(lv_event_t * e);
+static void cancelBgone(lv_event_t * e);
 
 //file Explorer
 static void confirm_delete_event_handler(lv_event_t * e);

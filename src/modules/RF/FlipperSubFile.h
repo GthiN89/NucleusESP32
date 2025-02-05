@@ -19,11 +19,7 @@ public:
      * @param frequency The frequency of the signal in MHz.
      */
     void generateRaw(
-        File32& file,
-        CC1101_PRESET presetName,
-        const std::vector<byte>& customPresetData,
-        String& samples,
-        float frequency
+File32&, CC1101_PRESET, const std::vector<unsigned char>&, std::ostringstream& , float
     );
 
 private:
@@ -47,7 +43,7 @@ private:
      * @param file Reference to the SD card file.
      * @param samples String containing the raw signal samples.
      */
-    void writeRawProtocolData(File32& file, String& samples);
+    void writeRawProtocolData(File32& file, std::ostringstream& samples);
 
     /**
      * Retrieves the name of the preset as a string.

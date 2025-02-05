@@ -6,21 +6,18 @@
 #include <iostream>
 #include <unordered_map>
 #include "ELECHOUSE_CC1101_SRC_DRV.h"
-#include "modules/BLE/SourApple.h"
-#include "modules/BLE/BLESpam.h"
+
 #include "events.h"
 #include "lv_fs_if.h"
 #include <cstdio>   
 #include "modules/dataProcessing/SubGHzParser.h"
 using namespace std;
-#include "modules/ETC/SDcard.h"
-#include "modules/IR/TV-B-Gone.h"
-#include "modules/IR/ir.h"
+
 #include "lvgl.h"
 #include "modules/nfc/nfc.h"
 #include "modules/RF/Radio.h"
 #include "main.h"
-
+#include "modules/IR/ir.h"
 #define MAX_PATH_LENGTH 256
 CC1101_CLASS CC1101EV;
 SDcard& SD_EVN = SDcard::getInstance();
@@ -54,6 +51,8 @@ char* EVENTS::fullPath;
 lv_obj_t* label_sub;
 static char buffer[256];
 
+
+
 TaskHandle_t taskHandle = NULL; 
 
 void EVENTS::btn_event_playZero_run(lv_event_t* e) {
@@ -77,6 +76,15 @@ void EVENTS::btn_event_Replay_run(lv_event_t* e) {
     }
 }
 
+void EVENTS::btn_event_Brute_run(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+                 
+          screenMgr.createReplayScreen();
+    }
+}
+
+
 void EVENTS::btn_event_detectForce_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {          
@@ -90,10 +98,10 @@ void EVENTS::btn_event_teslaCharger_run(lv_event_t* e) {
         screenMgr.createTeslaScreen();
      //   delay(10);
         detachInterrupt(CC1101_CCGDO0A);
-        CC1101_MODULATION = 2;
+        CC1101EV.CC1101_MODULATION = 2;
         CC1101EV.CC1101_FREQ = 433.92;
         CC1101EV.CC1101_PKT_FORMAT = 3;
-        CC1101EV.initrRaw();
+        CC1101EV.initRaw();
     }
 }
 
@@ -105,19 +113,21 @@ void EVENTS::btn_event_IR_menu_run(lv_event_t* e) {
 }
 
 void EVENTS::btn_event_NFC_menu_run(lv_event_t* e) {
-    //  lv_event_code_t code = lv_event_get_code(e);
-    // if (code == LV_EVENT_CLICKED) {
-    // RadioReceiver radio;
-    // Serial.println("Test");
-    // radio.setup();
-    // radio.loop();
-    // }
+     lv_event_code_t code = lv_event_get_code(e);
+     IR_CLASS ir;
+    if (code == LV_EVENT_CLICKED) {
+      //   ir.setupIR();
+         ir.sendPower();
+
+    }
 }
 
 void EVENTS::btn_event_RF24_menu_run(lv_event_t* e) {
    // testRF24();
  //   RF24CurrentState = RF24_STATE_TEST;
 }
+
+
 
 void EVENTS::ta_freq_event_cb(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -127,15 +137,6 @@ void EVENTS::ta_freq_event_cb(lv_event_t *e) {
     if (code == LV_EVENT_FOCUSED) {
         if(strcmp(user_data, "freq") == 0) {
             lv_keyboard_set_textarea(kb, screenMgr.customPreset); // Link the textarea to the keyboard
-        }
-        if(strcmp(user_data, "drate") == 0) {
-            lv_keyboard_set_textarea(kb, screenMgr.input_datarate); // Link the textarea to the keyboard
-        }
-        if(strcmp(user_data, "BW") == 0) {
-            lv_keyboard_set_textarea(kb, screenMgr.input_bandwidth); // Link the textarea to the keyboard
-        }
-        if(strcmp(user_data, "DEV") == 0) {
-            lv_keyboard_set_textarea(kb, screenMgr.input_deviation); // Link the textarea to the keyboard
         }
         lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN); // Show the keyboard
         Serial.println("Keyboard linked and shown");
@@ -156,22 +157,7 @@ void EVENTS::ta_freq_event_cb(lv_event_t *e) {
         } else {
             Serial.println("Frequency input is empty");
         }
-
-        if(strcmp(user_data, "drate") == 0) {
-            const char *drate_text = lv_textarea_get_text(screenMgr.input_datarate);
-            CC1101EV.CC1101_DRATE = atof(drate_text);
         }
-        if(strcmp(user_data, "BW") == 0) {
-            const char *drate_text = lv_textarea_get_text(screenMgr.input_bandwidth);
-            CC1101EV.CC1101_RX_BW = atof(drate_text);
-        }
-        if(strcmp(user_data, "DEV") == 0) {
-            const char *drate_text = lv_textarea_get_text(screenMgr.input_deviation);
-            CC1101EV.CC1101_DEVIATION = atof(drate_text);
-        }
-
-        }
-
     }
 }
 
@@ -181,10 +167,10 @@ void EVENTS::dropdown_modulation_event_cb(lv_event_t *e) {
     int selected = lv_dropdown_get_selected(screenMgr.dropdown_modulation); // Get selected index
 
     if (selected == 0) { // ASK selected
-        CC1101_MODULATION = 2;
+        CC1101EV.CC1101_MODULATION = 2;
         Serial.println("Modulation set to ASK.");
     } else if (selected == 1) { // FSK selected
-        CC1101_MODULATION = 0;
+        CC1101EV.CC1101_MODULATION = 0;
         Serial.println("Modulation set to FSK.");
     }
     }
@@ -196,83 +182,6 @@ enum InputType {
     DEVIATION,
     NONVALID
 };
-
-// Helper function to identify the input type
-InputType get_input_type(lv_obj_t *textarea) {
-    if (textarea == screenMgr.input_datarate) {
-        return DATARATE;
-    } else if (textarea == screenMgr.input_bandwidth) {
-        return BANDWIDTH;
-    } else if (textarea == screenMgr.input_deviation) {
-        return DEVIATION;
-    } else {
-        return NONVALID;
-    }
-}
-
-void EVENTS::ok_button_event_cb(lv_event_t *e) {
-        lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-    lv_obj_t *container = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
-    lv_obj_t *textareas[] = { screenMgr.input_datarate, screenMgr.input_bandwidth, screenMgr.input_deviation };
-    const char *messages[] = {
-        "Data rate must be between 1-500 kbps and cannot be empty.",
-        "Bandwidth must be between 50-600 kHz and cannot be empty.",
-        "Deviation must be between 1-200 kHz and cannot be empty."
-    };
-
-    bool valid = true;
-    char message[128];
-
-    // Validate each input
-    for (lv_obj_t *textarea : textareas) {
-        const char *input = lv_textarea_get_text(textarea);
-        int value = atoi(input);
-
-        switch (get_input_type(textarea)) {
-            case DATARATE:
-                if (strlen(input) == 0 || value < 1 || value > 500) {
-                    valid = false;
-                    snprintf(message, sizeof(message), "%s", messages[DATARATE]);
-                }
-                break;
-            case BANDWIDTH:
-                if (strlen(input) == 0 || value < 50 || value > 600) {
-                    valid = false;
-                    snprintf(message, sizeof(message), "%s", messages[BANDWIDTH]);
-                }
-                break;
-            case DEVIATION:
-                if (strlen(input) == 0 || value < 1 || value > 200) {
-                    valid = false;
-                    snprintf(message, sizeof(message), "%s", messages[DEVIATION]);
-                }
-                break;
-            default:
-                valid = false;
-                snprintf(message, sizeof(message), "Unknown input field.");
-                break;
-        }
-
-        if (!valid) {
-            lv_obj_t *msgbox = lv_msgbox_create(NULL);
-            lv_obj_center(msgbox);
-            return; // Prevent hiding the container
-        }
-    }
-
-    if (container) {
-        lv_obj_add_flag(container, LV_OBJ_FLAG_HIDDEN); // Hide the container
-        Serial.printf("Saving values: Data Rate = %s kbps, Bandwidth = %s kHz, Deviation = %s kHz\n",
-                      lv_textarea_get_text(screenMgr.input_datarate),
-                      lv_textarea_get_text(screenMgr.input_bandwidth),
-                      lv_textarea_get_text(screenMgr.input_deviation));
-        lv_msgbox_create(NULL);
-    }
-    }
-
-}
-
 
 
 void EVENTS::ta_filename_event_cb(lv_event_t * e) {
@@ -343,30 +252,6 @@ void EVENTS::closeCC1101scanner(lv_event_t * e){
     }
 }
 
-void EVENTS::replayEvent(lv_event_t * e) {
-    lv_obj_t * text_area = screenMgr.getTextArea();
-    lv_textarea_set_text(text_area, "Sending signal from buffer");
-    lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-      Serial.print("event_playback_rec_play");
-
-  if (C1101CurrentState == STATE_IDLE)
-  {     
-    lv_obj_t *ta = screenMgr.getTextArea();
-    float freq = String(lv_textarea_get_text(ta)).toFloat();
-    CC1101EV.setFrequency(freq);
-
-    C1101CurrentState = STATE_PLAYBACK;
-    runningModule = MODULE_CC1101;
-  }
-  else
-  {
-    Serial.print("NOT IDLE");
-  }
-    lv_textarea_add_text(text_area, "Signal has been send");
-    }
-}
-
 void EVENTS::exitReplayEvent(lv_event_t * e) {
         lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
@@ -376,30 +261,81 @@ void EVENTS::exitReplayEvent(lv_event_t * e) {
 void EVENTS::sendCapturedEvent(lv_event_t * e) {
         lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-    CC1101EV.sendRaw();
+            char selected_text_type[32];
+            lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text_type, sizeof(selected_text_type)); 
+         if(strcmp(selected_text_type, "Raw") == 0) {
+        CC1101EV.sendRaw();   
+    } else if(strcmp(selected_text_type, "RC-Switch") == 0) {
+        CC1101EV.initRaw();
+        RCSwitch mySwitch3;
+        Serial.println("RCSwitch");
+        CC1101EV.setFrequency(CC1101_MHZ);
+        mySwitch3.setProtocol(mySwitch3.getReceivedProtocol());
+        mySwitch3.setPulseLength(mySwitch3.getReceivedDelay());
+        mySwitch3.enableTransmit(17);
+        mySwitch3.send("11111100");
+    }
+        
     }
 }
 
-void EVENTS::sendCapturedIREvent(lv_event_t * e) {
-        lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-    sendReceived();
-    }
-}
 
 void EVENTS::btn_event_subGhzTools(lv_event_t * e) {
      lv_event_code_t code = lv_event_get_code(e);
      if (code == LV_EVENT_CLICKED) {
-    screenMgr.createRFMenu();
+        screenMgr.createRFMenu();
      }
 }
 
 void EVENTS::btn_event_UR_BGONE(lv_event_t * e) {
         lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
+
+        // lv_obj_t *mbox = lv_msgbox_create(lv_scr_act());
+        // lv_obj_set_size(mbox, 220, 120);
+        // lv_obj_align(mbox, LV_ALIGN_CENTER, 0, 0);
+        // lv_obj_clear_flag(mbox, LV_OBJ_FLAG_SCROLLABLE); 
+
+
+
+        // lv_obj_t *content_container = lv_obj_create(mbox);
+        // lv_obj_set_size(content_container, LV_PCT(100), LV_PCT(100));  
+        // lv_obj_set_flex_flow(content_container, LV_FLEX_FLOW_COLUMN);
+        // lv_obj_set_style_pad_all(content_container, 10, 0);  
+        // lv_obj_clear_flag(content_container, LV_OBJ_FLAG_SCROLLABLE); 
+
+
+
+        // label_sub = lv_label_create(content_container);
+        // lv_label_set_text(label_sub, String("Turning of TV's").c_str());
+        // lv_obj_align(label_sub, LV_ALIGN_TOP_MID, 0, 10); 
+
+        // button_container = lv_obj_create(content_container);
+        // lv_obj_set_size(button_container, LV_PCT(100), LV_SIZE_CONTENT);
+        // lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW);
+        // lv_obj_set_flex_align(button_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        // lv_obj_clear_flag(button_container, LV_OBJ_FLAG_SCROLLABLE); 
+
+        // lv_obj_t *yes_btn = lv_btn_create(button_container);
+        // lv_obj_set_size(yes_btn, 60, 60);
+        // lv_obj_t *yes_label = lv_label_create(yes_btn);
+        // lv_label_set_text(yes_label, "cancel");
+
+        // lv_obj_set_user_data(mbox, yes_btn); 
+        // lv_obj_add_event_cb(yes_btn, EVENTS::confirm__explorer_play_sub_cb, LV_EVENT_CLICKED, mbox);
     IRCurrentState = IR_STATE_BGONE;
     runningModule = MODULE_IR;
     }
+}
+
+void EVENTS::cancelBgone(lv_event_t * e){
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * msgbox = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+
+        if (code == LV_EVENT_CLICKED) {
+            IRCurrentState = IR_STATE_IDLE;
+            lv_obj_delete(msgbox);
+        }
 }
 
 void EVENTS::btn_event_IR_START_READ(lv_event_t * e) {
@@ -464,26 +400,21 @@ void EVENTS::btn_event_mainMenu_run(lv_event_t* e) {
 
 void EVENTS::ta_preset_event_cb(lv_event_t * e) {
      lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
+     Serial.println("Preset event");
+    if (code == LV_EVENT_VALUE_CHANGED) {
      char selected_text[32];
      lv_event_code_t code = lv_event_get_code(e);
-
     lv_dropdown_get_selected_str(screenMgr.C1101preset_dropdown_, selected_text, sizeof(selected_text));  
-    if (code == LV_EVENT_VALUE_CHANGED) {
-        C1101preset = convert_str_to_enum(selected_text);
-        if(C1101preset == CUSTOM) {
-            lv_obj_remove_flag(screenMgr.mbox_container, LV_OBJ_FLAG_HIDDEN);
-
-
-
-
-        }
-
-    }  
-
+    Serial.println(selected_text);
     C1101preset = convert_str_to_enum(selected_text);
     CC1101EV.loadPreset();
-
+    if (code == LV_EVENT_VALUE_CHANGED) {
+        if(strcmp(selected_text, "CSTM") == 0) {
+            screenMgr.createCustomSubghzScreen();
+            return;
+        }
+        C1101preset = convert_str_to_enum(selected_text);
+    }  
 } 
 }
 
@@ -511,10 +442,49 @@ void EVENTS::btn_event_IR_run(lv_event_t* e) {
 
     IRCurrentState = IR_STATE_LISTENING;
         runningModule = MODULE_IR;
+        IR_CLASS ir;
+        ir.receiveIR();
 
      }
 }
 
+void EVENTS::btn_event_CUSTOM_REC_run(lv_event_t* e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+
+
+    lv_obj_t * text_area = screenMgr.text_area_SubGHzCustom;
+    lv_textarea_set_text(text_area, "Waiting for signal.\n");
+    CC1101EV.enableReceiverCustom();
+    delay(20);
+    CC1101EV.setFrequency(CC1101_MHZ);
+    //ELECHOUSE_cc1101.SpiWriteReg(CC1101_AGCCTRL1, 0x98);
+  
+   //  delay(20);
+    runningModule = MODULE_CC1101;
+    C1101CurrentState = STATE_ANALYZER;
+
+    }
+}
+
+void EVENTS::CustomSubGhzHelp_CB(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_LONG_PRESSED) {
+        const char *user_data = static_cast<const char *>(lv_event_get_user_data(e));
+        if (strcmp(user_data, "SYNC") == 0) {
+            lv_textarea_set_text(screenMgr.text_area_SubGHzCustom, "Combined sync-word qualifier mode. 0 = No preamble/sync. 1 = 16 sync word bits detected. 2 = 16/16 sync word bits detected. 3 = 30/32 sync word bits detected. 4 = No preamble/sync, carrier-sense above threshold. 5 = 15/16 + carrier-sense above threshold. 6 = 16/16 + carrier-sense above threshold. 7 = 30/32 + carrier-sense above threshold.");            
+        } else if(strcmp(user_data, "PktFormat") == 0) {
+            lv_textarea_set_text(screenMgr.text_area_SubGHzCustom, "Packet format. 0 = Normal mode, no address check. 1 = Address check, no broadcast. 2 = Address check, 0 (0x00) broadcast. 3 = Address check, 0 (0x00) 0 (0x00) broadcast.");            
+        } else if(strcmp(user_data, "Modulatio") == 0) {
+            lv_textarea_set_text(screenMgr.text_area_SubGHzCustom, "Modulation format. 0 = 2-FSK. 1 = GFSK. 2 = ASK. 3 = 4-FSK.");            
+        } else if(strcmp(user_data, "Deviation") == 0) {
+            lv_textarea_set_text(screenMgr.text_area_SubGHzCustom, "Frequency deviation.");            
+        } else if(strcmp(user_data, "DataRate") == 0) {
+            lv_textarea_set_text(screenMgr.text_area_SubGHzCustom, "Data rate.");            
+        }
+    }
+}
 
 void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
 {
@@ -532,21 +502,18 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text_type, sizeof(selected_text_type)); 
 
     lv_textarea_set_text(text_area, "Waiting for signal.\n");
-
- //    CC1101EV.setCC1101Preset(convert_str_to_enum(selected_text));
- //    CC1101EV.loadPreset();
-     if(strcmp(selected_text_type, "Raw") == 0){
-     CC1101EV.enableReceiver();
-     } else {
-
-      //  CC1101EV.enableRCSwitch();
-    lv_textarea_add_text(text_area, "Decoder active.\n");
-     }
-     CC1101EV.setFrequency(CC1101_MHZ);
-   //  delay(20);
-    runningModule = MODULE_CC1101;
-    C1101CurrentState = STATE_ANALYZER;
-    
+    if(strcmp(selected_text_type, "Raw") == 0) {
+        CC1101EV.setFrequency(CC1101_MHZ);
+        CC1101EV.enableReceiver();
+        runningModule = MODULE_CC1101;
+        C1101CurrentState = STATE_ANALYZER;   
+    } else if(strcmp(selected_text_type, "RC-Switch") == 0) {
+        Serial.println("RCSwitch");
+        CC1101EV.setFrequency(CC1101_MHZ);
+        CC1101EV.enableRCSwitch(); 
+        runningModule = MODULE_CC1101;
+        C1101CurrentState = STATE_RCSWITCH;   
+    }
     }
 }
 
@@ -580,7 +547,7 @@ void EVENTS::btn_event_detect_run(lv_event_t* e) {
     CC1101EV.loadPreset();
     CC1101EV.enableScanner(300, 925);
     Serial.println("Scanner2");
-    CC1101EV.startSignalanalyseTask();
+    CC1101EV.startSignalAnalyseTask();
  //   delay(5);
     C1101CurrentState = STATE_DETECT;
     runningModule = MODULE_CC1101;
@@ -849,7 +816,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
             Serial.println(EVENTS::fullPath);
             String text = "Transmitting\n Codes send: " + String(codesSend);
             lv_label_set_text(label_sub, text.c_str());
-         //   updatetransmitLabel = true;
+            updatetransmitLabel = true;
             lv_obj_clean(button_container);
             lv_obj_set_size(button_container, LV_PCT(100), LV_SIZE_CONTENT);
             lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW);
@@ -888,6 +855,7 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
 
 
 void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
+    updatetransmitLabel = false;
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
     stopTransmit = true;
@@ -913,12 +881,12 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
     detachInterrupt(CC1101_CCGDO0A);
     detachInterrupt(CC1101_CCGDO2A);
     digitalWrite(CC1101_CS, LOW);
-    CC1101EV.initrRaw();
+    CC1101EV.initRaw();
     ELECHOUSE_cc1101.setCCMode(0); 
     ELECHOUSE_cc1101.setPktFormat(3);
     ELECHOUSE_cc1101.SetTx();
     pinMode(CC1101_CCGDO0A, OUTPUT);
-    digitalWrite(CC1101_CS, HIGH);
+    digitalWrite(CC1101_CCGDO0A, LOW);
     
     Serial.print("Loading file: ");
     Serial.println(fullPath);
@@ -927,6 +895,7 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
         SubGHzParser parser;
     parser.loadFile(fullPath);
     SubGHzData data = parser.parseContent();
+
    //   delay(1);
   } else {
       Serial.println("File does not exist.");

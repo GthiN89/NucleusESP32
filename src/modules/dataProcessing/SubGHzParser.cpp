@@ -1,11 +1,11 @@
 #include "SubGHzParser.h"
-#include <SDfat.h>
 #include <SPI.h>
 #include <map>
 #include <string>
 #include "modules/RF/CC1101.h"
 #include "GUI/events.h"
 #include "modules/ETC/SDcard.h"
+#include "SD.h"
 
 SubGHzParser::SubGHzParser() {}
 CC1101_CLASS CC1101;
@@ -55,6 +55,7 @@ SubGHzData SubGHzParser::parseContent() {
                 }
             }
             data.raw_data_list.push_back(raw_data_sequence);
+            sendRawData(raw_data_sequence);
             continue; 
         } else if (line.startsWith("Bit:")) {
             data.bit = line.substring(4);
@@ -87,17 +88,16 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
         }
         start = end + 1;
     }
-    String text = "Transmitting\n Codes send: " + String(codesSend);
-    lv_label_set_text(label_sub, text.c_str());
     return result;
 }
 
 
 
   void SubGHzParser::sendRawData(const std::vector<RawDataElement>& rawData) {
-    if(stopTransmit) {
-        return;
-    }
+    // if(stopTransmit) {
+    //     return;
+    // }
+    
 
     int tempSampleCount = rawData.size();
     if (tempSampleCount % 2 == 0) {
@@ -128,24 +128,23 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
         s++;
     }
     
-    
+    bool levelFlag = rawData[0] > 0;
 
     for (int i = 0; i < tempSampleCount; i++) {        
         Serial.print(String(samplesClean[i]).c_str());
             Serial.print(", ");
         }
-    codesSend++;
+    
     Serial.print(SD_SUB.tempFreq);
     CC1101.setFrequency(SD_SUB.tempFreq);
     CC1101.setCC1101Preset(C1101preset);
     CC1101.loadPreset();
     Serial.println(presetToString(C1101preset));   
-
+    codesSend++;
    
-    CC1101.sendSamples(samplesClean, tempSampleCount);
+    CC1101.sendSamples(samplesClean, tempSampleCount, levelFlag);
 
     C1101CurrentState = STATE_IDLE;
-    runningModule = MODULE_NONE;
 
   }
 
@@ -227,13 +226,15 @@ bool SubGHzParser::loadFile(const char* filename) {
         line.trim();
 
         if (line.startsWith("RAW_Data:")) {
+            raw_data_sequence = parseRawData(line.substring(9));
+            parsingRawData = true;
+
             if (parsingRawData) {
                 sendRawData(raw_data_sequence);  
                 raw_data_sequence.clear();       
             }
             // Start a new RAW_Data section
-            raw_data_sequence = parseRawData(line.substring(9));
-            parsingRawData = true;
+            
         
         } else if (parsingRawData && (line[0] == '-' || isDigit(line[0]))) {
             Serial.print(line);
@@ -263,11 +264,10 @@ bool SubGHzParser::loadFile(const char* filename) {
 
 
 void SubGHzParser::clearData() {
-    data = SubGHzData();  // Reset data to a new instance (clears all fields)
-    SD_SUB.tempFreq = 0;
-    SD_SUB.tempSampleCount = 0;
-    C1101CurrentState = STATE_IDLE;
-    runningModule = MODULE_NONE;
-    codesSend = 0;
+ //   data = SubGHzData();  // Reset data to a new instance (clears all fields)
+   // SD_SUB.tempFreq = 0;
+//    SD_SUB.tempSampleCount = 0;
+  //  C1101CurrentState = STATE_IDLE;
+ //   codesSend = 0;
     SD_SUB.FlipperFileFlag = false;
 }
