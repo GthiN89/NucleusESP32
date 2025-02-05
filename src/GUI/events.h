@@ -71,6 +71,7 @@ static void ta_filename_event_cb(lv_event_t * e);
 static void kb_event_cb(lv_event_t * e);
 static void kb_qwert_event_cb(lv_event_t * e);
 static void saveSignal(lv_event_t * e);
+static void btn_event_Brute_run(lv_event_t * e);
 static void replayEvent(lv_event_t * e);
 static void exitReplayEvent(lv_event_t * e);
 static void sendCapturedEvent(lv_event_t * e);

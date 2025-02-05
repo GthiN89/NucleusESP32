@@ -9,6 +9,11 @@
 
 #define SAMPLE_SIZE 4092
 #define MAX_SIGNAL_LENGTH 10000000  
+#define RAW_BUF_SIZE   2048     // Maximum number of raw samples
+#define TE_MIN_COUNT   5        // Minimum number of high pulses required to calculate TE
+#define GAP_MULTIPLIER 10       // A low pulse longer than GAP_MULTIPLIER * TE is considered a gap
+const float BIN_RAW_GAP_MULTIPLIER = 10.0;  // A low pulse longer than (TE * GAP_MULTIPLIER) is considered a gap
+const uint16_t BIN_RAW_TE_MIN_COUNT = 5;  // Minimum number of high pulses to compute TE
 
 //---------------------------------------------------------------------------//
 //-----------------------------Presets-Variables-----------------------------//
@@ -89,6 +94,89 @@ struct SignalCollection {
     }
 };
 
+struct pulseTrain {
+    std::vector<uint16_t> pulseTrainVec;
+    uint16_t size = 0;
+    void addPulse(uint16_t pulse) {
+        pulseTrainVec.push_back(pulse);
+        size++;
+    }
+    uint16_t getPulse(uint16_t i) {
+        return pulseTrainVec[i];
+    }
+    void clear() {
+        pulseTrainVec.clear();
+        size = 0;
+    }
+    uint16_t getSize() {
+        // if(size > 0) {
+        //     return size;
+        // } else {
+        //     return 1;
+        // }
+       return pulseTrainVec.size();
+    }
+};
+
+
+struct pulseTrains {
+    std::vector<pulseTrain> pulseTrainVec;
+    uint16_t size = 0; 
+    void addPulseTrain(const pulseTrain& pt) { 
+        pulseTrainVec.push_back(pt);
+        size++;
+    }
+    pulseTrain getPulseTrain(uint16_t i) {
+       return pulseTrainVec[i];
+    } 
+    pulseTrain* getPulseTrainPointer(uint16_t i) {
+       return &pulseTrainVec[i];
+    }
+    void clear() {
+        pulseTrainVec.clear();
+        size = 0;
+    }
+    uint16_t getSize() {
+        // if(size > 0) {
+        //     return size;
+        // } else {
+        //     return 1;
+        // }
+    return    pulseTrainVec.size();
+    }
+};
+
+struct CC1101TH {
+    std::map<int, uint8_t> valueMap = {
+        {-70, 0x88},
+        {-60, 0x90},
+        {-50, 0x98},
+        {-40, 0xA0},
+        {-30, 0xA8},
+        {-20, 0xB0},
+        {-10, 0xB8},
+        {  0, 0xC0},
+        { 10, 0xC8},
+        { 20, 0xD0},
+        { 30, 0xD8},
+        { 40, 0xE0},
+        { 50, 0xE8},
+        { 60, 0xF0},
+        { 70, 0xF8},
+        { 80, 0xFF}
+    };
+
+    uint8_t getRegValue(int input) const {
+        auto it = valueMap.find(input);
+        if (it != valueMap.end()) {
+            return it->second;
+        }
+        return 0; // Default or error value
+    }
+};
+
+
+
 
 
 class CC1101_CLASS {
@@ -125,6 +213,7 @@ public:
     void loadPreset();
     void disableReceiver();
     void enableReceiverCustom();
+    void enableRCSwitch();
     void setFrequency(float freq);
     void enableReceiver();
     void setSync(int sync);
@@ -142,6 +231,13 @@ public:
     void fskAnalyze();
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
     void enableScanner(float start, float stop);
+    void emptyReceive();
+    bool decodeCameProtocol(const long long int* data, size_t size);
+    bool decodeCameAtomoProtocol(const long long int* data, size_t size);
+    bool decodeCameTweeProtocol(const long long int* data, size_t size);
+    bool decodeNiceFloProtocol(const long long int* data, size_t size);
+    bool decodeNiceFlorSProtocol(const long long int* data, size_t size);
+
 
 private:
     uint16_t spaceAvg = 0;
@@ -149,7 +245,7 @@ private:
     uint16_t sampleSmooth[SAMPLE_SIZE];
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
-    void decode(uint16_t* pulseTrain, size_t length);
+    bool decode(pulseTrain* pulseTrain, size_t length);
     bool levelFlag;                         // Current GPIO level
     timer_idx_t timerIndex = TIMER_0;               // Timer index
 };

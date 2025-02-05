@@ -176,8 +176,9 @@ void ScreenManager::createReplayScreen() {
     lv_obj_set_width(C1101preset_dropdown_, 120);  
     C1101type_dropdown_ = lv_dropdown_create(secondLabel_container_);
     lv_dropdown_set_options(C1101type_dropdown_, "Raw\n"
-                                "Analyze\n"
-
+                                "RC-Switch\n"
+                                "ESPiLight\n"
+                                "RTL_433\n"
                                 );
     lv_obj_set_width(C1101type_dropdown_, 120);  
     lv_obj_add_event_cb(C1101type_dropdown_, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, C1101type_dropdown_);
@@ -769,6 +770,15 @@ void ScreenManager::createRFMenu() {
     lv_label_set_text(label_playZero_menu, "Transmit saved codes");
     lv_obj_center(label_playZero_menu);
     apply_neon_theme_button(btn_playZero_menu); 
+
+    lv_obj_t *btn_Brute_menu = lv_btn_create(lv_scr_act());
+    lv_obj_set_pos(btn_Brute_menu, 25, 70);
+    lv_obj_set_size(btn_Brute_menu, 200, 50);
+    lv_obj_add_event_cb(btn_Brute_menu, EVENTS::btn_event_Brute_run, LV_EVENT_ALL, NULL);
+    lv_obj_t *label_Brute_menu = lv_label_create(btn_Brute_menu);
+    lv_label_set_text(label_Brute_menu, "BruteForce");
+    lv_obj_center(label_Brute_menu);
+    apply_neon_theme_button(btn_Brute_menu); 
 
     lv_obj_t *btn_c1101Alanalyzer_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_c1101Alanalyzer_menu, 25, 130);
