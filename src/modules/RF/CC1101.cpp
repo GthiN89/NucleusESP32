@@ -23,9 +23,6 @@
 #include <typeinfo>
 #include <soc/rtc.h>
 
-#define CHAMBERLAIN_CODE_BIT_STOP 0b0001
-#define CHAMBERLAIN_CODE_BIT_1    0b0011
-#define CHAMBERLAIN_CODE_BIT_0    0b0111
 
 std::vector<uint32_t> samplesToSend;   // Holds the durations of high/low states
 
@@ -81,2376 +78,39 @@ RCSwitch CC1101_CLASS::getRCSwitch() {
  return mySwitch;
 }
 
+
+
+
 std::vector<int64_t> CC1101_CLASS::samplesToSend;
 CC1101_CLASS::ReceivedData CC1101_CLASS::receivedData;
 
 void IRAM_ATTR InterruptHandler(void *arg) {
     static volatile uint64_t DRAM_ATTR lastTime = 0;
-    const uint64_t time = xthal_get_ccount();
+    const uint64_t time = esp_timer_get_time();
     int64_t  duration = time - lastTime;
     lastTime = time;
 
-    if (gpio_get_level(CC1101_CCGDO2A)) {
+    if (!gpio_get_level(CC1101_CCGDO2A)) {
         duration = -duration;
     }
 
     // Simple noise filtering
-    if (((duration > 22800) and (duration > 0)) or ((-duration > 22800) and (-duration > 0))) { // 95µs minimum
+    if (((duration > 100) and (duration > 0)) or ((-duration > 100) and (-duration > 0))) { 
         noInterrupts();
         if (CC1101_CLASS::receivedData.samples.size() < SAMPLE_SIZE) {
-            CC1101_CLASS::receivedData.samples.push_back(duration / 240);
+            CC1101_CLASS::receivedData.samples.push_back(duration);
             CC1101_CLASS::receivedData.lastReceiveTime = esp_timer_get_time();
             samplecount++;
         }
-        if (duration > 4800000 || duration < -4800000) {
+        if (duration > 25000 || duration < -25000) {
                 CC1101_CLASS::receivedData.samples.clear();
         }
         interrupts();
     }
 }
 
-bool CC1101_CLASS::decodeNiceFlorSProtocol(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    // Protocol constants for NiceFlorS
-    const uint32_t te_short = 500;      // expected short pulse duration (µs)
-    const uint32_t te_long  = 1000;     // expected long pulse duration (µs)
-    const uint32_t te_delta = 300;      // tolerance (µs)
-    const uint32_t min_bits = 52;       // minimum bit count required
-    // Header: defined as a LOW pulse with absolute duration >= te_short * 38
-    const uint32_t header_threshold = te_short * 38; // ~500*38 = 19000 µs
-
-    // Step 1. Find header: a LOW pulse (data[i] < 0) whose absolute value is at least header_threshold.
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    // Step 2. Verify expected start pattern.
-    // Expect two pulses immediately after header: a HIGH pulse then a LOW pulse,
-    // each with a duration near 3×te_short (about 1500 µs) within tolerance.
-    if (headerIndex + 2 >= size) {
-        Serial.println("Not enough pulses after header.");
-        return false;
-    }
-    uint32_t firstHigh = (uint32_t)llabs(data[headerIndex + 1]);
-    uint32_t firstLow  = (uint32_t)llabs(data[headerIndex + 2]);
-    if (!((firstHigh >= (te_short * 3 - te_delta * 3)) && (firstHigh <= (te_short * 3 + te_delta * 3)) &&
-          (firstLow  >= (te_short * 3 - te_delta * 3)) && (firstLow  <= (te_short * 3 + te_delta * 3)))) {
-        Serial.println("Start bit pattern not found.");
-        return false;
-    }
-
-    // Step 3. Decode key bits from pulse pairs following the header pattern.
-    // Each bit is encoded as two pulses:
-    // • For bit 1: a HIGH pulse near te_long (1000 µs ± te_delta) followed by a LOW pulse near te_short (500 µs ± te_delta).
-    // • For bit 0: a HIGH pulse near te_short (500 µs ± te_delta) followed by a LOW pulse near te_long (1000 µs ± te_delta).
-    size_t i = headerIndex + 3; // start after header + start pulses
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int firstPulse = data[i];    // expected HIGH pulse
-        long long int secondPulse = data[i + 1]; // expected LOW pulse
-
-        // Verify polarity: first pulse should be positive, second negative.
-        if (firstPulse <= 0 || secondPulse >= 0) {
-            i++; // skip this pulse and try next
-            continue;
-        }
-        uint32_t absFirst = (uint32_t)llabs(firstPulse);
-        uint32_t absSecond = (uint32_t)llabs(secondPulse);
-        bool bit;
-
-        // If HIGH pulse is near te_long and LOW pulse near te_short → bit 1.
-        if ((absFirst >= te_long - te_delta && absFirst <= te_long + te_delta) &&
-            (absSecond >= te_short - te_delta && absSecond <= te_short + te_delta)) {
-            bit = true;
-        }
-        // If HIGH pulse is near te_short and LOW pulse near te_long → bit 0.
-        else if ((absFirst >= te_short - te_delta && absFirst <= te_short + te_delta) &&
-                 (absSecond >= te_long - te_delta && absSecond <= te_long + te_delta)) {
-            bit = false;
-        }
-        else {
-            // Unrecognized pulse pair; skip it.
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-            lv_obj_t * textareaRC;
-    lv_obj_t * container = screenMgr1.getSquareLineContainer();
-    if(C1101preset == CUSTOM){
-        textareaRC = screenMgr1.text_area_SubGHzCustom;        
-    } else {
-       // Serial.println("Signal preset");
-        textareaRC = screenMgr1.getTextArea();
-    }
-
-
-    
-    lv_textarea_add_text(textareaRC, "\n NiceFLorS (" );
-    lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-    lv_textarea_add_text(textareaRC, " bits)\n 0x");
-    lv_textarea_add_text(textareaRC, String(decodedValue).c_str());
-        Serial.print("NiceFlorS decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeNiceFloProtocol(const long long int* data, size_t size) {
-    if(size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-    
-    // Protocol constants for NiceFlo
-    const uint32_t te_short = 700;      // expected short pulse duration (µs)
-    const uint32_t te_long  = 1400;     // expected long pulse duration (µs)
-    const uint32_t te_delta = 200;      // tolerance (µs)
-    const uint32_t min_bits = 12;       // minimum bits required
-    const uint32_t header_threshold = te_short * 36;  // ~700*36 = 25200 µs
-    
-    // Step 1: Find header: a LOW pulse (negative) with abs(duration) >= header_threshold.
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    for(size_t i = 0; i < size; i++) {
-        if(data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-    if(!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-    
-    // Step 2: Decode pulses after the header.
-    size_t i = headerIndex + 1;
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-    
-    // Process pulses in pairs (LOW then HIGH).
-    // Also, if a LOW pulse is very long (e.g. >= te_short*4) it is considered a boundary.
-    while(i + 1 < size) {
-        long long int lowPulse = data[i];      // expected LOW pulse
-        long long int highPulse = data[i + 1];   // expected HIGH pulse
-        
-        // Check polarity: lowPulse should be negative, highPulse positive.
-        if(lowPulse >= 0 || highPulse <= 0) {
-            i++; // skip unexpected pulse
-            continue;
-        }
-        
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        
-        // If the LOW pulse is very long (e.g. boundary), exit decoding.
-        if(absLow >= te_short * 4) {
-            break;
-        }
-        
-        bool bit;
-        // If LOW is near te_short and HIGH near te_long → bit 0.
-        if((absLow >= te_short - te_delta && absLow <= te_short + te_delta) &&
-           (absHigh >= te_long - te_delta && absHigh <= te_long + te_delta))
-        {
-            bit = false;
-        }
-        // If LOW is near te_long and HIGH near te_short → bit 1.
-        else if((absLow >= te_long - te_delta && absLow <= te_long + te_delta) &&
-                (absHigh >= te_short - te_delta && absHigh <= te_short + te_delta))
-        {
-            bit = true;
-        }
-        else {
-            // If the pair does not match, skip it.
-            i += 2;
-            continue;
-        }
-        
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-    
-    if(bitCount >= (int)min_bits) {
-            lv_obj_t * textareaRC;
-    lv_obj_t * container = screenMgr1.getSquareLineContainer();
-    if(C1101preset == CUSTOM){
-        textareaRC = screenMgr1.text_area_SubGHzCustom;        
-    } else {
-       // Serial.println("Signal preset");
-        textareaRC = screenMgr1.getTextArea();
-    }
-
-
-    
-    lv_textarea_add_text(textareaRC, "\n NiceFlo decoded (" );
-    lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-    lv_textarea_add_text(textareaRC, "bits)\n  0x");
-    lv_textarea_add_text(textareaRC, String(decodedValue).c_str());
-        Serial.print("NiceFlo decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-
-bool CC1101_CLASS::decodeCameProtocol(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    const uint32_t te_short = 320;
-    const uint32_t te_long  = 640;
-    const uint32_t te_delta = 150;
-    
-    const uint8_t CAME_12_BIT = 12;
-    const uint8_t CAME_24_BIT = 24;
-    const uint8_t PRASTEL_BIT = 25;
-    const uint8_t AIRFORCE_BIT = 18;
-
-    size_t gapIndex = 0;
-    bool gapFound = false;
-    for (size_t i = 0; i < size - 1; i++) {
-        if ((data[i] < 0 && abs(data[i]) >= te_short * 56 - te_delta * 47)) {
-            gapIndex = i + 1;
-            gapFound = true;
-            break;
-        }
-    }
-    if (!gapFound) {
-        Serial.println("GAP not found.");
-        return false;
-    }
-
-    size_t i = gapIndex;
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int highPulse = data[i];
-        long long int lowPulse = data[i + 1];
-
-        if (highPulse <= 0 || lowPulse >= 0) {
-            i++;
-            continue;
-        }
-
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        bool bit;
-
-        if ((absHigh >= te_long - te_delta && absHigh <= te_long + te_delta) &&
-            (absLow >= te_short - te_delta && absLow <= te_short + te_delta)) {
-            bit = true;
-        } else if ((absHigh >= te_short - te_delta && absHigh <= te_short + te_delta) &&
-                   (absLow >= te_long - te_delta && absLow <= te_long + te_delta)) {
-            bit = false;
-        } else {
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= CAME_12_BIT && bitCount <= PRASTEL_BIT) {
-        uint32_t reversed = 0;
-        for (int i = 0; i < bitCount; i++) {
-            reversed |= ((decodedValue >> i) & 1) << (bitCount - 1 - i);
-        }
-
-        const char* protocolName = bitCount == PRASTEL_BIT ? "Prastel" :
-                                   bitCount == AIRFORCE_BIT ? "Airforce" :
-                                   "Came";
-
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n CAME Protocol decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, " bits)\n Key: 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue, HEX).c_str());
-        lv_textarea_add_text(textareaRC, "\n Yek (Reversed): 0x");
-        lv_textarea_add_text(textareaRC, String(reversed, HEX).c_str());
-        lv_textarea_add_text(textareaRC, "\n Protocol: ");
-        lv_textarea_add_text(textareaRC, protocolName);
-        lv_textarea_add_text(textareaRC, "\n");
-
-        Serial.print(protocolName);
-        Serial.print(" decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        Serial.print("Reversed: 0x");
-        Serial.println(reversed, HEX);
-
-        return true;
-    } else {
-        Serial.print("Invalid or insufficient bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeBETT(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data received.");
-        return false;
-    }
-
-    const uint32_t te_short = 340;  // Short pulse duration (µs)
-    const uint32_t te_long  = 2000; // Long pulse duration (µs)
-    const uint32_t te_delta = 150;  // Allowed deviation (µs)
-    const uint32_t min_bits = 18;   // Minimum bits for valid decoding
-    const uint32_t header_threshold = te_short * 44;
-
-    size_t headerIndex = 0;
-    bool headerFound = false;
-
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold - te_delta &&
-            (uint32_t)llabs(data[i]) <= header_threshold + te_delta) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    if (headerIndex + 1 >= size) {
-        Serial.println("No data after header.");
-        return false;
-    }
-
-    size_t i = headerIndex + 1;
-    uint32_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int firstPulse = data[i];   
-        long long int secondPulse = data[i + 1]; 
-
-        if (firstPulse >= 0 || secondPulse <= 0) {
-            i++;
-            continue;
-        }
-
-        uint32_t absFirst = (uint32_t)llabs(firstPulse);
-        uint32_t absSecond = (uint32_t)llabs(secondPulse);
-        bool bit;
-
-        if ((absFirst >= te_long - te_delta && absFirst <= te_long + te_delta) &&
-            (absSecond >= te_short - te_delta && absSecond <= te_short + te_delta)) {
-            bit = true;  
-        }
-        else if ((absFirst >= te_short - te_delta && absFirst <= te_short + te_delta) &&
-                 (absSecond >= te_long - te_delta && absSecond <= te_long + te_delta)) {
-            bit = false;
-        }
-        else {
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1 : 0);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n BETT RF decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, "\n bits): 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue, HEX).c_str());
-
-        Serial.print("BETT RF decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Insufficient bits: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeChamberlain(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data received.");
-        return false;
-    }
-
-    const uint32_t te_short = 1000;  // Short pulse duration (µs)
-    const uint32_t te_long  = 3000;  // Long pulse duration (µs)
-    const uint32_t te_delta = 200;   // Allowed deviation (µs)
-    const uint32_t min_bits = 10;    // Minimum bits for valid decoding
-    const uint32_t header_threshold = te_short * 39;  // Header threshold
-
-    size_t headerIndex = 0;
-    bool headerFound = false;
-
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold - te_delta &&
-            (uint32_t)llabs(data[i]) <= header_threshold + te_delta) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    if (headerIndex + 1 >= size) {
-        Serial.println("No data after header.");
-        return false;
-    }
-
-    size_t i = headerIndex + 1;
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int firstPulse = data[i];   
-        long long int secondPulse = data[i + 1]; 
-
-        if (firstPulse >= 0 || secondPulse <= 0) {
-            i++;
-            continue;
-        }
-
-        uint32_t absFirst = (uint32_t)llabs(firstPulse);
-        uint32_t absSecond = (uint32_t)llabs(secondPulse);
-        bool bit;
-
-        if ((absFirst >= te_short * 3 - te_delta && absFirst <= te_short * 3 + te_delta) &&
-            (absSecond >= te_short - te_delta && absSecond <= te_short + te_delta)) {
-            decodedValue = (decodedValue << 4) | CHAMBERLAIN_CODE_BIT_STOP;
-        }
-        else if ((absFirst >= te_short * 2 - te_delta && absFirst <= te_short * 2 + te_delta) &&
-                 (absSecond >= te_short * 2 - te_delta && absSecond <= te_short * 2 + te_delta)) {
-            decodedValue = (decodedValue << 4) | CHAMBERLAIN_CODE_BIT_1;
-        }
-        else if ((absFirst >= te_short - te_delta && absFirst <= te_short + te_delta) &&
-                 (absSecond >= te_short * 3 - te_delta && absSecond <= te_short * 3 + te_delta)) {
-            decodedValue = (decodedValue << 4) | CHAMBERLAIN_CODE_BIT_0;
-        }
-        else {
-            i += 2;
-            continue;
-        }
-
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n Chamberlain RF decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, "\n bits): 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue, HEX).c_str());
-
-        Serial.print("Chamberlain RF decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Insufficient bits: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeCameAtomoProtocol(const long long int* data, size_t size) {
-    if(size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-    
-    // Atomo protocol constants
-    const uint32_t te_short = 600;             // expected short pulse (µs)
-    const uint32_t te_long  = 1200;            // expected long pulse (µs)
-    const uint32_t te_delta = 250;             // tolerance (µs)
-    const uint32_t min_bits = 62;              // minimum bits to be considered valid
-    const uint32_t header_threshold = te_long * 60;  // ~72000 µs header threshold
-
-    // Find header: look for a LOW pulse (negative) whose absolute value is at least header_threshold.
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    for(size_t i = 0; i < size; i++) {
-        if(data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-    if(!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-    
-    // Start decoding after the header.
-    size_t i = headerIndex + 1;
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-    
-    // Process pulses in pairs: expect a LOW pulse (negative) followed by a HIGH pulse (positive)
-    while(i + 1 < size) {
-        long long int lowPulse = data[i];
-        long long int highPulse = data[i + 1];
-        
-        // Check polarity: low pulse should be negative, high pulse positive.
-        if(lowPulse >= 0 || highPulse <= 0) {
-            i++;
-            continue;
-        }
-        
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        bool bit;
-        
-        // If LOW is near te_long and HIGH is near te_short → interpret as bit 1.
-        if((absLow >= te_long - te_delta && absLow <= te_long + te_delta) &&
-           (absHigh >= te_short - te_delta && absHigh <= te_short + te_delta))
-        {
-            bit = true;
-        }
-        // If LOW is near te_short and HIGH is near te_long → interpret as bit 0.
-        else if((absLow >= te_short - te_delta && absLow <= te_short + te_delta) &&
-                (absHigh >= te_long - te_delta && absHigh <= te_long + te_delta))
-        {
-            bit = false;
-        }
-        else {
-            // Pair does not match expected patterns; skip these two pulses.
-            i += 2;
-            continue;
-        }
-        
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-    
-    if(bitCount >= (int)min_bits) {
-    lv_obj_t * textareaRC;
-    lv_obj_t * container = screenMgr1.getSquareLineContainer();
-    if(C1101preset == CUSTOM){
-        textareaRC = screenMgr1.text_area_SubGHzCustom;        
-    } else {
-       // Serial.println("Signal preset");
-        textareaRC = screenMgr1.getTextArea();
-    }
-
-
-    
-    lv_textarea_add_text(textareaRC, "\n Atomo decoded (" );
-    lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-    lv_textarea_add_text(textareaRC, "\n bits): 0x");
-    lv_textarea_add_text(textareaRC, String(decodedValue).c_str());
-
-        Serial.print("Atomo decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits)\n 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeCameTweeProtocol(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-    
-    // Came Twee protocol constants
-    const uint32_t te_short = 500;             // expected short pulse duration (µs)
-    const uint32_t te_long  = 1000;            // expected long pulse duration (µs)
-    const uint32_t te_delta = 250;             // tolerance (µs)
-    const uint32_t min_bits = 54;              // minimum number of bits required
-    const uint32_t header_threshold = te_long * 51;  // e.g. 1000*51 = 51000 µs
-
-    // Step 1: Search for header (a LOW pulse whose abs(duration) is >= header_threshold)
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-    
-    // Step 2: Decode pulses after the header.
-    size_t i = headerIndex + 1;
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-    
-    // Process pulses in pairs: expect a LOW pulse (negative) followed by a HIGH pulse (positive)
-    while (i + 1 < size) {
-        long long int lowPulse = data[i];
-        long long int highPulse = data[i + 1];
-        
-        // Ensure correct polarity: lowPulse should be negative and highPulse positive.
-        if (lowPulse >= 0 || highPulse <= 0) {
-            i++; // skip nonconforming pulse and try next
-            continue;
-        }
-        
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        bool bit;
-        
-        // If LOW is near te_long and HIGH near te_short → interpret as bit 1.
-        if ((absLow >= te_long - te_delta && absLow <= te_long + te_delta) &&
-            (absHigh >= te_short - te_delta && absHigh <= te_short + te_delta))
-        {
-            bit = true;
-        }
-        // If LOW is near te_short and HIGH near te_long → interpret as bit 0.
-        else if ((absLow >= te_short - te_delta && absLow <= te_short + te_delta) &&
-                 (absHigh >= te_long - te_delta && absHigh <= te_long + te_delta))
-        {
-            bit = false;
-        }
-        else {
-            // This pulse pair does not match; skip the pair.
-            i += 2;
-            continue;
-        }
-        
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-    
-    if (bitCount >= (int)min_bits) {
-            lv_obj_t * textareaRC;
-    lv_obj_t * container = screenMgr1.getSquareLineContainer();
-    if(C1101preset == CUSTOM){
-        textareaRC = screenMgr1.text_area_SubGHzCustom;        
-    } else {
-       // Serial.println("Signal preset");
-        textareaRC = screenMgr1.getTextArea();
-    }
-
-
-    
-    lv_textarea_add_text(textareaRC, "\n CAME TWEE decoded (" );
-    lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-    lv_textarea_add_text(textareaRC, " bits)\n 0x");
-    lv_textarea_add_text(textareaRC, String(decodedValue).c_str());
-        Serial.print("Came Twee decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-
-bool CC1101_CLASS::decodeHormannHSMProtocol(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    // Protocol constants for Hormann HSM
-    const uint32_t te_short = 500;      // expected short pulse duration (µs)
-    const uint32_t te_long  = 1000;     // expected long pulse duration (µs)
-    const uint32_t te_delta = 200;      // tolerance (µs)
-    const uint32_t min_bits = 44;       // minimum bit count required
-    const uint32_t header_threshold = te_short * 24; // ~500*24 = 12000 µs
-
-    // Step 1: Locate header (a HIGH pulse >= header_threshold)
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] > 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    // Step 2: Verify expected start pattern.
-    // Expect a LOW pulse after header with a duration near te_short.
-    if (headerIndex + 1 >= size) {
-        Serial.println("Not enough pulses after header.");
-        return false;
-    }
-    uint32_t firstLow = (uint32_t)llabs(data[headerIndex + 1]);
-    if (!(firstLow >= (te_short - te_delta) && firstLow <= (te_short + te_delta))) {
-        Serial.println("Start bit pattern not found.");
-        return false;
-    }
-
-    // Step 3: Decode key bits
-    size_t i = headerIndex + 2; // Start decoding after header and start bit
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int highPulse = data[i];      // expected HIGH pulse
-        long long int lowPulse = data[i + 1];   // expected LOW pulse
-
-        // Verify polarity: HIGH then LOW.
-        if (highPulse <= 0 || lowPulse >= 0) {
-            i++; // Skip and try next
-            continue;
-        }
-
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        bool bit;
-
-        // If HIGH pulse is near te_long and LOW pulse near te_short → bit 1.
-        if ((absHigh >= te_long - te_delta && absHigh <= te_long + te_delta) &&
-            (absLow >= te_short - te_delta && absLow <= te_short + te_delta)) {
-            bit = true;
-        }
-        // If HIGH pulse is near te_short and LOW pulse near te_long → bit 0.
-        else if ((absHigh >= te_short - te_delta && absHigh <= te_short + te_delta) &&
-                 (absLow >= te_long - te_delta && absLow <= te_long + te_delta)) {
-            bit = false;
-        }
-        else {
-            // Unrecognized pulse pair; skip it.
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n Hormann HSM decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, " bits)\n 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue).c_str());
-
-        Serial.print("Hormann HSM decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeSecPlusV1Protocol(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    // Protocol constants for Security+ 1.0
-    const uint32_t te_short = 500;      // expected short pulse duration (µs)
-    const uint32_t te_long  = 1500;     // expected long pulse duration (µs)
-    const uint32_t te_delta = 100;      // tolerance (µs)
-    const uint32_t min_bits = 42;       // minimum bit count required (21 per packet)
-    const uint32_t header_threshold = te_short * 120; // ~500*120 = 60000 µs
-
-    // Step 1: Locate header (a LOW pulse >= header_threshold)
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    // Step 2: Verify expected start pattern.
-    // Expect a HIGH pulse after header with a duration near te_short.
-    if (headerIndex + 1 >= size) {
-        Serial.println("Not enough pulses after header.");
-        return false;
-    }
-    uint32_t firstHigh = (uint32_t)llabs(data[headerIndex + 1]);
-    if (!(firstHigh >= (te_short - te_delta) && firstHigh <= (te_short + te_delta))) {
-        Serial.println("Start bit pattern not found.");
-        return false;
-    }
-
-    // Step 3: Decode key bits
-    size_t i = headerIndex + 2; // Start decoding after header and start bit
-    uint8_t data_array[44] = {0}; // Stores decoded bits
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int lowPulse = data[i];     // expected LOW pulse
-        long long int highPulse = data[i + 1]; // expected HIGH pulse
-
-        // Verify polarity: LOW then HIGH.
-        if (lowPulse >= 0 || highPulse <= 0) {
-            i++; // Skip and try next
-            continue;
-        }
-
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        uint8_t bitValue = 0xFF;
-
-        // If LOW is ~3×te_short and HIGH is ~te_short → bit 0.
-        if ((absLow >= 3 * te_short - te_delta * 3 && absLow <= 3 * te_short + te_delta * 3) &&
-            (absHigh >= te_short - te_delta && absHigh <= te_short + te_delta)) {
-            bitValue = 0; // SECPLUS_V1_BIT_0
-        }
-        // If LOW is ~2×te_short and HIGH is ~2×te_short → bit 1.
-        else if ((absLow >= 2 * te_short - te_delta * 2 && absLow <= 2 * te_short + te_delta * 2) &&
-                 (absHigh >= 2 * te_short - te_delta * 2 && absHigh <= 2 * te_short + te_delta * 2)) {
-            bitValue = 1; // SECPLUS_V1_BIT_1
-        }
-        // If LOW is ~te_short and HIGH is ~3×te_short → bit 2.
-        else if ((absLow >= te_short - te_delta && absLow <= te_short + te_delta) &&
-                 (absHigh >= 3 * te_short - te_delta * 3 && absHigh <= 3 * te_short + te_delta * 3)) {
-            bitValue = 2; // SECPLUS_V1_BIT_2
-        }
-        else {
-            // Unrecognized pulse pair; skip it.
-            i += 2;
-            continue;
-        }
-
-        data_array[bitCount] = bitValue;
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n SecPlus V1 decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, " bits)\n 0x");
-
-        String decodedString = "";
-        for (int j = 0; j < bitCount; j++) {
-            decodedString += String(data_array[j]);
-        }
-
-        lv_textarea_add_text(textareaRC, decodedString.c_str());
-
-        Serial.print("SecPlus V1 decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): ");
-        Serial.println(decodedString);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeSecPlusV2Protocol(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    // Protocol constants for Security+ 2.0
-    const uint32_t te_short = 250;      // expected short pulse duration (µs)
-    const uint32_t te_long  = 500;      // expected long pulse duration (µs)
-    const uint32_t te_delta = 110;      // tolerance (µs)
-    const uint32_t min_bits = 62;       // minimum bits required
-    const uint32_t header_threshold = te_long * 130; // ~500*130 = 65000 µs
-
-    // Step 1: Locate header (a LOW pulse >= header_threshold)
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    // Step 2: Verify expected start pattern.
-    // Expect a HIGH pulse after header with a duration near te_long.
-    if (headerIndex + 1 >= size) {
-        Serial.println("Not enough pulses after header.");
-        return false;
-    }
-    uint32_t firstHigh = (uint32_t)llabs(data[headerIndex + 1]);
-    if (!(firstHigh >= (te_long - te_delta) && firstHigh <= (te_long + te_delta))) {
-        Serial.println("Start bit pattern not found.");
-        return false;
-    }
-
-    // Step 3: Decode key bits using Manchester encoding
-    size_t i = headerIndex + 2; // Start decoding after header and start bit
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int lowPulse = data[i];     // expected LOW pulse
-        long long int highPulse = data[i + 1]; // expected HIGH pulse
-
-        // Verify polarity: LOW then HIGH.
-        if (lowPulse >= 0 || highPulse <= 0) {
-            i++; // Skip and try next
-            continue;
-        }
-
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        bool bit;
-
-        // Manchester encoding: Long HIGH + Short LOW = '1', Short HIGH + Long LOW = '0'
-        if ((absLow >= te_short - te_delta && absLow <= te_short + te_delta) &&
-            (absHigh >= te_long - te_delta && absHigh <= te_long + te_delta)) {
-            bit = false; // Bit 0
-        }
-        else if ((absLow >= te_long - te_delta && absLow <= te_long + te_delta) &&
-                 (absHigh >= te_short - te_delta && absHigh <= te_short + te_delta)) {
-            bit = true; // Bit 1
-        }
-        else {
-            // Unrecognized pulse pair; skip it.
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n SecPlus V2 decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, "\n bits): 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue).c_str());
-
-        Serial.print("SecPlus V2 decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeKiaProtocol(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    // Protocol constants for Kia Remote
-    const uint32_t te_short = 250;      // expected short pulse duration (µs)
-    const uint32_t te_long  = 500;      // expected long pulse duration (µs)
-    const uint32_t te_delta = 100;      // tolerance (µs)
-    const uint32_t min_bits = 61;       // minimum bits required
-    const uint32_t header_threshold = te_short * 15; // Threshold to detect the header
-
-    // Step 1: Locate header (sequence of short pulses)
-    size_t headerCount = 0;
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] > 0 && (uint32_t)llabs(data[i]) >= te_short - te_delta &&
-            (uint32_t)llabs(data[i]) <= te_short + te_delta) {
-            headerCount++;
-            if (headerCount >= 15) {
-                headerIndex = i;
-                headerFound = true;
-                break;
-            }
-        } else {
-            headerCount = 0;
-        }
-    }
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    // Step 2: Verify expected start pattern.
-    // Expect a HIGH pulse after header with a duration near te_long.
-    if (headerIndex + 1 >= size) {
-        Serial.println("Not enough pulses after header.");
-        return false;
-    }
-    uint32_t firstHigh = (uint32_t)llabs(data[headerIndex + 1]);
-    if (!(firstHigh >= (te_long - te_delta) && firstHigh <= (te_long + te_delta))) {
-        Serial.println("Start bit pattern not found.");
-        return false;
-    }
-
-    // Step 3: Decode key bits
-    size_t i = headerIndex + 2; // Start decoding after header and start bit
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int firstPulse = data[i];  // expected HIGH pulse
-        long long int secondPulse = data[i + 1]; // expected LOW pulse
-
-        // Verify polarity: first should be HIGH, second LOW.
-        if (firstPulse <= 0 || secondPulse >= 0) {
-            i++; // skip and try next
-            continue;
-        }
-
-        uint32_t absFirst = (uint32_t)llabs(firstPulse);
-        uint32_t absSecond = (uint32_t)llabs(secondPulse);
-        bool bit;
-
-        // Kia Encoding: Short HIGH + Short LOW = '0', Long HIGH + Long LOW = '1'
-        if ((absFirst >= te_short - te_delta && absFirst <= te_short + te_delta) &&
-            (absSecond >= te_short - te_delta && absSecond <= te_short + te_delta)) {
-            bit = false; // Bit 0
-        }
-        else if ((absFirst >= te_long - te_delta && absFirst <= te_long + te_delta) &&
-                 (absSecond >= te_long - te_delta && absSecond <= te_long + te_delta)) {
-            bit = true; // Bit 1
-        }
-        else {
-            // Unrecognized pulse pair; skip it.
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n Kia RF decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, "\n bits): 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue).c_str());
-
-        Serial.print("Kia RF decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeAlutechAT4N(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    const uint32_t te_short = 400;  // Expected short pulse duration (µs)
-    const uint32_t te_long  = 800;  // Expected long pulse duration (µs)
-    const uint32_t te_delta = 140;  // Tolerance (µs)
-    const uint32_t min_bits = 72;   // Minimum bits required for decoding
-    const uint32_t header_threshold = te_short * 12;
-
-    size_t headerCount = 0;
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] > 0 && (uint32_t)llabs(data[i]) >= te_short - te_delta &&
-            (uint32_t)llabs(data[i]) <= te_short + te_delta) {
-            headerCount++;
-            if (headerCount >= 12) {
-                headerIndex = i;
-                headerFound = true;
-                break;
-            }
-        } else {
-            headerCount = 0;
-        }
-    }
-    
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    if (headerIndex + 1 >= size) {
-        Serial.println("Not enough pulses after header.");
-        return false;
-    }
-    
-    uint32_t firstHigh = (uint32_t)llabs(data[headerIndex + 1]);
-    if (!(firstHigh >= (te_short * 9 - te_delta) && firstHigh <= (te_short * 9 + te_delta))) {
-        Serial.println("Start bit pattern not found.");
-        return false;
-    }
-
-    size_t i = headerIndex + 2;
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int firstPulse = data[i];  
-        long long int secondPulse = data[i + 1]; 
-
-        if (firstPulse <= 0 || secondPulse >= 0) {
-            i++;
-            continue;
-        }
-
-        uint32_t absFirst = (uint32_t)llabs(firstPulse);
-        uint32_t absSecond = (uint32_t)llabs(secondPulse);
-        bool bit;
-
-        if ((absFirst >= te_short - te_delta && absFirst <= te_short + te_delta) &&
-            (absSecond >= te_long - te_delta && absSecond <= te_long + te_delta)) {
-            bit = true;  
-        }
-        else if ((absFirst >= te_long - te_delta && absFirst <= te_long + te_delta) &&
-                 (absSecond >= te_short - te_delta && absSecond <= te_short + te_delta)) {
-            bit = false;
-        }
-        else {
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n Alutech AT-4N RF decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, "\n bits): 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue).c_str());
-
-        Serial.print("Alutech AT-4N RF decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeAnsonic(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data received.");
-        return false;
-    }
-
-    const uint32_t te_short = 555;  // Short pulse duration (µs)
-    const uint32_t te_long  = 1111; // Long pulse duration (µs)
-    const uint32_t te_delta = 120;  // Allowed deviation (µs)
-    const uint32_t min_bits = 12;   // Minimum bits for valid decoding
-    const uint32_t header_threshold = te_short * 35;
-
-    size_t headerIndex = 0;
-    bool headerFound = false;
-
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold - te_delta &&
-            (uint32_t)llabs(data[i]) <= header_threshold + te_delta) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    if (headerIndex + 1 >= size) {
-        Serial.println("No data after header.");
-        return false;
-    }
-
-    uint32_t firstPulse = (uint32_t)llabs(data[headerIndex + 1]);
-    if (!(firstPulse >= te_short - te_delta && firstPulse <= te_short + te_delta)) {
-        Serial.println("Start bit missing.");
-        return false;
-    }
-
-    size_t i = headerIndex + 2;
-    uint16_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int firstPulse = data[i];   
-        long long int secondPulse = data[i + 1]; 
-
-        if (firstPulse >= 0 || secondPulse <= 0) {
-            i++;
-            continue;
-        }
-
-        uint32_t absFirst = (uint32_t)llabs(firstPulse);
-        uint32_t absSecond = (uint32_t)llabs(secondPulse);
-        bool bit;
-
-        if ((absFirst >= te_short - te_delta && absFirst <= te_short + te_delta) &&
-            (absSecond >= te_long - te_delta && absSecond <= te_long + te_delta)) {
-            bit = true;  
-        }
-        else if ((absFirst >= te_long - te_delta && absFirst <= te_long + te_delta) &&
-                 (absSecond >= te_short - te_delta && absSecond <= te_short + te_delta)) {
-            bit = false;
-        }
-        else {
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1 : 0);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n Ansonic RF decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, "\n bits): 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue, HEX).c_str());
-
-        Serial.print("Ansonic RF decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Insufficient bits: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeClemsa(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data received.");
-        return false;
-    }
-
-    // Protocol constants for Clemsa
-    const uint32_t te_short = 385;  // Short pulse duration (µs)
-    const uint32_t te_long  = 2695; // Long pulse duration (µs)
-    const uint32_t te_delta = 150;  // Allowed deviation (µs)
-    const uint32_t min_bits = 18;   // Minimum bits for valid decoding
-    const uint32_t header_threshold = te_short * 51;
-
-    // Step 1: Locate header (a HIGH pulse >= header_threshold)
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] > 0 && (uint32_t)llabs(data[i]) >= header_threshold - te_delta * 25) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    if (headerIndex + 1 >= size) {
-        Serial.println("No data after header.");
-        return false;
-    }
-
-    uint32_t firstPulse = (uint32_t)llabs(data[headerIndex + 1]);
-    if (!(firstPulse >= te_short - te_delta && firstPulse <= te_short + te_delta)) {
-        Serial.println("Start bit missing.");
-        return false;
-    }
-
-    // Step 2: Decode key bits
-    size_t i = headerIndex + 2;
-    uint32_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int firstPulse = data[i];   
-        long long int secondPulse = data[i + 1]; 
-
-        if (firstPulse <= 0 || secondPulse >= 0) {
-            i++;
-            continue;
-        }
-
-        uint32_t absFirst = (uint32_t)llabs(firstPulse);
-        uint32_t absSecond = (uint32_t)llabs(secondPulse);
-        bool bit;
-
-        if ((absFirst >= te_short - te_delta && absFirst <= te_short + te_delta) &&
-            (absSecond >= te_long - te_delta * 3 && absSecond <= te_long + te_delta * 3)) {
-            bit = false;
-        }
-        else if ((absFirst >= te_long - te_delta * 3 && absFirst <= te_long + te_delta * 3) &&
-                 (absSecond >= te_short - te_delta && absSecond <= te_short + te_delta)) {
-            bit = true;
-        }
-        else {
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1 : 0);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n Clemsa RF decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, " bits): 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue, HEX).c_str());
-
-        Serial.print("Clemsa RF decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Insufficient bits: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeDickertMAHS(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    const uint32_t te_short = 400;
-    const uint32_t te_long  = 800;
-    const uint32_t te_delta = 100;
-    const uint32_t min_bits = 36;
-    const uint32_t header_threshold = te_short * 10;
-
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    if (headerIndex + 1 >= size) {
-        Serial.println("Not enough pulses after header.");
-        return false;
-    }
-    uint32_t firstHigh = (uint32_t)llabs(data[headerIndex + 1]);
-    if (!(firstHigh >= (te_short - te_delta) && firstHigh <= (te_short + te_delta))) {
-        Serial.println("Start bit pattern not found.");
-        return false;
-    }
-
-    size_t i = headerIndex + 2;
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int highPulse = data[i];
-        long long int lowPulse = data[i + 1];
-
-        if (highPulse <= 0 || lowPulse >= 0) {
-            i++;
-            continue;
-        }
-
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        bool bit;
-
-        if ((absHigh >= te_long - te_delta && absHigh <= te_long + te_delta) &&
-            (absLow >= te_short - te_delta && absLow <= te_short + te_delta)) {
-            bit = true;
-        } else if ((absHigh >= te_short - te_delta && absHigh <= te_short + te_delta) &&
-                   (absLow >= te_long - te_delta && absLow <= te_long + te_delta)) {
-            bit = false;
-        } else {
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n Dickert MAHS decoded (");
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, " bits)\n 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue, HEX).c_str());
-
-        Serial.print("Dickert MAHS decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeDoitrandProtocol(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    const uint32_t te_short = 400;  // expected short pulse duration (µs)
-    const uint32_t te_long  = 1100; // expected long pulse duration (µs)
-    const uint32_t te_delta = 150;  // tolerance (µs)
-    const uint32_t min_bits = 37;   // minimum bit count required
-    const uint32_t header_threshold = te_short * 62; // ~400*62 = 24800 µs
-
-    // Step 1: Locate header (a LOW pulse >= header_threshold)
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    // Step 2: Verify expected start pattern.
-    // Expect a HIGH pulse after header with a duration near te_short * 2.
-    if (headerIndex + 1 >= size) {
-        Serial.println("Not enough pulses after header.");
-        return false;
-    }
-    uint32_t firstHigh = (uint32_t)llabs(data[headerIndex + 1]);
-    if (!(firstHigh >= ((te_short * 2) - te_delta) && firstHigh <= ((te_short * 2) + te_delta))) {
-        Serial.println("Start bit pattern not found.");
-        return false;
-    }
-
-    // Step 3: Decode key bits
-    size_t i = headerIndex + 2; // Start decoding after header and start bit
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int lowPulse = data[i];     // expected LOW pulse
-        long long int highPulse = data[i + 1]; // expected HIGH pulse
-
-        // Verify polarity: LOW then HIGH.
-        if (lowPulse >= 0 || highPulse <= 0) {
-            i++; // Skip and try next
-            continue;
-        }
-
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        bool bit;
-
-        // If LOW pulse is near te_long and HIGH pulse near te_short → bit 1.
-        if ((absLow >= te_long - te_delta && absLow <= te_long + te_delta) &&
-            (absHigh >= te_short - te_delta && absHigh <= te_short + te_delta)) {
-            bit = true;
-        }
-        // If LOW pulse is near te_short and HIGH pulse near te_long → bit 0.
-        else if ((absLow >= te_short - te_delta && absLow <= te_short + te_delta) &&
-                 (absHigh >= te_long - te_delta && absHigh <= te_long + te_delta)) {
-            bit = false;
-        }
-        else {
-            // Unrecognized pulse pair; skip it.
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n Doitrand decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, " bits)\n 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue).c_str());
-
-        Serial.print("Doitrand decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeDooyaProtocol(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    const uint32_t te_short = 366;  // expected short pulse duration (µs)
-    const uint32_t te_long  = 733;  // expected long pulse duration (µs)
-    const uint32_t te_delta = 120;  // tolerance (µs)
-    const uint32_t min_bits = 40;   // minimum bit count required
-    const uint32_t header_threshold = te_long * 12; // ~733 * 12 = 8796 µs
-
-    // Step 1: Locate header (a LOW pulse >= header_threshold)
-    size_t headerIndex = 0;
-    bool headerFound = false;
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] < 0 && (uint32_t)llabs(data[i]) >= header_threshold) {
-            headerIndex = i;
-            headerFound = true;
-            break;
-        }
-    }
-    if (!headerFound) {
-        Serial.println("Header not found.");
-        return false;
-    }
-
-    // Step 2: Verify expected start pattern.
-    if (headerIndex + 1 >= size) {
-        Serial.println("Not enough pulses after header.");
-        return false;
-    }
-    uint32_t firstHigh = (uint32_t)llabs(data[headerIndex + 1]);
-    if (!(firstHigh >= (te_short * 13 - te_delta) && firstHigh <= (te_short * 13 + te_delta))) {
-        Serial.println("Start bit pattern not found.");
-        return false;
-    }
-
-    // Step 3: Decode key bits
-    size_t i = headerIndex + 2; // Start decoding after header and start bit
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int highPulse = data[i];    // expected HIGH pulse
-        long long int lowPulse = data[i + 1]; // expected LOW pulse
-
-        // Verify polarity: HIGH then LOW.
-        if (highPulse <= 0 || lowPulse >= 0) {
-            i++; // Skip and try next
-            continue;
-        }
-
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        bool bit;
-
-        // If HIGH pulse is near te_long and LOW pulse near te_short → bit 1.
-        if ((absHigh >= te_long - te_delta && absHigh <= te_long + te_delta) &&
-            (absLow >= te_short - te_delta && absLow <= te_short + te_delta)) {
-            bit = true;
-        }
-        // If HIGH pulse is near te_short and LOW pulse near te_long → bit 0.
-        else if ((absHigh >= te_short - te_delta && absHigh <= te_short + te_delta) &&
-                 (absLow >= te_long - te_delta && absLow <= te_long + te_delta)) {
-            bit = false;
-        }
-        else {
-            // Unrecognized pulse pair; skip it.
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n Dooya decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, " bits)\n 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue, HEX).c_str());
-
-        Serial.print("Dooya decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeFaacSLHProtocol(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    const uint32_t te_short = 255;
-    const uint32_t te_long  = 595;
-    const uint32_t te_delta = 100;
-    const uint32_t min_bits = 64;
-    
-    // Locate preamble: expect a long HIGH followed by a long LOW
-    size_t preambleIndex = 0;
-    bool preambleFound = false;
-    for (size_t i = 0; i < size - 1; i++) {
-        if ((data[i] > 0 && abs(data[i]) >= te_long * 2 - te_delta) &&
-            (data[i + 1] < 0 && abs(data[i + 1]) >= te_long * 2 - te_delta)) {
-            preambleIndex = i + 2; // Start decoding after preamble
-            preambleFound = true;
-            break;
-        }
-    }
-    if (!preambleFound) {
-        Serial.println("Preamble not found.");
-        return false;
-    }
-
-    // Decode bits
-    size_t i = preambleIndex;
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int highPulse = data[i];
-        long long int lowPulse = data[i + 1];
-
-        if (highPulse <= 0 || lowPulse >= 0) {
-            i++;
-            continue;
-        }
-
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        bool bit;
-
-        if ((absHigh >= te_long - te_delta && absHigh <= te_long + te_delta) &&
-            (absLow >= te_short - te_delta && absLow <= te_short + te_delta)) {
-            bit = true;
-        } else if ((absHigh >= te_short - te_delta && absHigh <= te_short + te_delta) &&
-                   (absLow >= te_long - te_delta && absLow <= te_long + te_delta)) {
-            bit = false;
-        } else {
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n FAAC SLH decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, " bits)\n 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue, HEX).c_str());
-
-        Serial.print("FAAC SLH decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeGangQiProtocol(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    const uint32_t te_short = 500;
-    const uint32_t te_long  = 1200;
-    const uint32_t te_delta = 200;
-    const uint32_t min_bits = 34;
-    
-    // Locate first GAP as marker
-    size_t gapIndex = 0;
-    bool gapFound = false;
-    for (size_t i = 0; i < size - 1; i++) {
-        if ((data[i] > 0 && abs(data[i]) >= te_long * 2 - te_delta) &&
-            (data[i + 1] < 0 && abs(data[i + 1]) >= te_long * 2 - te_delta)) {
-            gapIndex = i + 2;
-            gapFound = true;
-            break;
-        }
-    }
-    if (!gapFound) {
-        Serial.println("GAP not found.");
-        return false;
-    }
-
-    // Decode bits
-    size_t i = gapIndex;
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int highPulse = data[i];
-        long long int lowPulse = data[i + 1];
-
-        if (highPulse <= 0 || lowPulse >= 0) {
-            i++;
-            continue;
-        }
-
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        bool bit;
-
-        if ((absHigh >= te_short - te_delta && absHigh <= te_short + te_delta) &&
-            (absLow >= te_long - te_delta && absLow <= te_long + te_delta)) {
-            bit = false;
-        } else if ((absHigh >= te_long - te_delta && absHigh <= te_long + te_delta) &&
-                   (absLow >= te_short - te_delta && absLow <= te_short + te_delta)) {
-            bit = true;
-        } else {
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        uint8_t btn = (decodedValue >> 10) & 0xF;
-        uint32_t serial = (decodedValue >> 16) & 0xFFFFF;
-        uint8_t crc = -0xD7 - ((decodedValue >> 32) & 0xFF) - ((decodedValue >> 24) & 0xFF) -
-                      ((decodedValue >> 16) & 0xFF) - ((decodedValue >> 8) & 0xFF);
-
-        // LVGL UI update
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n GangQi decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, " bits)\n Serial: 0x");
-        lv_textarea_add_text(textareaRC, String(serial, HEX).c_str());
-        lv_textarea_add_text(textareaRC, "\n Btn: ");
-        lv_textarea_add_text(textareaRC, String(btn, HEX).c_str());
-        lv_textarea_add_text(textareaRC, " CRC: 0x");
-        lv_textarea_add_text(textareaRC, String(crc, HEX).c_str());
-
-        Serial.print("GangQi decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        Serial.print("Serial: 0x");
-        Serial.print(serial, HEX);
-        Serial.print(" Btn: 0x");
-        Serial.print(btn, HEX);
-        Serial.print(" CRC: 0x");
-        Serial.println(crc, HEX);
-        
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeHay21Protocol(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    const uint32_t te_short = 300;
-    const uint32_t te_long  = 700;
-    const uint32_t te_delta = 150;
-    const uint32_t min_bits = 21;
-
-    size_t gapIndex = 0;
-    bool gapFound = false;
-    for (size_t i = 0; i < size - 1; i++) {
-        if ((data[i] > 0 && abs(data[i]) >= te_long * 6 - te_delta) &&
-            (data[i + 1] < 0 && abs(data[i + 1]) >= te_long * 6 - te_delta)) {
-            gapIndex = i + 2;
-            gapFound = true;
-            break;
-        }
-    }
-    if (!gapFound) {
-        Serial.println("GAP not found.");
-        return false;
-    }
-
-    size_t i = gapIndex;
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-
-    while (i + 1 < size) {
-        long long int highPulse = data[i];
-        long long int lowPulse = data[i + 1];
-
-        if (highPulse <= 0 || lowPulse >= 0) {
-            i++;
-            continue;
-        }
-
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        bool bit;
-
-        if ((absHigh >= te_long - te_delta && absHigh <= te_long + te_delta) &&
-            (absLow >= te_short - te_delta && absLow <= te_short + te_delta)) {
-            bit = true;
-        } else if ((absHigh >= te_short - te_delta && absHigh <= te_short + te_delta) &&
-                   (absLow >= te_long - te_delta && absLow <= te_long + te_delta)) {
-            bit = false;
-        } else {
-            i += 2;
-            continue;
-        }
-
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        uint8_t btn = (decodedValue >> 13) & 0xFF;
-        uint8_t serial = (decodedValue >> 5) & 0xFF;
-        uint8_t cnt = (decodedValue >> 1) & 0xF;
-
-        // LVGL UI update
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n HAY21 decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, " bits)\n Serial: 0x");
-        lv_textarea_add_text(textareaRC, String(serial, HEX).c_str());
-        lv_textarea_add_text(textareaRC, "\n Btn: 0x");
-        lv_textarea_add_text(textareaRC, String(btn, HEX).c_str());
-        lv_textarea_add_text(textareaRC, " Cnt: 0x");
-        lv_textarea_add_text(textareaRC, String(cnt, HEX).c_str());
-
-        Serial.print("HAY21 decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        Serial.print("Serial: 0x");
-        Serial.print(serial, HEX);
-        Serial.print(" Btn: 0x");
-        Serial.print(btn, HEX);
-        Serial.print(" Cnt: 0x");
-        Serial.println(cnt, HEX);
-
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeHoltekHT12X(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    const uint32_t te_short = 320;
-    const uint32_t te_long  = 640;
-    const uint32_t te_delta = 200;
-    const uint32_t min_bits = 12;
-
-    size_t gapIndex = 0;
-    bool gapFound = false;
-    for (size_t i = 0; i < size - 1; i++) {
-        if ((data[i] < 0 && abs(data[i]) >= te_short * 36 - te_delta * 36)) {
-            gapIndex = i + 1;
-            gapFound = true;
-            break;
-        }
-    }
-    if (!gapFound) {
-        Serial.println("GAP not found.");
-        return false;
-    }
-
-    size_t i = gapIndex;
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-    uint32_t te_dynamic = 0;
-
-    while (i + 1 < size) {
-        long long int highPulse = data[i];
-        long long int lowPulse = data[i + 1];
-
-        if (highPulse <= 0 || lowPulse >= 0) {
-            i++;
-            continue;
-        }
-
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        bool bit;
-
-        if ((absHigh >= te_long - te_delta && absHigh <= te_long + te_delta) &&
-            (absLow >= te_short - te_delta && absLow <= te_short + te_delta)) {
-            bit = true;
-        } else if ((absHigh >= te_short - te_delta && absHigh <= te_short + te_delta) &&
-                   (absLow >= te_long - te_delta && absLow <= te_long + te_delta)) {
-            bit = false;
-        } else {
-            i += 2;
-            continue;
-        }
-
-        te_dynamic += absHigh + absLow;
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits) {
-        uint8_t btn = decodedValue & 0x0F;
-        uint8_t cnt = (decodedValue >> 4) & 0xFF;
-
-        // LVGL UI update
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n HT12X decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, " bits)\n Key: 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue & 0xFFF, HEX).c_str());
-        lv_textarea_add_text(textareaRC, "\n Btn: ");
-        lv_textarea_add_text(textareaRC, String(btn, HEX).c_str());
-        lv_textarea_add_text(textareaRC, " DIP: ");
-        lv_textarea_add_text(textareaRC, String(cnt, HEX).c_str());
-        lv_textarea_add_text(textareaRC, "\n Te: ");
-        lv_textarea_add_text(textareaRC, String(te_dynamic / (bitCount * 3 + 1)).c_str());
-        lv_textarea_add_text(textareaRC, "us\n");
-
-        Serial.print("HT12X decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        Serial.print("Btn: 0x");
-        Serial.print(btn, HEX);
-        Serial.print(" DIP: 0x");
-        Serial.print(cnt, HEX);
-        Serial.print(" Te: ");
-        Serial.print(te_dynamic / (bitCount * 3 + 1));
-        Serial.println("us");
-
-        return true;
-    } else {
-        Serial.print("Not enough bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
-bool CC1101_CLASS::decodeHoltekHT640(const long long int* data, size_t size) {
-    if (size == 0) {
-        Serial.println("No pulse data provided.");
-        return false;
-    }
-
-    const uint32_t te_short = 430;
-    const uint32_t te_long  = 870;
-    const uint32_t te_delta = 100;
-    const uint32_t min_bits = 40;
-    const uint64_t header_mask = 0xF000000000;
-    const uint64_t header_value = 0x5000000000;
-
-    size_t gapIndex = 0;
-    bool gapFound = false;
-    for (size_t i = 0; i < size - 1; i++) {
-        if ((data[i] < 0 && abs(data[i]) >= te_short * 36 - te_delta * 36)) {
-            gapIndex = i + 1;
-            gapFound = true;
-            break;
-        }
-    }
-    if (!gapFound) {
-        Serial.println("GAP not found.");
-        return false;
-    }
-
-    size_t i = gapIndex;
-    uint64_t decodedValue = 0;
-    int bitCount = 0;
-    uint32_t te_dynamic = 0;
-
-    while (i + 1 < size) {
-        long long int highPulse = data[i];
-        long long int lowPulse = data[i + 1];
-
-        if (highPulse <= 0 || lowPulse >= 0) {
-            i++;
-            continue;
-        }
-
-        uint32_t absHigh = (uint32_t)llabs(highPulse);
-        uint32_t absLow = (uint32_t)llabs(lowPulse);
-        bool bit;
-
-        if ((absHigh >= te_long - te_delta && absHigh <= te_long + te_delta) &&
-            (absLow >= te_short - te_delta && absLow <= te_short + te_delta)) {
-            bit = true;
-        } else if ((absHigh >= te_short - te_delta && absHigh <= te_short + te_delta) &&
-                   (absLow >= te_long - te_delta && absLow <= te_long + te_delta)) {
-            bit = false;
-        } else {
-            i += 2;
-            continue;
-        }
-
-        te_dynamic += absHigh + absLow;
-        decodedValue = (decodedValue << 1) | (bit ? 1ULL : 0ULL);
-        bitCount++;
-        i += 2;
-    }
-
-    if (bitCount >= (int)min_bits && (decodedValue & header_mask) == header_value) {
-        uint32_t serial = (decodedValue >> 16) & 0xFFFFF;
-        uint16_t btn = decodedValue & 0xFFFF;
-        uint8_t extractedBtn = 0;
-
-        if ((btn & 0xf) != 0xA) {
-            extractedBtn = 0x1 << 4 | (btn & 0xF);
-        } else if (((btn >> 4) & 0xF) != 0xA) {
-            extractedBtn = 0x2 << 4 | ((btn >> 4) & 0xF);
-        } else if (((btn >> 8) & 0xF) != 0xA) {
-            extractedBtn = 0x3 << 4 | ((btn >> 8) & 0xF);
-        } else if (((btn >> 12) & 0xF) != 0xA) {
-            extractedBtn = 0x4 << 4 | ((btn >> 12) & 0xF);
-        }
-
-        const char* buttonStr = (extractedBtn & 0xF) == 0xE ? "ON" : 
-                                (extractedBtn & 0xF) == 0xB ? "OFF" : "UNKNOWN";
-
-        // LVGL UI update
-        lv_obj_t * textareaRC;
-        lv_obj_t * container = screenMgr1.getSquareLineContainer();
-        if (C1101preset == CUSTOM) {
-            textareaRC = screenMgr1.text_area_SubGHzCustom;        
-        } else {
-            textareaRC = screenMgr1.getTextArea();
-        }
-
-        lv_textarea_add_text(textareaRC, "\n Holtek HT640 decoded (" );
-        lv_textarea_add_text(textareaRC, String(bitCount).c_str());
-        lv_textarea_add_text(textareaRC, " bits)\n Key: 0x");
-        lv_textarea_add_text(textareaRC, String(decodedValue, HEX).c_str());
-        lv_textarea_add_text(textareaRC, "\n Serial: 0x");
-        lv_textarea_add_text(textareaRC, String(serial, HEX).c_str());
-        lv_textarea_add_text(textareaRC, "\n Btn: 0x");
-        lv_textarea_add_text(textareaRC, String(extractedBtn, HEX).c_str());
-        lv_textarea_add_text(textareaRC, " - ");
-        lv_textarea_add_text(textareaRC, buttonStr);
-        lv_textarea_add_text(textareaRC, "\n");
-
-        Serial.print("Holtek HT640 decoded (");
-        Serial.print(bitCount);
-        Serial.print(" bits): 0x");
-        Serial.println(decodedValue, HEX);
-        Serial.print("Serial: 0x");
-        Serial.println(serial, HEX);
-        Serial.print("Btn: 0x");
-        Serial.print(extractedBtn, HEX);
-        Serial.print(" - ");
-        Serial.println(buttonStr);
-
-        return true;
-    } else {
-        Serial.print("Invalid or insufficient bits decoded: ");
-        Serial.println(bitCount);
-        return false;
-    }
-}
-
 
 //encoders
-
-bool CC1101_CLASS::encodeCame(uint64_t key, uint8_t bitCount) {
-    if (bitCount != 12 && bitCount != 18 && bitCount != 24 && bitCount != 25) {
-        Serial.println("Invalid bit count for CAME encoding.");
-        return false;
-    }
-
-    const uint32_t te_short = 320;
-    const uint32_t te_long  = 640;
-    
-    uint32_t header_te = 0;
-    switch (bitCount) {
-        case 24:
-            header_te = 76;
-            break;
-        case 12:
-        case 18:
-            header_te = 47;
-            break;
-        case 25:
-            header_te = 36;
-            break;
-        default:
-            header_te = 16;
-            break;
-    }
-
-    std::vector<uint32_t> signal;
-
-    signal.push_back(te_short * header_te);
-    signal.push_back(te_short);
-
-    for (int i = bitCount - 1; i >= 0; i--) {
-        if ((key >> i) & 1) {
-            signal.push_back(te_long);
-            signal.push_back(te_short);
-        } else {
-            signal.push_back(te_short);
-            signal.push_back(te_long);
-        }
-    }
-
-    //sendRawSignal(signal.data(), signal.size()); Here pak napojit
-
-    Serial.print("CAME Protocol Transmitted (");
-    Serial.print(bitCount);
-    Serial.print(" bits): 0x");
-    Serial.println(key, HEX);
-    return true;
-}
 
 
 bool CC1101_CLASS::init() {
@@ -2539,6 +199,7 @@ void CC1101_CLASS::enableReceiver() {
 
     ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, 0x0D); // Set GP2
     ELECHOUSE_cc1101.SpiWriteReg(CC1101_PKTCTRL0, 0x32); // Async mode
+    ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
     delay(10);
 
     ELECHOUSE_cc1101.setRxBW(CC1101_RX_BW);
@@ -2547,7 +208,7 @@ void CC1101_CLASS::enableReceiver() {
     ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);
     ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
-    ELECHOUSE_cc1101.setDRate(115.051);
+    ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
 
     delay(10);
 
@@ -2609,8 +270,8 @@ void CC1101_CLASS::emptyReceive() {
     ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);
     ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);
-    ELECHOUSE_cc1101.setDRate(115.051);
-
+    ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
+    ELECHOUSE_cc1101.setPA(12);
     delay(10);
 
     gpio_config_t io_conf = {
@@ -2629,10 +290,6 @@ void CC1101_CLASS::emptyReceive() {
         ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, iocfg0);
         delay(20);
     }
-    // gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
-    // gpio_isr_handler_add(GPIO_NUM_4, InterruptHandler, NULL);
-
-    ELECHOUSE_cc1101.SetRx();
 }
 
 
@@ -2735,13 +392,13 @@ void CC1101_CLASS::loadPreset() {
     switch (C1101preset) {
     case AM650:
         CC1101_MODULATION = 2;
-        CC1101_DRATE = 3.79372;
+        CC1101_DRATE = 115.051;
         CC1101_RX_BW = 650.00;
         CC1101_DEVIATION = 1.58;
         break;
     case AM270:
         CC1101_MODULATION = 2;
-        CC1101_DRATE = 3.79372;
+        CC1101_DRATE = 115.051;
         CC1101_RX_BW = 270.833333;
         CC1101_DEVIATION = 1.58;
         break;
@@ -2807,7 +464,7 @@ void CC1101_CLASS::loadPreset() {
         CC1101_DRATE = 31.73;        // Derived from preset name (31.73kHz deviation)
         CC1101_RX_BW = 200;          // Receiver bandwidth (200kHz as per preset name)
         CC1101_DEVIATION = 31.73;    // Derived from deviation value in preset name
-        // CC1101_SYNC = 0x47;          // Sync word from `Custom_preset_data` (byte 3)
+         CC1101_SYNC = 0x47;          // Sync word from `Custom_preset_data` (byte 3)
         // CC1101_CONFIG = {            // Full configuration extracted from `Custom_preset_data`
         //     0x02, 0x0D, 0x03, 0x47, 0x08, 0x32, 0x0B, 0x06, 0x15, 0x42,
         //     0x14, 0x00, 0x13, 0x00, 0x12, 0x00, 0x11, 0x32, 0x10, 0xA7,
@@ -2845,196 +502,177 @@ void CC1101_CLASS::loadPreset() {
 }
 
 bool CC1101_CLASS::CheckReceived() {
-    constexpr unsigned long SIGNAL_TIMEOUT = 25000;
-
-    // Timing windows for protocol detection
-    constexpr uint16_t SHORT_PULSE_MIN = 100;
-    constexpr uint16_t LONG_PULSE_MAX = 1500;
-    constexpr uint16_t TOLERANCE_PERCENT = 20; //TODO User set tolerance
-
-    // Ensure atomic read of samplecount
-    localSampleCount = 0;
-
-    noInterrupts();
-    localSampleCount = samplecount;
-    interrupts();
-
-    if (localSampleCount < 10) return false;
-
-    uint64_t currentTime = esp_timer_get_time();
-    uint64_t signalDuration = currentTime - CC1101_CLASS::receivedData.lastReceiveTime;
-
-    // Check pointer validity before accessing receivedData.samples
-    if (!CC1101_CLASS::receivedData.samples.empty()) {
-        if (CC1101_CLASS::receivedData.samples[0] > 2500 || CC1101_CLASS::receivedData.samples[0] < -2500) {
-            CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin());
-          //  Serial.println(F("First pulse removed"));
-            CC1101_CLASS::receivedData.startstate = !CC1101_CLASS::receivedData.startstate;
-        }
-    }
-
-    if (signalDuration > SIGNAL_TIMEOUT || localSampleCount >= SAMPLE_SIZE) {
-        if (!CC1101_CLASS::receivedData.samples.empty() && 
-            (CC1101_CLASS::receivedData.samples[0] > 2500 || CC1101_CLASS::receivedData.samples[0] < -2500))
-        {
-            CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin());
-        //    Serial.println(F("First pulse removed"));
-            CC1101_CLASS::receivedData.startstate = !CC1101_CLASS::receivedData.startstate;
-        }
-
+    if(samplecount > 512) {
         CC1101_CLASS::receivedData.sampleCount = 0;
-
-        std::vector<uint16_t> shortPulses;
-        std::vector<uint16_t> longPulses;
-        shortPulseAvg = 0;
-        longPulseAvg = 0;
-        uint16_t samplesCount = CC1101_CLASS::receivedData.samples.size();
-
-        // - fallowed by- or + by + makes no sense, assume its one pulse/space
-
-        auto &samples = CC1101_CLASS::receivedData.samples;
-        for (size_t i = 1; i < samples.size(); ++i) {
-            if ((samples[i - 1] < 0) && (samples[i] < 0)) {
-                samples[i - 1] += samples[i];
-                samples.erase(samples.begin() + i);
-                --i;
-            }
-            if ((samples[i - 1] > 0) && (samples[i] > 0)) {
-                samples[i - 1] += samples[i];
-                samples.erase(samples.begin() + i);
-                --i;
-            }
-
-            if ((samples[i - 1] < 0) && (samples[i] > 10000)) {
-                samples[i - 1] += -samples[i];
-                samples.erase(samples.begin() + i);
-                --i;
-            }
-        }
-
-        for (uint32_t i = 0; i < samplesCount; i++) {
-            uint16_t sample = CC1101_CLASS::receivedData.samples[i];
-            if ((sample < SHORT_PULSE_MIN && sample > 0) || (sample > -SHORT_PULSE_MIN && sample < 0)) {
-        //        Serial.println(F("Short pulse skipped"));
-           //     Serial.println(sample);
-                continue;
-            }
-            if ((sample > 2000 && sample > 0) || (sample < -2000 && sample < 0)) {
-                // Serial.println(F("Long pulse skipped"));
-                // Serial.println(sample);
-                continue;
-
-            }
-
-            // First valid pulse becomes reference for short pulse
-            if (shortPulses.empty() && longPulses.empty() && sample > 0) {
-                shortPulses.push_back(sample);
-                 Serial.println("short");
-                 Serial.println(sample);
-                longPulses.push_back(-CC1101_CLASS::receivedData.samples[i+1]);
-                 Serial.println("long");
-                 Serial.println(-CC1101_CLASS::receivedData.samples[i+1]);
-                continue;
-            }
-
-            if (shortPulses.empty() && longPulses.empty() && sample < 0) {
-                shortPulses.push_back(-sample);
-                 Serial.println("short");
-                 Serial.println(-sample);
-                longPulses.push_back(CC1101_CLASS::receivedData.samples[i+1]);
-                 Serial.println("long");
-                 Serial.println(CC1101_CLASS::receivedData.samples[i+1]);
-                continue;
-            }
-
-
-
-            // Calculate averages
-            shortPulseAvg = std::accumulate(shortPulses.begin(), shortPulses.end(), 0) / 
-                           (shortPulses.size() > 0 ? shortPulses.size() : 1);
-        //    Serial.println("shortPulseAvg");
-       //     Serial.println(shortPulseAvg);
-
-            longPulseAvg = std::accumulate(longPulses.begin(), longPulses.end(), 0) / 
-                          (longPulses.size() > 0 ? longPulses.size() : 1);
-     //       Serial.println("longPulseAvg");
-//Serial.println(longPulseAvg);
-
-
-            // Determine tolerance levels
-            uint16_t shortTolerance = (shortPulseAvg * TOLERANCE_PERCENT) / 100;
-            uint16_t longTolerance = (longPulseAvg * TOLERANCE_PERCENT) / 100;
-
-
-
-            if(sample > 0) {
-                if (static_cast<int>(sample - shortPulseAvg) <= shortTolerance) {
-                        shortPulses.push_back(sample);
-                } else if (!longPulses.empty() || 
-                        static_cast<int>(sample - longPulseAvg) <= longTolerance) {
-                        longPulses.push_back(sample);
-                 }
-            } else {
-                if (static_cast<int>(-sample + shortPulseAvg) <= -shortTolerance) {
-                        shortPulses.push_back(-sample);
-                } else if (!longPulses.empty() || 
-                        static_cast<int>(-sample + longPulseAvg) <= -longTolerance) {
-                        longPulses.push_back(-sample);
-                 }
-            }
-
-        }
-
-        shortPulseAvg = std::accumulate(shortPulses.begin(), shortPulses.end(), 0) / 
-                       (shortPulses.size() > 0 ? shortPulses.size() : 1);
-        longPulseAvg = std::accumulate(longPulses.begin(), longPulses.end(), 0) / 
-                       (longPulses.size() > 0 ? longPulses.size() : 1);
-
-        if (longPulseAvg < shortPulseAvg) {
-            std::swap(longPulseAvg, shortPulseAvg);
-        }
-
-        if(CC1101_CLASS::receivedData.samples.size() < 1){
-        return false;
-        }
-
-        std::vector<uint16_t> pauses;
-
-        for (const auto& sample : CC1101_CLASS::receivedData.samples) {
-            if(-sample > (4 * longPulseAvg)){
-            pauses.push_back(-sample);
-            }
-        }
-
-
-        pauseAVG = std::accumulate(pauses.begin(), pauses.end(), 0) / 
-                    (pauses.size() > 0 ? pauses.size() : 1);      
-
-        Signal data;
-        
-        Serial.println(F("Pulse Analysis:"));
-        Serial.print(F("Short pulses avg: ")); Serial.println(shortPulseAvg);
-        Serial.print(F("Long pulses avg: ")); Serial.println(longPulseAvg);
-        Serial.print(F("Pause avg: ")); Serial.println(pauseAVG);
-
-        Serial.println(F("Raw samples: "));
-        CC1101_CLASS::receivedData.sampleCount = 0;
-        for (const auto& sample : CC1101_CLASS::receivedData.samples) {
-            Serial.print(sample);
-            data.addSample(sample);
-            Serial.print(" ");
-            CC1101_CLASS::receivedData.sampleCount++;
-        }
-        CC1101_CLASS::allData.addSignal(data);
-
+        samplecount = 0;
+        CC1101_CLASS::receivedData.lastReceiveTime = 0;
         return true;
     }
+    else if (samplecount < 10 or
+            (esp_timer_get_time() - CC1101_CLASS::receivedData.lastReceiveTime) > 300000) {
+            return false;
+    }
+
+    CC1101_CLASS::receivedData.sampleCount = 0;
+    samplecount = 0;
+    CC1101_CLASS::receivedData.lastReceiveTime = 0;
+    return true;
     
-    return false;
+//     constexpr unsigned long SIGNAL_TIMEOUT = 25000;
+//     constexpr uint16_t SHORT_PULSE_MIN = 50;
+//     constexpr uint16_t LONG_PULSE_MAX = 1500;
+//     constexpr uint16_t TOLERANCE_PERCENT = 20;
+
+//     localSampleCount = 0;
+//     noInterrupts();
+//     localSampleCount = samplecount;
+//     interrupts();
+
+
+    
+
+//     uint64_t currentTime = esp_timer_get_time();
+//     uint64_t signalDuration = currentTime - CC1101_CLASS::receivedData.lastReceiveTime;
+
+//     // if (!CC1101_CLASS::receivedData.samples.empty()) {
+//     //     if (CC1101_CLASS::receivedData.samples[0] > 2500 ||
+//     //         CC1101_CLASS::receivedData.samples[0] < -2500) {
+//     //         CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin());
+//     //         CC1101_CLASS::receivedData.startstate = !CC1101_CLASS::receivedData.startstate;
+//     //     }
+//     // }
+
+//     if (signalDuration > SIGNAL_TIMEOUT || localSampleCount >= SAMPLE_SIZE) {
+//         // if (!CC1101_CLASS::receivedData.samples.empty() &&
+//         //     (CC1101_CLASS::receivedData.samples[0] > 2500 ||
+//         //      CC1101_CLASS::receivedData.samples[0] < -2500)) {
+//         //     CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin());
+//         //     CC1101_CLASS::receivedData.startstate = !CC1101_CLASS::receivedData.startstate;
+//         // }
+
+//         CC1101_CLASS::receivedData.sampleCount = 0;
+//         std::vector<uint16_t> shortPulses;
+//         std::vector<uint16_t> longPulses;
+//         shortPulseAvg = 0;
+//         longPulseAvg = 0;
+//         uint16_t samplesCount = CC1101_CLASS::receivedData.samples.size();
+
+//         //this merge signals splited by false edge detection
+//         auto &samples = CC1101_CLASS::receivedData.samples;
+//         for (size_t i = 1; i < samples.size(); ++i) {
+//             if ((samples[i - 1] < 0) && (samples[i] < 0)) {
+//                 samples[i - 1] += samples[i];
+//                 samples.erase(samples.begin() + i);
+//                 --i;
+//             }
+//             if ((samples[i - 1] > 0) && (samples[i] > 0)) {
+//                 samples[i - 1] += samples[i];
+//                 samples.erase(samples.begin() + i);
+//                 --i;
+//             }
+//             if ((samples[i - 1] < 0) && (samples[i] > 10000)) {
+//                 samples[i - 1] += -samples[i];
+//                 samples.erase(samples.begin() + i);
+//                 --i;
+//             }
+//         }
+
+//         for (uint32_t i = 0; i < samplesCount; i++) {
+//             uint16_t sample = CC1101_CLASS::receivedData.samples[i];
+//             if ((sample < SHORT_PULSE_MIN && sample > 0) ||
+//                 (sample > -SHORT_PULSE_MIN && sample < 0)) {
+//                 continue;
+//             }
+//             if ((sample > LONG_PULSE_MAX && sample > 0) ||
+//                 (sample < -LONG_PULSE_MAX && sample < 0)) {
+//                 continue;
+//             }
+//             if (shortPulses.empty() && longPulses.empty() && sample > 0) {
+//                 shortPulses.push_back(sample);
+//                 Serial.println("short");
+//                 Serial.println(sample);
+//                 longPulses.push_back(-CC1101_CLASS::receivedData.samples[i + 1]);
+//                 Serial.println("long");
+//                 Serial.println(-CC1101_CLASS::receivedData.samples[i + 1]);
+//                 continue;
+//             }
+//             if (shortPulses.empty() && longPulses.empty() && sample < 0) {
+//                 shortPulses.push_back(-sample);
+//                 Serial.println("short");
+//                 Serial.println(-sample);
+//                 longPulses.push_back(CC1101_CLASS::receivedData.samples[i + 1]);
+//                 Serial.println("long");
+//                 Serial.println(CC1101_CLASS::receivedData.samples[i + 1]);
+//                 continue;
+//             }
+
+//             shortPulseAvg = std::accumulate(shortPulses.begin(), shortPulses.end(), 0) /
+//                             (shortPulses.empty() ? 1 : shortPulses.size());
+//             longPulseAvg = std::accumulate(longPulses.begin(), longPulses.end(), 0) /
+//                            (longPulses.empty() ? 1 : longPulses.size());
+
+//             uint16_t shortTolerance = (shortPulseAvg * TOLERANCE_PERCENT) / 100;
+//             uint16_t longTolerance = (longPulseAvg * TOLERANCE_PERCENT) / 100;
+
+//             if (sample > 0) {
+//                 if (static_cast<int>(sample - shortPulseAvg) <= shortTolerance) {
+//                     shortPulses.push_back(sample);
+//                 } else if (!longPulses.empty() ||
+//                            static_cast<int>(sample - longPulseAvg) <= longTolerance) {
+//                     longPulses.push_back(sample);
+//                 }
+//             } else {
+//                 if (static_cast<int>(-sample + shortPulseAvg) <= -shortTolerance) {
+//                     shortPulses.push_back(-sample);
+//                 } else if (!longPulses.empty() ||
+//                            static_cast<int>(-sample + longPulseAvg) <= -longTolerance) {
+//                     longPulses.push_back(-sample);
+//                 }
+//             }
+//         }
+
+//         shortPulseAvg = std::accumulate(shortPulses.begin(), shortPulses.end(), 0) /
+//                         (shortPulses.empty() ? 1 : shortPulses.size());
+//         longPulseAvg = std::accumulate(longPulses.begin(), longPulses.end(), 0) /
+//                        (longPulses.empty() ? 1 : longPulses.size());
+
+//         if (longPulseAvg < shortPulseAvg)
+//             std::swap(longPulseAvg, shortPulseAvg);
+
+//         if (CC1101_CLASS::receivedData.samples.empty())
+//             return false;
+
+//         std::vector<uint16_t> pauses;
+//         for (const auto &sample : CC1101_CLASS::receivedData.samples) {
+//             if (-sample > (4 * longPulseAvg))
+//                 pauses.push_back(-sample);
+//         }
+//         pauseAVG = std::accumulate(pauses.begin(), pauses.end(), 0) /
+//                    (pauses.empty() ? 1 : pauses.size());
+
+//         Signal data;
+//         Serial.println(F("Pulse Analysis:"));
+//         Serial.print(F("Short pulses avg: ")); Serial.println(shortPulseAvg);
+//         Serial.print(F("Long pulses avg: ")); Serial.println(longPulseAvg);
+//         Serial.print(F("Pause avg: ")); Serial.println(pauseAVG);
+
+//         Serial.println(F("Raw samples: "));
+//         CC1101_CLASS::receivedData.sampleCount = 0;
+//         for (const auto &sample : CC1101_CLASS::receivedData.samples) {
+//             Serial.print(sample);
+//             data.addSample(sample);
+//             Serial.print(" ");
+//             CC1101_CLASS::receivedData.sampleCount++;
+//         }
+
+//         // Only finalize reception if the time elapsed since the last signal is > 150000 micros.
+
+//             CC1101_CLASS::allData.addSignal(data);
+
+
+//     return true;
+// }
 }
-
-
-
 void CC1101_CLASS::fskAnalyze() {
     Serial.println(F("ana run"));         
 
@@ -3228,6 +866,49 @@ void CC1101_CLASS::startSignalAnalyseTask() {
 
 void CC1101_CLASS::signalAnalyse(){
 
+////////////////////////////////////////////////////
+    Signal data;
+
+
+    
+//    auto &samples = CC1101_CLASS::receivedData.samples;
+//         for (size_t i = 1; i < samples.size(); ++i) {
+//             if ((samples[i - 1] < 0) && (samples[i] < 0)) {
+//                 samples[i - 1] += samples[i];
+//                 samples.erase(samples.begin() + i);
+//                 --i;
+//             }
+//             if ((samples[i - 1] > 0) && (samples[i] > 0)) {
+//                 samples[i - 1] += samples[i];
+//                 samples.erase(samples.begin() + i);
+//                 --i;
+//             }
+//             if ((samples[i - 1] < 0) && (samples[i] > 10000)) {
+//                 samples[i - 1] += -samples[i];
+//                 samples.erase(samples.begin() + i);
+//                 --i;
+//             }
+//         }
+
+        Serial.println(F("Raw samples: "));
+        CC1101_CLASS::receivedData.sampleCount = 0;
+        for (const auto &sample : CC1101_CLASS::receivedData.samples) {
+            Serial.print(sample);
+            data.addSample(sample);
+            Serial.print(" ");
+            CC1101_CLASS::receivedData.sampleCount++;
+        }
+
+        CC1101_CLASS::allData.addSignal(data);
+
+///////////////////////////////////////////
+
+
+
+
+
+
+
 //Serial.println("Signal AnalyseIN");
      lv_obj_t * textareaRC;
     if(C1101preset == CUSTOM){
@@ -3237,44 +918,44 @@ void CC1101_CLASS::signalAnalyse(){
     }
 
     lv_textarea_set_text(textareaRC, "\nRAW signal");//, \nCount: ");
-    lv_textarea_add_text(textareaRC, "\nShort: ");
-    lv_textarea_add_text(textareaRC, String(shortPulseAvg).c_str());
-    lv_textarea_add_text(textareaRC, "\nLong: ");
-    lv_textarea_add_text(textareaRC, String(longPulseAvg).c_str());
+ //   lv_textarea_add_text(textareaRC, "\nShort: ");
+//    lv_textarea_add_text(textareaRC, String(shortPulseAvg).c_str());
+//lv_textarea_add_text(textareaRC, "\nLong: ");
+  //  lv_textarea_add_text(textareaRC, String(longPulseAvg).c_str());
 
     std::ostringstream  rawString;
 
-Serial.println("");
+//Serial.println("");
         // for (int i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++) {
         //     if(CC1101_CLASS::receivedData.samples[i] > 25000){
         //         CC1101_CLASS::receivedData.samples[i] = 25000;
         //     }
         // }
-Signal samplesData = CC1101_CLASS::allData.getSignal(CC1101_CLASS::allData.signals.size() - 1);
-uint16_t pausetreshold = pauseAVG - (pauseAVG / 4);
+// Signal samplesData = CC1101_CLASS::allData.getSignal(CC1101_CLASS::allData.signals.size() - 1);
+// uint16_t pausetreshold = pauseAVG - (pauseAVG / 4);
 
 
 
-pulseTrain pulseTrain;
-pulseTrains pulseTrains;
+// pulseTrain pulseTrain;
+// pulseTrains pulseTrains;
 
-  for (int i = 0; i < samplesData.size(); i++) {
-            if(-samplesData.getSample(i) > pausetreshold){
-                pulseTrains.addPulseTrain(pulseTrain);
-                pulseTrain.clear();
-                continue;
-            }
-            samplesData.getSample(i) > 0 ? pulseTrain.addPulse(samplesData.getSample(i)) : pulseTrain.addPulse(-samplesData.getSample(i));
-    }
+//   for (int i = 0; i < samplesData.size(); i++) {
+//             if(-samplesData.getSample(i) > pausetreshold){
+//                 pulseTrains.addPulseTrain(pulseTrain);
+//                 pulseTrain.clear();
+//                 continue;
+//             }
+//             samplesData.getSample(i) > 0 ? pulseTrain.addPulse(samplesData.getSample(i)) : pulseTrain.addPulse(-samplesData.getSample(i));
+//     }
 
         
-    rawString << "RAW_Data " <<  ": ";
+//     rawString << "RAW_Data " <<  ": ";
 
-    for (int i = 0; i < samplesData.size(); i++) {
-            rawString << samplesData.getSample(i);
-            Serial.print(CC1101_CLASS::receivedData.samples[i]);
-            Serial.print(", ");
-        }
+//     for (int i = 0; i < samplesData.size(); i++) {
+//             rawString << samplesData.getSample(i);
+//             Serial.print(CC1101_CLASS::receivedData.samples[i]);
+//             Serial.print(", ");
+//         }
 
 
 //Serial.println("");
@@ -3282,10 +963,10 @@ pulseTrains pulseTrains;
 // lv_textarea_add_text(textareaRC, "\nCapture Complete.");
 // delay(20);
 
-Serial.println("number of trains: ");
-Serial.print(pulseTrains.getSize());
-Serial.println("\n");
-decode();
+// Serial.println("number of trains: ");
+// Serial.print(pulseTrains.getSize());
+// Serial.println("\n");
+
 
 
 // if (C1101preset != CUSTOM) {
@@ -3428,69 +1109,27 @@ bool CC1101_CLASS::decode() {
         Serial.println("No pulses to decode.");
         return false;
     }
-    if(CC1101.decodeAlutechAT4N(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+
+
+   if(hormannDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        hormannDecoder.getCodeString();
         return true;
     }
-    if(CC1101.decodeAnsonic(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+
+    if(CameDecode.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        CameDecode.getCodeString();
         return true;
     }
-    if(CC1101.decodeCameAtomoProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+    if(NiceFloDecode.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        NiceFloDecode.getCodeString();
         return true;
     }
-    if(CC1101.decodeCameTweeProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+    if(ansonicDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        ansonicDecoder.getCodeString();
         return true;
     }
-    if(CC1101.decodeCameProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    } 
-    if(CC1101.decodeBETT(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    }  
-    if(CC1101.decodeChamberlain(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    }  
-    if(CC1101.decodeNiceFlorSProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    }
-    if(CC1101.decodeNiceFloProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    }
-    if(CC1101.decodeHormannHSMProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    }
-    if(CC1101.decodeSecPlusV1Protocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    }
-    if(CC1101.decodeSecPlusV2Protocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    }
-    if(CC1101.decodeKiaProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    }   
-    if(CC1101.decodeClemsa(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    } 
-    if(CC1101.decodeDickertMAHS(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    } 
-     if(CC1101.decodeDoitrandProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    } 
-    if(CC1101.decodeDooyaProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    } 
-    if(CC1101.decodeFaacSLHProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    }
-    if(CC1101.decodeGangQiProtocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    }
-    if(CC1101.decodeHay21Protocol(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    } 
-    if(CC1101.decodeHoltekHT640(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        return true;
-    }
+    
+
     return false;  
 }
 
@@ -3577,7 +1216,7 @@ void CC1101_CLASS::initRaw() {
     ELECHOUSE_cc1101.setCCMode(0);          // set config for internal transmission mode. value 0 is for RAW recording/replaying
     ELECHOUSE_cc1101.setModulation(CC1101_MODULATION);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
     ELECHOUSE_cc1101.setDeviation(CC1101_DEVIATION);   // Set the Frequency deviation in kHz. Value from 1.58 to 380.85. Default is 47.60 kHz.
-    ELECHOUSE_cc1101.setDRate(99.97);
+    ELECHOUSE_cc1101.setDRate(CC1101_DRATE);
     ELECHOUSE_cc1101.setPktFormat(3);
     ELECHOUSE_cc1101.SetTx();
     

@@ -6,6 +6,11 @@
 #include "ESPiLight.h"
 #include "SPI.h"
 #include <driver/timer.h>
+//decoders
+#include "protocols/HormannDecoder.h" 
+#include "protocols/CameDecoder.h" 
+#include "protocols/NiceFloDecoder.h"
+#include "protocols/AnsonicDecoder.h"
 
 #define SAMPLE_SIZE 4092
 #define MAX_SIGNAL_LENGTH 10000000  
@@ -182,7 +187,7 @@ struct CC1101TH {
 class CC1101_CLASS {
 public:
     static SignalCollection allData;
-    float CC1101_DRATE = 3.79372;
+    float CC1101_DRATE = 115.051;
     float CC1101_RX_BW = 650.00;
     float CC1101_DEVIATION = 47.60;
     int CC1101_PKT_FORMAT = 0;
@@ -232,42 +237,21 @@ public:
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
     void enableScanner(float start, float stop);
     void emptyReceive();
+    bool decode();
 
-    //decoders
-    bool decodeCameProtocol(const long long int* data, size_t size);
-    bool decodeCameAtomoProtocol(const long long int* data, size_t size);
-    bool decodeCameTweeProtocol(const long long int* data, size_t size);
-    bool decodeNiceFloProtocol(const long long int* data, size_t size);
-    bool decodeNiceFlorSProtocol(const long long int* data, size_t size);
-    bool decodeHormannHSMProtocol(const long long int* data, size_t size);
-    bool decodeSecPlusV1Protocol(const long long int* data, size_t size);
-    bool decodeSecPlusV2Protocol(const long long int* data, size_t size);
-    bool decodeKiaProtocol(const long long int* data, size_t size);
-    bool decodeAlutechAT4N(const long long int* data, size_t size);
-    bool decodeAnsonic(const long long int* data, size_t size);
-    bool decodeBETT(const long long int* data, size_t size);
-    bool decodeChamberlain(const long long int* data, size_t size);
-    bool decodeClemsa(const long long int* data, size_t size);
-    bool decodeDickertMAHS(const long long int* data, size_t size);
-    bool decodeDoitrandProtocol(const long long int* data, size_t size);
-    bool decodeDooyaProtocol(const long long int* data, size_t size);
-    bool decodeFaacSLHProtocol(const long long int* data, size_t size);
-    bool decodeGangQiProtocol(const long long int* data, size_t size);
-    bool decodeHay21Protocol(const long long int* data, size_t size);
-    bool decodeHoltekHT12X(const long long int* data, size_t size);
-    bool decodeHoltekHT640(const long long int* data, size_t size);
-
-
-    //encoders
-    bool encodeCame(uint64_t key, uint8_t bitCount);
 
 private:
+    //decoder instances
+    HormannDecoder hormannDecoder;
+    CameDecoder CameDecode;
+    AnsonicDecoder ansonicDecoder;
+    NiceFloDecoder NiceFloDecode;
     uint16_t spaceAvg = 0;
     size_t smoothcount;
     uint16_t sampleSmooth[SAMPLE_SIZE];
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
-    bool decode();
+
     bool levelFlag;                         // Current GPIO level
     timer_idx_t timerIndex = TIMER_0;               // Timer index
 };

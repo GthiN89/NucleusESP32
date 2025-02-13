@@ -98,7 +98,7 @@ void setup() {
             Serial.println("Analyzing signal...");
             CC1101.signalAnalyse();
             Serial.println("Signal analyzed.");
- 
+            CC1101.decode();
 
             C1101CurrentState = STATE_IDLE;
             runningModule = MODULE_NONE;
@@ -106,7 +106,7 @@ void setup() {
     }
     if(C1101CurrentState == STATE_RCSWITCH) {
                // delay(50);
-                Serial.println(gpio_get_level(CC1101_CCGDO2A));
+               // Serial.println(gpio_get_level(CC1101_CCGDO2A));
         if (mySwitch1.available()) {
              delay(50);
             ir.output(mySwitch1.getReceivedValue(), mySwitch1.getReceivedBitlength(), mySwitch1.getReceivedDelay(), mySwitch1.getReceivedRawdata(),mySwitch1.getReceivedProtocol(), screenMgrM.getTextArea());
