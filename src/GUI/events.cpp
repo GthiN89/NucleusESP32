@@ -21,6 +21,8 @@ using namespace std;
 #define MAX_PATH_LENGTH 256
 CC1101_CLASS CC1101EV;
 SDcard& SD_EVN = SDcard::getInstance();
+                   AnsonicDecoder decoder;
+
 
 int SpamDevice = 1;
 bool updatetransmitLabel = false;
@@ -79,7 +81,9 @@ void EVENTS::btn_event_Replay_run(lv_event_t* e) {
 void EVENTS::btn_event_Brute_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-                 
+            CC1101EV.enableTransmit();
+decoder.transmit(0xABCD, 16);
+delay (2000);
           screenMgr.createReplayScreen();
     }
 }

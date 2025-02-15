@@ -2,6 +2,7 @@
 #include "lvgl.h"
 #include "GUI/ScreenManager.h"
 #include "globals.h"
+#include "math.h"
 
 NiceFloDecoder::NiceFloDecoder()
     : te_short(700),
@@ -27,38 +28,55 @@ void NiceFloDecoder::reset() {
     finalBitCount = 0;
 }
 
-inline uint32_t NiceFloDecoder::durationDiff(uint32_t a, uint32_t b) const {
-    return (a > b) ? (a - b) : (b - a);
-}
+
 
 inline void NiceFloDecoder::addBit(uint8_t bit) {
     decodeData = (decodeData << 1) | bit;
     decodeCountBit++;
+    Serial.print("addBit: Added bit ");
+    Serial.print(bit);
+    Serial.print(" => decodeData: 0x");
+    Serial.print(decodeData, HEX);
+    Serial.print(", decodeCountBit: ");
+    Serial.println(decodeCountBit);
 }
 
 void NiceFloDecoder::feed(bool level, uint32_t duration) {
     switch(state) {
     case StepReset:
-        if(!level && durationDiff(duration, te_short * 36) < te_delta * 36) {
+        if(!level && DURATION_DIFF(duration, te_short * 36) < te_delta * 36) {
+            Serial.println(F("Header detected, switching to StepFoundStartBit"));
             state = StepFoundStartBit;
+        } else {
+            Serial.println(F("No header condition met in StepReset"));
         }
         break;
     case StepFoundStartBit:
+        Serial.println(F("State: StepFoundStartBit"));
         if(!level) {
+            Serial.println(F("Ignoring falling edge in StepFoundStartBit"));
             break;
-        } else if(durationDiff(duration, te_short) < te_delta) {
+        } else if(DURATION_DIFF(duration, te_short) < te_delta) {
+            Serial.println(F("Start bit detected, switching to StepSaveDuration"));
             state = StepSaveDuration;
             decodeData = 0;
             decodeCountBit = 0;
         } else {
+            Serial.println(F("Start bit not matched, resetting state"));
             state = StepReset;
         }
         break;
     case StepSaveDuration:
+        Serial.println(F("State: StepSaveDuration"));
         if(!level) { // falling edge: low duration
             if(duration >= (te_short * 4)) {
+                Serial.println(F("Long low duration detected in StepSaveDuration, possible end of data"));
                 state = StepFoundStartBit;
                 if(decodeCountBit >= min_count_bit) {
+                    Serial.print(F("Valid code detected: decodeCountBit = "));
+                    Serial.print(decodeCountBit);
+                    Serial.print(F(", decodeData = 0x"));
+                    Serial.println(decodeData, HEX);
                     validCodeFound = true;
                     finalCode = decodeData;
                     finalBitCount = decodeCountBit;
@@ -68,27 +86,34 @@ void NiceFloDecoder::feed(bool level, uint32_t duration) {
             te_last = duration;
             state = StepCheckDuration;
         } else {
+            Serial.println(F("Unexpected HIGH in StepSaveDuration, resetting state"));
             state = StepReset;
         }
         break;
     case StepCheckDuration:
+        Serial.println(F("State: StepCheckDuration"));
         if(level) {
-            if((durationDiff(te_last, te_short) < te_delta) &&
-               (durationDiff(duration, te_long) < te_delta)) {
+            if((DURATION_DIFF(te_last, te_short) < te_delta) &&
+               (DURATION_DIFF(duration, te_long) < te_delta)) {
+                Serial.println(F("Detected bit 0 in StepCheckDuration"));
                 addBit(0);
                 state = StepSaveDuration;
-            } else if((durationDiff(te_last, te_long) < te_delta) &&
-                      (durationDiff(duration, te_short) < te_delta)) {
+            } else if((DURATION_DIFF(te_last, te_long) < te_delta) &&
+                      (DURATION_DIFF(duration, te_short) < te_delta)) {
+                Serial.println(F("Detected bit 1 in StepCheckDuration"));
                 addBit(1);
                 state = StepSaveDuration;
             } else {
+                Serial.println(F("Duration mismatch in StepCheckDuration, resetting state"));
                 state = StepReset;
             }
         } else {
+            Serial.println(F("Expected HIGH in StepCheckDuration but got LOW, resetting state"));
             state = StepReset;
         }
         break;
     default:
+        Serial.println(F("Unknown state, resetting"));
         state = StepReset;
         break;
     }
@@ -97,12 +122,19 @@ void NiceFloDecoder::feed(bool level, uint32_t duration) {
 bool NiceFloDecoder::decode(long long int* samples, size_t sampleCount) {
     reset();
     for(size_t i = 0; i < sampleCount; i++) {
+        Serial.print("Sample index ");
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.println(samples[i]);
+        
         if(samples[i] > 0) {
             feed(true, samples[i]);
         } else {
             feed(false, -samples[i]);
         }
+        
         if(validCodeFound) {
+            Serial.println(F("Valid code found, exiting decode loop"));
             return true;
         }
     }
@@ -125,9 +157,11 @@ String NiceFloDecoder::getCodeString() const {
     const char* protocolName = "\nNiceFlo";
     sprintf(buf, "%s %dbit\r\nKey:0x%08lX\r\nYek:0x%08lX\r\n",
             protocolName, finalBitCount, codeFound, codeReversed);
+    Serial.println("getCodeString:");
+    Serial.println(buf);
 
-    ScreenManager& screenMgr = ScreenManager::getInstance();
-    lv_obj_t * textarea;
+   ScreenManager& screenMgr = ScreenManager::getInstance();
+             lv_obj_t * textarea;
     if(C1101preset == CUSTOM){
         textarea = screenMgr.text_area_SubGHzCustom;        
     } else {
@@ -135,11 +169,12 @@ String NiceFloDecoder::getCodeString() const {
     }
 
     lv_textarea_set_text(textarea, buf); 
-    Serial.println("getCodeString:");
-    Serial.println(buf);
+
     return String(buf);
 }
 
 bool NiceFloDecoder::hasValidCode() const {
+    Serial.print("hasValidCode: ");
+    Serial.println(validCodeFound ? "true" : "false");
     return validCodeFound;
 }

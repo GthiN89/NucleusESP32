@@ -72,7 +72,8 @@ uint32_t cur_timestamp;
 uint8_t  cur_status;
 uint32_t last_change_time;
 uint32_t pulse_duration;
-
+bool recordingStarted = false;
+int64_t startRec = false;
 
 RCSwitch CC1101_CLASS::getRCSwitch() {
  return mySwitch;
@@ -85,11 +86,15 @@ std::vector<int64_t> CC1101_CLASS::samplesToSend;
 CC1101_CLASS::ReceivedData CC1101_CLASS::receivedData;
 
 void IRAM_ATTR InterruptHandler(void *arg) {
+    if (recordingStarted) {
+        recordingStarted = false;
+        startRec = esp_timer_get_time();
+    }
     static volatile uint64_t DRAM_ATTR lastTime = 0;
     const uint64_t time = esp_timer_get_time();
     int64_t  duration = time - lastTime;
     lastTime = time;
-
+ 
     if (!gpio_get_level(CC1101_CCGDO2A)) {
         duration = -duration;
     }
@@ -241,6 +246,7 @@ void CC1101_CLASS::enableReceiver() {
         CC1101_CLASS::receivedData.normalizedCount = 0;
 
         delay(500);
+    recordingStarted = true;
 
     interrupts();
 }
@@ -502,22 +508,25 @@ void CC1101_CLASS::loadPreset() {
 }
 
 bool CC1101_CLASS::CheckReceived() {
-    if(samplecount > 512) {
+    if(samplecount > 1024) {
         CC1101_CLASS::receivedData.sampleCount = 0;
         samplecount = 0;
         CC1101_CLASS::receivedData.lastReceiveTime = 0;
         return true;
     }
     else if (samplecount < 10 or
-            (esp_timer_get_time() - CC1101_CLASS::receivedData.lastReceiveTime) > 300000) {
+            (esp_timer_get_time() - CC1101_CLASS::receivedData.lastReceiveTime) > 3000000) {
             return false;
     }
-
-    CC1101_CLASS::receivedData.sampleCount = 0;
-    samplecount = 0;
-    CC1101_CLASS::receivedData.lastReceiveTime = 0;
-    return true;
+     else if (samplecount > 10 and
+            (esp_timer_get_time() - startRec) > 3000000) {
+        CC1101_CLASS::receivedData.sampleCount = 0;
+        samplecount = 0;
+        CC1101_CLASS::receivedData.lastReceiveTime = 0;
+        return true;
     
+    }
+    return false;
 //     constexpr unsigned long SIGNAL_TIMEOUT = 25000;
 //     constexpr uint16_t SHORT_PULSE_MIN = 50;
 //     constexpr uint16_t LONG_PULSE_MAX = 1500;
@@ -892,6 +901,7 @@ void CC1101_CLASS::signalAnalyse(){
 
         Serial.println(F("Raw samples: "));
         CC1101_CLASS::receivedData.sampleCount = 0;
+        
         for (const auto &sample : CC1101_CLASS::receivedData.samples) {
             Serial.print(sample);
             data.addSample(sample);
@@ -1109,26 +1119,34 @@ bool CC1101_CLASS::decode() {
         Serial.println("No pulses to decode.");
         return false;
     }
+ Serial.println(startRec - esp_timer_get_time());
+     if(ansonicDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+         ansonicDecoder.getCodeString();
+         return true;
+     }
+
+    if(hormannDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+         hormannDecoder.getCodeString();
+         return true;
+     }
+     if(CameDecode.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+         CameDecode.getCodeString();
+         return true;
+     }
+     if(NiceFloDecode.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+         NiceFloDecode.getCodeString();
+         return true;
+     }
+   if(SMC5326Decoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+         SMC5326Decoder.getCodeString();
+         return true;
+    }
+   if(ChamberlainDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+         ChamberlainDecoder.getCodeString();
+         return true;
+     }
 
 
-   if(hormannDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        hormannDecoder.getCodeString();
-        return true;
-    }
-
-    if(CameDecode.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        CameDecode.getCodeString();
-        return true;
-    }
-    if(NiceFloDecode.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        NiceFloDecode.getCodeString();
-        return true;
-    }
-    if(ansonicDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-        ansonicDecoder.getCodeString();
-        return true;
-    }
-    
 
     return false;  
 }

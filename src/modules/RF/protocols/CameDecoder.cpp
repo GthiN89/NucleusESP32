@@ -28,9 +28,7 @@ void CameDecoder::reset() {
     finalBitCount = 0;
 }
 
-inline uint32_t CameDecoder::durationDiff(uint32_t a, uint32_t b) const {
-    return (a > b) ? (a - b) : (b - a);
-}
+
 
 inline void CameDecoder::addBit(uint8_t bit) {
     decodeData = decodeData << 1 | bit;
@@ -40,7 +38,7 @@ inline void CameDecoder::addBit(uint8_t bit) {
 void CameDecoder::feed(bool level, uint32_t duration) {    
     switch(state) {
     case StepReset:
-        if(!level && durationDiff(duration, te_short * 56) < te_delta * 52) {
+        if(!level && DURATION_DIFF(duration, te_short * 56) < te_delta * 52) {
             state = StepFoundStartBit;
         }
         break;
@@ -48,7 +46,7 @@ void CameDecoder::feed(bool level, uint32_t duration) {
     case StepFoundStartBit:
         if(!level) {
             break;
-        } else if(durationDiff(duration, te_short) < te_delta) {
+        } else if(DURATION_DIFF(duration, te_short) < te_delta) {
             state = StepSaveDuration;
             decodeData = 0;
             decodeCountBit = 0;
@@ -80,16 +78,16 @@ void CameDecoder::feed(bool level, uint32_t duration) {
 
     case StepCheckDuration:
         if(level) {
-            if((durationDiff(te_last, te_short) <
+            if((DURATION_DIFF(te_last, te_short) <
                 te_delta) &&
-               (durationDiff(duration, te_long) <
+               (DURATION_DIFF(duration, te_long) <
                 te_delta)) {
                 addBit(0);
                 state = StepSaveDuration;
             } else if(
-                (durationDiff(te_last, te_long) <
+                (DURATION_DIFF(te_last, te_long) <
                  te_delta) &&
-                (durationDiff(duration, te_short) <
+                (DURATION_DIFF(duration, te_short) <
                  te_delta)) {
                 addBit(1);
                 state = StepSaveDuration;

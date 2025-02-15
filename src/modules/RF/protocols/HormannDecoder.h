@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <stdint.h>
+#include "math.h"
 
 class HormannDecoder {
 public:
@@ -47,7 +48,6 @@ private:
     uint64_t finalCode;
     uint8_t finalBitCount;
 
-    uint32_t durationDiff(uint32_t a, uint32_t b) const;
     void addBit(uint8_t bit);
     uint64_t reverseKey(uint64_t code, uint8_t bitCount) const;
     bool checkPattern() const;

@@ -1,62 +1,68 @@
-#ifndef ANSONIC_DECODER_H
-#define ANSONIC_DECODER_H
+#ifndef ANSONICDECODER_H
+#define ANSONICDECODER_H
 
 #include <Arduino.h>
 #include <stdint.h>
-#include <String.h>
+#include <stddef.h>
+#include "math.h"
+
+#define DIP_PATTERN "%c%c%c%c%c%c%c%c%c%c"
+#define CNT_TO_DIP(dip)                                                                         \
+    ((dip & 0x0800) ? '1' : '0'), ((dip & 0x0400) ? '1' : '0'), ((dip & 0x0200) ? '1' : '0'),     \
+    ((dip & 0x0100) ? '1' : '0'), ((dip & 0x0080) ? '1' : '0'), ((dip & 0x0040) ? '1' : '0'),     \
+    ((dip & 0x0020) ? '1' : '0'), ((dip & 0x0010) ? '1' : '0'), ((dip & 0x0001) ? '1' : '0'),     \
+    ((dip & 0x0008) ? '1' : '0')
 
 class AnsonicDecoder {
 public:
     AnsonicDecoder();
 
-    // Reset internal state.
+    // Resets the decoder to its initial state.
     void reset();
 
-    // Feed a single sample (level and duration in µs).
+    // Feeds a signal pulse to the decoder.
     void feed(bool level, uint32_t duration);
 
-    // Process an array of samples; returns true if a valid code is detected.
+    // Processes an array of raw signal samples.
     bool decode(long long int* samples, size_t sampleCount);
 
-    // Return a formatted string with the decoded key, button and DIP info.
-    // Also updates the GUI textarea.
-    String getCodeString();
+    // Returns a formatted string of the decoded code.
+    String getCodeString() const;
 
-    // Returns true if a valid code has been detected.
+    // Returns true if a valid code has been decoded.
     bool hasValidCode() const;
 
+    // Transmits the given code using the Ansonic protocol.
+    // The code is transmitted with the specified bit count.
+    void transmit(uint32_t code, uint8_t bitCount);
+
 private:
+    // Adds a bit to the decoded data.
+    inline void addBit(uint8_t bit);
+
+    // Timing constants for the Ansonic protocol.
+    const uint32_t te_short;
+    const uint32_t te_long;
+    const uint32_t te_delta;
+    const uint8_t  min_count_bit;
+
+    // Decoder state machine steps.
     enum DecoderStep {
-        StepReset,
+        StepReset = 0,
         StepFoundStartBit,
         StepSaveDuration,
-        StepCheckDuration
+        StepCheckDuration,
     };
 
     DecoderStep state;
-
-    const uint32_t te_short;       // 555 µs
-    const uint32_t te_long;        // 1111 µs
-    const uint32_t te_delta;       // 120 µs tolerance
-    const uint8_t  min_count_bit;  // 12 bits
-
     uint32_t decodeData;
-    uint8_t  decodeCountBit;
+    uint8_t decodeCountBit;
     uint32_t te_last;
 
-    // Generic protocol fields (final decoded values).
-    uint32_t data;         // full key data
-    uint8_t  dataCountBit; // number of bits received
-    uint32_t btn;          // button field
-    uint32_t cnt;          // DIP bits (extracted from key)
-    String   protocolName;
-    bool     validCodeFound;
-
-    // Helper: compute absolute difference.
-    uint32_t durationDiff(uint32_t a, uint32_t b) const;
-
-    // Helper: add a bit (to the key data).
-    void addBit(uint8_t bit);
+    // Final decoded data.
+    bool validCodeFound;
+    uint32_t finalCode;
+    uint8_t finalBitCount;
 };
 
-#endif // ANSONIC_DECODER_H
+#endif // ANSONICDECODER_H

@@ -11,6 +11,8 @@
 #include "protocols/CameDecoder.h" 
 #include "protocols/NiceFloDecoder.h"
 #include "protocols/AnsonicDecoder.h"
+#include "protocols/Smc5326Decoder.h"
+#include "protocols/ChamberlainCodeDecoder.h"
 
 #define SAMPLE_SIZE 4092
 #define MAX_SIGNAL_LENGTH 10000000  
@@ -246,6 +248,11 @@ private:
     CameDecoder CameDecode;
     AnsonicDecoder ansonicDecoder;
     NiceFloDecoder NiceFloDecode;
+    Smc5326Decoder  SMC5326Decoder;
+
+    ChamberlainCodeDecoder ChamberlainDecoder;
+
+
     uint16_t spaceAvg = 0;
     size_t smoothcount;
     uint16_t sampleSmooth[SAMPLE_SIZE];

@@ -27,9 +27,6 @@ void HormannDecoder::reset() {
     finalBitCount = 0;
 }
 
-uint32_t HormannDecoder::durationDiff(uint32_t a, uint32_t b) const {
-    return (a > b) ? (a - b) : (b - a);
-}
 
 void HormannDecoder::addBit(uint8_t bit) {
     decodeData = (decodeData << 1) | bit;
@@ -52,12 +49,12 @@ bool HormannDecoder::checkPattern() const {
 void HormannDecoder::feed(bool level, uint32_t duration) {
     switch(state) {
     case StepReset:
-        if(level && durationDiff(duration, te_short * 24) < te_delta * 24) {
+        if(level && DURATION_DIFF(duration, te_short * 24) < te_delta * 24) {
             state = StepFoundStartBit;
         }
         break;
     case StepFoundStartBit:
-        if(!level && durationDiff(duration, te_short) < te_delta) {
+        if(!level && DURATION_DIFF(duration, te_short) < te_delta) {
             state = StepSaveDuration;
             decodeData = 0;
             decodeCountBit = 0;
@@ -84,12 +81,12 @@ void HormannDecoder::feed(bool level, uint32_t duration) {
         break;
     case StepCheckDuration:
         if(!level) {
-            if((durationDiff(te_last, te_short) < te_delta) &&
-               (durationDiff(duration, te_long) < te_delta)) {
+            if((DURATION_DIFF(te_last, te_short) < te_delta) &&
+               (DURATION_DIFF(duration, te_long) < te_delta)) {
                 addBit(0);
                 state = StepSaveDuration;
-            } else if((durationDiff(te_last, te_long) < te_delta) &&
-                      (durationDiff(duration, te_short) < te_delta)) {
+            } else if((DURATION_DIFF(te_last, te_long) < te_delta) &&
+                      (DURATION_DIFF(duration, te_short) < te_delta)) {
                 addBit(1);
                 state = StepSaveDuration;
             } else {

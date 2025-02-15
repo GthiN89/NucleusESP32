@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <stdint.h>
+#include "math.h"
 
 struct Sample {
     bool level;
@@ -53,7 +54,6 @@ private:
     uint32_t finalCode;
     uint8_t  finalBitCount;
 
-    inline uint32_t durationDiff(uint32_t a, uint32_t b) const;
     inline void addBit(uint8_t bit);
     uint32_t reverseKey(uint32_t code, uint8_t bitCount) const;
     void feed(bool level, uint32_t duration);
