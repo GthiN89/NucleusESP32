@@ -1,0 +1,26 @@
+{
+    "name": "NucleusESP32 Development",
+    "dockerFile": "../Dockerfile",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "twxs.cmake",
+                "cschlosser.doxdocgen",
+                "eamodio.gitlens",
+                "ms-vscode.cpptools-extension-pack"
+            ],
+            "settings": {
+                "C_Cpp.clang_format_path": "/usr/bin/clang-format",
+                "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+                "C_Cpp.codeAnalysis.runAutomatically": true,
+                "cmake.configureOnOpen": true,
+                "editor.formatOnSave": true
+            }
+        }
+    },
+    "forwardPorts": [],
+    "postCreateCommand": "chmod +x scripts/run-analysis.sh",
+    "remoteUser": "vscode"
+} 

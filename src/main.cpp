@@ -19,6 +19,7 @@
 #include <IRutils.h>
 #include "modules/IR/ir.h"
 
+#include "nfc.h"
 
 decode_results results;
 IRsend Irsend(IR_TX);
@@ -34,6 +35,20 @@ XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
 ScreenManager& screenMgrM = ScreenManager::getInstance();
 static lv_indev_t *indev = nullptr;
 TouchCallback _singleTouchCallback;
+
+// Define the RFID module pins (adjust these based on your hardware setup)
+constexpr uint8_t RFID_SS_PIN = 10;
+constexpr uint8_t RFID_RESET_PIN = 9;
+
+// Create an NFC instance.
+NFC nfc(RFID_SS_PIN, RFID_RESET_PIN);
+
+// Callback function that is called when a card is detected.
+void onCardDetected(const String &uid) {
+    Serial.print("Callback - Card detected with UID: ");
+    Serial.println(uid);
+    // Additional actions can be performed here (e.g., update the UI).
+}
 
 void register_touch(lv_disp_t *disp);
 void my_touchpad_read(lv_indev_t * indev_driver, lv_indev_data_t * data);
@@ -82,7 +97,11 @@ void setup() {
 
     pinMode(26, OUTPUT);
       
-
+  // Initialize the NFC module.
+  nfc.begin();
+  
+  // Set the card detected callback.
+  nfc.setCardDetectedCallback(onCardDetected);
 }
 
  void CC1101Loop() {
@@ -203,7 +222,10 @@ void setup() {
         lv_label_set_text(label_sub, text.c_str());        
     }
   
+  // Periodically update the NFC module.
+  nfc.update();
 
+  delay(100);  // Adjust delay as needed.
 }
  
  bool touched() {
