@@ -148,6 +148,7 @@ The module follows SOLID principles:
 
 ### Class Diagram
 ```mermaid
+%%{init: {'theme': 'forest'}}%%
 classDiagram
     class INFCReader {
         <<interface>>
@@ -200,11 +201,11 @@ classDiagram
     NFC o-- NFCState : uses
     MFRC522Reader ..> UID : creates
     INFCReader ..> UID : uses
-
 ```
 
 ### State Diagram
 ```mermaid
+%%{init: {'theme': 'forest'}}%%
 stateDiagram-v2
     [*] --> Idle: begin()
     Idle --> Reading: isNewCardPresent()
@@ -254,6 +255,7 @@ sequenceDiagram
 
 ### Component Integration
 ```mermaid
+%%{init: {'theme': 'forest'}}%%
 graph TD
     subgraph NFC Module
         A[NFC Class] --> B[INFCReader]
@@ -279,6 +281,7 @@ graph TD
 
 ### Protocol State Machine
 ```mermaid
+%%{init: {'theme': 'forest'}}%%
 stateDiagram-v2
     [*] --> Ready: initialize()
     Ready --> WaitingForCard: field active
