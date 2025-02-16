@@ -1,68 +1,118 @@
-// #include <SPI.h>
-// #include <MFRC522v2.h>
-// #include <MFRC522DriverSPI.h>
-// #include <MFRC522DriverPinSimple.h>
-// #include <MFRC522Debug.h>
-// #include "nfc.h"
-// #include "globals.h"
-//  MFRC522DriverPinSimple ss_pin(RFID_CS); // Create pin driver. See typical pin layout above.
+#include "nfc.h"
+#include <stdexcept>
 
-//  //SPIClass &spiClass = SPI; // Alternative SPI e.g. SPI2 or from library e.g. softwarespi.
+#ifdef ARDUINO
+  #include <Arduino.h>
+  #define LOG_PRINTLN(msg) Serial.println(F(msg))
+  #define LOG_PRINT(msg) Serial.print(F(msg))
+  #define LOG_PRINT_VAR(msg) Serial.print(msg)
+  #define HEX_FORMAT 16
+#else
+  #define LOG_PRINTLN(msg) 
+  #define LOG_PRINT(msg) 
+  #define LOG_PRINT_VAR(msg)
+  #define HEX_FORMAT 16
+#endif
 
+NFC::NFC(std::unique_ptr<INFCReader> readerImplementation)
+    : reader(std::move(readerImplementation))
+    , callback(nullptr) {
+    if (!reader) {
+        throw std::invalid_argument("NFC reader implementation cannot be null");
+    }
+}
 
-// MFRC522DriverSPI driver{ss_pin}; // Create SPI driver.
+void NFC::begin() {
+    if (!reader) {
+        throw std::runtime_error("NFC reader not initialized");
+    }
 
-// MFRC522 mfrc522{driver}; // Create MFRC522 instance.
+    try {
+        reader->initialize();
+        LOG_PRINTLN("NFC module initialized");
+    } catch (const std::exception& e) {
+        LOG_PRINT("NFC initialization failed: ");
+        LOG_PRINT_VAR(e.what());
+        state = NFCState::Idle;
+        throw;
+    }
+}
 
+void NFC::update() {
+    if (!reader) {
+        return;
+    }
 
+    try {
+        if (reader->isNewCardPresent() && reader->readCardSerial()) {
+            state = NFCState::Reading;
+            const auto uid = reader->getUID();
 
-// NFC_STATE NFCCurrentState = NFC_IDLE;
+            if (uid.size > 0) {
+                String uidStr("");
+                uidStr = formatUID(uid.data.data(), uid.size);
+                LOG_PRINT("NFC Card detected: ");
+                LOG_PRINT_VAR(uidStr);
 
-// void enableRFID() {
-//      digitalWrite(RF24_CS, HIGH);
-//      digitalWrite(CC1101_CS, HIGH);
-//      digitalWrite(RFID_CS, LOW);
+                if (callback) {
+                    try {
+                        callback(uidStr);
+                    } catch (...) {
+                        LOG_PRINTLN("Error in card detection callback");
+                    }
+                }
+            }
 
-//      mfrc522.PCD_Init();   // Init MFRC522 board.
-//      Serial.println("RFID enable");
-//    MFRC522Debug::PCD_DumpVersionToSerial(mfrc522, Serial);	// Show details of PCD - MFRC522 Card Reader details.
-// 	 Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
-//    mfrc522.PCD_SoftPowerDown();
-// }
+            reader->halt();
+            state = NFCState::Idle;
+        }
+    } catch (const std::exception& e) {
+        LOG_PRINT("Error during NFC update: ");
+        LOG_PRINT_VAR(e.what());
+        state = NFCState::Idle;
+    }
+}
 
-// void readLoop(){
-//   mfrc522.PCD_Reset();
-//   mfrc522.PCD_SoftPowerUp();
+void NFC::shutdown() {
+    if (!reader) {
+        return;
+    }
 
-// 	//Dump debug info about the card; PICC_HaltA() is automatically called.
-//   MFRC522Debug::PICC_DumpToSerial(mfrc522, Serial, &(mfrc522.uid));
+    try {
+        reader->powerDown();
+        state = NFCState::Idle;
+        LOG_PRINTLN("NFC module shutdown");
+    } catch (const std::exception& e) {
+        LOG_PRINT("Error during NFC shutdown: ");
+        LOG_PRINT_VAR(e.what());
+        throw;
+    }
+}
 
-//     if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+[[nodiscard]] auto NFC::getState() const -> NFCState {
+    return state;
+}
 
-//       Serial.print(F("Reader "));
-//       static uint8_t i = 0;
-//       i++;
-//       Serial.print(i);
-      
-//       // Show some details of the PICC (that is: the tag/card).
-//       Serial.print(F(": Card UID:"));
-//       MFRC522Debug::PrintUID(Serial, mfrc522.uid);
-//       Serial.println();
-      
-//       Serial.print(F("PICC type: "));
-//       MFRC522::PICC_Type piccType = mfrc522.PICC_GetType(mfrc522.uid.sak);
-//       Serial.println(MFRC522Debug::PICC_GetTypeName(piccType));
-      
-//       // Halt PICC.
-//       mfrc522.PICC_HaltA();
-//       // Stop encryption on PCD.
-//       mfrc522.PCD_StopCrypto1();
-    
-//   }
-// }
+void NFC::setCardDetectedCallback(CardDetectedCallback callback) {
+    this->callback = std::move(callback);
+}
 
-// void disableRFID() {
-//     mfrc522.PCD_SoftPowerDown();
-//     digitalWrite(RFID_CS, HIGH);
+[[nodiscard]] auto NFC::formatUID(const byte* uidBytes, byte uidSize) const -> String {
+    if (uidBytes == nullptr || uidSize == 0 || uidSize > 10) {
+        return {};
+    }
 
-// }
+    String result("");
+    result.reserve(static_cast<size_t>(uidSize) * 2);  // Pre-allocate space for efficiency
+
+    for (byte i = 0; i < uidSize; i++) {
+        if (uidBytes[i] < 0x10) {
+            result += '0';
+        }
+        result += String(uidBytes[i], HEX_FORMAT);
+    }
+    result.toUpperCase();
+    return result;
+}
+
+// Remaining setter/getter implementations...
