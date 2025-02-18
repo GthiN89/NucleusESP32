@@ -8,6 +8,7 @@
 #include <FFat.h>
 #include "lv_fs_if.h"
 #include "modules/dataProcessing/SubGHzParser.h"
+#include "modules/RF/brute.h"
 
 
 #include <Wire.h>
@@ -26,6 +27,7 @@ IRrecv Irrecv(IR_RX);
 IR_CLASS ir;
 RCSwitch mySwitch1;
 
+BRUTE::CC1101_BRUTE RFbruteForcer;
 
 
 SDcard& SD_CARD = SDcard::getInstance();
@@ -34,6 +36,7 @@ XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
 ScreenManager& screenMgrM = ScreenManager::getInstance();
 static lv_indev_t *indev = nullptr;
 TouchCallback _singleTouchCallback;
+
 
 void register_touch(lv_disp_t *disp);
 void my_touchpad_read(lv_indev_t * indev_driver, lv_indev_data_t * data);
@@ -125,13 +128,13 @@ void setup() {
         runningModule = MODULE_NONE;
     }
     if(C1101CurrentState == STATE_DETECT) {
-        lv_label_set_text(screenMgrM.detectLabel, 
-        (String("Frequencies:\n") +
-        "Frequency: " + strongestASKFreqs[0] + " MHz | RSSI: " + strongestASKRSSI[0] + "\n" +
-        "Frequency: " + strongestASKFreqs[1] + " MHz | RSSI: " + strongestASKRSSI[1] + "\n" +
-        "Frequency: " + strongestASKFreqs[2] + " MHz | RSSI: " + strongestASKRSSI[2] + "\n" +
-        "Frequency: " + strongestASKFreqs[3] + " MHz | RSSI: " + strongestASKRSSI[3] + "\n\n")
-        .c_str());
+        // lv_label_set_text(screenMgrM.detectLabel, 
+        // (String("Frequencies:\n") +
+        // "Frequency: " + strongestASKFreqs[0] + " MHz | RSSI: " + strongestASKRSSI[0] + "\n" +
+        // "Frequency: " + strongestASKFreqs[1] + " MHz | RSSI: " + strongestASKRSSI[1] + "\n" +
+        // "Frequency: " + strongestASKFreqs[2] + " MHz | RSSI: " + strongestASKRSSI[2] + "\n" +
+        // "Frequency: " + strongestASKFreqs[3] + " MHz | RSSI: " + strongestASKRSSI[3] + "\n\n")
+        // .c_str());
     }
 
     if(C1101CurrentState == STATE_SEND_FLIPPER) {
@@ -139,6 +142,19 @@ void setup() {
         parser.loadFile(EVENTS::fullPath);
         SubGHzData data = parser.parseContent();
     }
+
+    if(C1101CurrentState == STATE_BRUTE) {
+        if(BruteCurrentState == CAME_12bit) {
+            if(RFbruteForcer.Came12BitBrute()){
+                C1101CurrentState = STATE_IDLE;
+            }      
+        
+        };
+
+        Serial.println(RFbruteForcer.counter);
+        Serial.print(F("CAME codes send"));
+    }
+
     if(C1101CurrentState == STATE_IDLE) {
         updatetransmitLabel = false;
         delay(20);
@@ -202,7 +218,6 @@ void setup() {
         String text = "Transmitting\n Codes send: " + String(codesSend);
         lv_label_set_text(label_sub, text.c_str());        
     }
-  
 
 }
  

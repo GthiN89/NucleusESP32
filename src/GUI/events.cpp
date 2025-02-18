@@ -81,10 +81,12 @@ void EVENTS::btn_event_Replay_run(lv_event_t* e) {
 void EVENTS::btn_event_Brute_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-            CC1101EV.enableTransmit();
-decoder.transmit(0xABCD, 16);
-delay (2000);
-          screenMgr.createReplayScreen();
+        Serial.println("Brute force clicked");
+        //    CC1101.enableTransmit();
+            runningModule = MODULE_CC1101;
+            C1101CurrentState = STATE_BRUTE;
+            BruteCurrentState = CAME_12bit;
+
     }
 }
 
@@ -272,12 +274,12 @@ void EVENTS::sendCapturedEvent(lv_event_t * e) {
     } else if(strcmp(selected_text_type, "RC-Switch") == 0) {
         CC1101EV.initRaw();
         RCSwitch mySwitch3;
-        Serial.println("RCSwitch");
-        CC1101EV.setFrequency(CC1101_MHZ);
-        mySwitch3.setProtocol(mySwitch3.getReceivedProtocol());
-        mySwitch3.setPulseLength(mySwitch3.getReceivedDelay());
-        mySwitch3.enableTransmit(17);
-        mySwitch3.send("11111100");
+        // Serial.println("RCSwitch");
+        // CC1101EV.setFrequency(CC1101_MHZ);
+        // mySwitch3.setProtocol(mySwitch3.getReceivedProtocol());
+        // mySwitch3.setPulseLength(mySwitch3.getReceivedDelay());
+        // mySwitch3.enableTransmit(17);
+        // mySwitch3.send("11111100");
     }
         
     }
@@ -888,6 +890,7 @@ void EVENTS::CC1101TransmitTask(void* pvParameters) {
     CC1101EV.initRaw();
     ELECHOUSE_cc1101.setCCMode(0); 
     ELECHOUSE_cc1101.setPktFormat(3);
+    ELECHOUSE_cc1101.setPA(12);
     ELECHOUSE_cc1101.SetTx();
     pinMode(CC1101_CCGDO0A, OUTPUT);
     digitalWrite(CC1101_CCGDO0A, LOW);

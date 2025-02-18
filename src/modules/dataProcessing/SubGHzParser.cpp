@@ -32,6 +32,7 @@ SubGHzData SubGHzParser::parseContent() {
             SD_SUB.tempFreq = data.frequency / 1000000.0f;
         } else if (line.startsWith("Preset:")) {
             data.preset = line.substring(7);
+            Serial.print("preset parser " + data.preset);
             C1101preset =  convert_str_to_enum(data.preset.c_str());
             SubGHzParser::setRegisters();
         } else if (line.startsWith("Custom_preset_data:")) {
@@ -157,7 +158,7 @@ void SubGHzParser::setRegisters(){
     if (data.preset == "FuriHalSubGhzPresetCustom") {
         regs = data.custom_preset_data;  
     } else {
-        const uint8_t* array = presetTobyteArray(convert_str_to_enum(data.preset.c_str()));
+    const uint8_t* array = presetTobyteArray(convert_str_to_enum(data.preset.c_str()));
     size_t presetArrayLength = 44;
     regs.assign(array, array + presetArrayLength);
     }

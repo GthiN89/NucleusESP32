@@ -7,6 +7,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
     enum State {
         IDLE,
@@ -20,10 +21,9 @@
 
    void setState(State newState);
 
-
-
 extern State currentState;
 
+extern std::vector<int64_t> samplesToSend;
 
  enum CC1101_PRESET {
      AM650,
@@ -42,16 +42,14 @@ extern State currentState;
  };
 
 extern CC1101_PRESET  C1101preset;
-
-enum SPI_STATE
- {
-  SPI_STATE_NC,
-  SPI_STATE_INIT,
-  SPI_STATE_FREE,
-  SPI_STATE_CC1101,
-  SPI_STATE_NRF24,
-  SPI_STATE_RC522
-};
+ enum EncoderStep {
+        EncoderStepIddle,
+        EncoderStepStart,
+        EncodeStepStartBit,
+        EncoderStepDurations,
+        EncoderStepReady //to relase
+    };
+extern EncoderStep encoderState;
 
 
 const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0); // May have to be set if hardware is not fully compatible to Arduino specifications.
@@ -142,10 +140,20 @@ enum C1101State
   STATE_TESLA_US,
   STATE_TESLA_EU,
   STATE_SEND_FLIPPER,
+  STATE_BRUTE,
   STATE_DETECT,
 };
-
 extern uint8_t C1101CurrentState;
+
+enum BruteProtocol {
+  CAME_12bit,
+  NICE_12bit,
+  BRUTE_IDLE,
+};
+
+extern uint8_t BruteCurrentState;
+
+
 
 enum RunnigModule
 {

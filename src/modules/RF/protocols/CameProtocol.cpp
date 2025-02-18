@@ -1,25 +1,31 @@
-#include "CameDecoder.h"
+#include "CameProtocol.h"
 #include <stdio.h>
 #include "lvgl.h"
 #include "GUI/ScreenManager.h"
 #include "globals.h"
 
-CameDecoder::CameDecoder()
+
+CameProtocol::CameProtocol() 
     : te_short(320),
       te_long(640),
       te_delta(150),
       min_count_bit(12),
-      state(StepReset),
+      binaryValue(0),
+      DecoderState(DecoderStepReset),
       decodeData(0),
       decodeCountBit(0),
       te_last(0),
       validCodeFound(false),
       finalCode(0),
-      finalBitCount(0) {
+      finalBitCount(0) 
+{
+    binaryValue = std::bitset<12>(0);
+    encoderState = EncoderStepIddle;
 }
 
-void CameDecoder::reset() {
-    state = StepReset;
+
+void CameProtocol::reset() {
+    DecoderState = DecoderStepReset;
     decodeData = 0;
     decodeCountBit = 0;
     te_last = 0;
@@ -30,35 +36,92 @@ void CameDecoder::reset() {
 
 
 
-inline void CameDecoder::addBit(uint8_t bit) {
+inline void CameProtocol::addBit(uint8_t bit) {
     decodeData = decodeData << 1 | bit;
     decodeCountBit++;
 }
 
-void CameDecoder::feed(bool level, uint32_t duration) {    
-    switch(state) {
-    case StepReset:
+
+void CameProtocol::toBits(unsigned int hexValue) {
+    binaryValue = std::bitset<12>(hexValue);
+}
+
+
+void CameProtocol::yield(unsigned int hexValue) {
+   // Serial.println("CameProtocol::yield");
+    switch (encoderState)
+    {
+    case EncoderStepStart:
+        samplesToSend.clear();
+        toBits(hexValue);
+        encoderState = EncodeStepStartBit;
+        break;
+    case EncodeStepStartBit:   
+        samplesToSend.push_back(320);
+        encoderState = EncoderStepDurations;
+        break;
+    case EncoderStepDurations:
+        for (size_t i = 0; i < 12; i++) 
+        {
+            if (binaryValue[i]) {
+                samplesToSend.push_back(640);
+                samplesToSend.push_back(320);
+            } else {
+                samplesToSend.push_back(320);
+                samplesToSend.push_back(640); 
+            }
+        }
+        samplesToSend.push_back(11520);
+        samplesToSend.push_back(320);
+                for (size_t i = 0; i < 12; i++) 
+        {
+            if (binaryValue[i]) {
+                samplesToSend.push_back(640);
+                samplesToSend.push_back(320);
+            } else {
+                samplesToSend.push_back(320);
+                samplesToSend.push_back(640); 
+            }
+        }
+        samplesToSend.push_back(11520);
+        // for (size_t i = 0; i < samplesToSend.size(); i++)
+        // {
+        //     Serial.println(samplesToSend[i]);
+        // }
+        
+            encoderState = EncoderStepReady;
+
+        break;
+    default:
+            //
+        break;
+    }
+}
+
+void CameProtocol::feed(bool level, uint32_t duration) {    
+    switch(DecoderState) {
+    case DecoderStepReset:
         if(!level && DURATION_DIFF(duration, te_short * 56) < te_delta * 52) {
-            state = StepFoundStartBit;
+            DecoderState = DecoderStepFoundStartBit;
         }
         break;
 
-    case StepFoundStartBit:
+    case DecoderStepFoundStartBit:
         if(!level) {
             break;
         } else if(DURATION_DIFF(duration, te_short) < te_delta) {
-            state = StepSaveDuration;
+            DecoderState = DecoderStepSaveDuration;
             decodeData = 0;
             decodeCountBit = 0;
         } else {
-            state = StepReset;
+            DecoderState = DecoderStepReset;
         }
         break;
 
-    case StepSaveDuration:
+    case DecoderStepSaveDuration:
         if(!level) {
             if(duration > 5000) {
-                state = StepFoundStartBit;
+                DecoderState = DecoderStepFoundStartBit;
                 if((decodeCountBit == min_count_bit) ||
                    (decodeCountBit == AIRFORCE_COUNT_BIT) ||
                    (decodeCountBit == PRASTEL_COUNT_BIT) ||
@@ -70,42 +133,42 @@ void CameDecoder::feed(bool level, uint32_t duration) {
                 break;
             }
             te_last = duration;
-            state = StepCheckDuration;
+            DecoderState = DecoderStepCheckDuration;
         } else {
-            state = StepReset;
+            DecoderState = DecoderStepReset;
         }
         break;
 
-    case StepCheckDuration:
+    case DecoderStepCheckDuration:
         if(level) {
             if((DURATION_DIFF(te_last, te_short) <
                 te_delta) &&
                (DURATION_DIFF(duration, te_long) <
                 te_delta)) {
                 addBit(0);
-                state = StepSaveDuration;
+                DecoderState = DecoderStepSaveDuration;
             } else if(
                 (DURATION_DIFF(te_last, te_long) <
                  te_delta) &&
                 (DURATION_DIFF(duration, te_short) <
                  te_delta)) {
                 addBit(1);
-                state = StepSaveDuration;
+                DecoderState = DecoderStepSaveDuration;
             } else {
-                state = StepReset;
+                DecoderState = DecoderStepReset;
             }
         } else {
-            state = StepReset;
+            DecoderState = DecoderStepReset;
         }
         break;
 
     default:
-        state = StepReset;
+        DecoderState = DecoderStepReset;
         break;
     }
 }
 
-bool CameDecoder::decode(long long int* samples, size_t sampleCount) {
+bool CameProtocol::decode(long long int* samples, size_t sampleCount) {
     reset();
     for (size_t i = 0; i < sampleCount; i++) {
         if (samples[i] > 0) {
@@ -120,7 +183,7 @@ bool CameDecoder::decode(long long int* samples, size_t sampleCount) {
     return false;
 }
 
-uint32_t CameDecoder::reverseKey(uint32_t code, uint8_t bitCount) const {
+uint32_t CameProtocol::reverseKey(uint32_t code, uint8_t bitCount) const {
     uint32_t reversed = 0;
     for(uint8_t i = 0; i < bitCount; i++) {
         reversed <<= 1;
@@ -129,7 +192,7 @@ uint32_t CameDecoder::reverseKey(uint32_t code, uint8_t bitCount) const {
     return reversed;
 }
 
-String CameDecoder::getCodeString() const {
+String CameProtocol::getCodeString() const {
     ScreenManager& screenMgr = ScreenManager::getInstance();
 
     char buf[128];
@@ -155,6 +218,6 @@ String CameDecoder::getCodeString() const {
     return String(buf);
 }
 
-bool CameDecoder::hasValidCode() const {
+bool CameProtocol::hasValidCode() const {
     return validCodeFound;
 }

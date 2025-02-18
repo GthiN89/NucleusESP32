@@ -7,14 +7,14 @@
 #include "SPI.h"
 #include <driver/timer.h>
 //decoders
-#include "protocols/HormannDecoder.h" 
-#include "protocols/CameDecoder.h" 
-#include "protocols/NiceFloDecoder.h"
+#include "protocols/HormannProtocol.h" 
+#include "protocols/CameProtocol.h" 
+#include "protocols/NiceFloProtocol.h"
 #include "protocols/AnsonicDecoder.h"
 #include "protocols/Smc5326Decoder.h"
 #include "protocols/ChamberlainCodeDecoder.h"
 
-#define SAMPLE_SIZE 4092
+#define SAMPLE_SIZE 1024
 #define MAX_SIGNAL_LENGTH 10000000  
 #define RAW_BUF_SIZE   2048     // Maximum number of raw samples
 #define TE_MIN_COUNT   5        // Minimum number of high pulses required to calculate TE
@@ -35,10 +35,7 @@ extern uint16_t sample[];
 extern uint8_t samplecount;
 extern bool startLow;
 extern uint32_t actualFreq;
-extern float strongestASKFreqs[4];
-extern int strongestASKRSSI[4];
-extern float strongestFSKFreqs[2];
-extern int strongestFSKRSSI[2];
+
 
 #include <vector>
 
@@ -101,57 +98,8 @@ struct SignalCollection {
     }
 };
 
-struct pulseTrain {
-    std::vector<uint16_t> pulseTrainVec;
-    uint16_t size = 0;
-    void addPulse(uint16_t pulse) {
-        pulseTrainVec.push_back(pulse);
-        size++;
-    }
-    uint16_t getPulse(uint16_t i) {
-        return pulseTrainVec[i];
-    }
-    void clear() {
-        pulseTrainVec.clear();
-        size = 0;
-    }
-    uint16_t getSize() {
-        // if(size > 0) {
-        //     return size;
-        // } else {
-        //     return 1;
-        // }
-       return pulseTrainVec.size();
-    }
-};
 
 
-struct pulseTrains {
-    std::vector<pulseTrain> pulseTrainVec;
-    uint16_t size = 0; 
-    void addPulseTrain(const pulseTrain& pt) { 
-        pulseTrainVec.push_back(pt);
-        size++;
-    }
-    pulseTrain getPulseTrain(uint16_t i) {
-       return pulseTrainVec[i];
-    } 
-    pulseTrain* getPulseTrainPointer(uint16_t i) {
-       return &pulseTrainVec[i];
-    }
-    void clear() {
-        pulseTrainVec.clear();
-        size = 0;
-    }
-    uint16_t getSize() {
-        // if(size > 0) {
-        //     return size;
-        // } else {
-        //     return 1;
-        // }
-    return    pulseTrainVec.size();
-    }
-};
 
 struct CC1101TH {
     std::map<int, uint8_t> valueMap = {
@@ -196,7 +144,7 @@ public:
     int CC1101_SYNC = 2;
     float CC1101_FREQ = 433.92;
     int CC1101_MODULATION;
-    static std::vector<int64_t> samplesToSend;
+
 
     struct ReceivedData {
         std::vector<int64_t> samples;
@@ -204,7 +152,6 @@ public:
         volatile unsigned long lastReceiveTime = 0;
         volatile unsigned long sampleCount = 0;
         volatile unsigned long normalizedCount = 0;
-        std::vector<uint16_t> pulseTrainVec;
         bool startstate;
 
         size_t size(){
@@ -239,15 +186,16 @@ public:
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
     void enableScanner(float start, float stop);
     void emptyReceive();
+    std::vector<int64_t> getPulseClusters(const std::vector<int64_t>& samples);
     bool decode();
 
 
 private:
     //decoder instances
-    HormannDecoder hormannDecoder;
-    CameDecoder CameDecode;
+    HormannProtocol hormannProtocol;
+    CameProtocol cameProtocol;
     AnsonicDecoder ansonicDecoder;
-    NiceFloDecoder NiceFloDecode;
+    NiceFloProtocol niceFloProtocol;
     Smc5326Decoder  SMC5326Decoder;
 
     ChamberlainCodeDecoder ChamberlainDecoder;

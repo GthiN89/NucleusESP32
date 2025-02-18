@@ -1,9 +1,9 @@
-#include "HormannDecoder.h"
+#include "HormannProtocol.h"
 #include "lvgl.h"
 #include "GUI/ScreenManager.h"
 #include "globals.h"
 
-HormannDecoder::HormannDecoder()
+HormannProtocol::HormannProtocol()
     : te_short(500),
       te_long(1000),
       te_delta(200),
@@ -14,10 +14,13 @@ HormannDecoder::HormannDecoder()
       te_last(0),
       validCodeFound(false),
       finalCode(0),
-      finalBitCount(0) {
+      finalBitCount(0),
+      hormanEncoderState(HormanEncoderStepStart),
+      bitCount(44)
+     {
 }
 
-void HormannDecoder::reset() {
+void HormannProtocol::reset() {
     state = StepReset;
     decodeData = 0;
     decodeCountBit = 0;
@@ -28,12 +31,12 @@ void HormannDecoder::reset() {
 }
 
 
-void HormannDecoder::addBit(uint8_t bit) {
+void HormannProtocol::addBit(uint8_t bit) {
     decodeData = (decodeData << 1) | bit;
     decodeCountBit++;
 }
 
-uint64_t HormannDecoder::reverseKey(uint64_t code, uint8_t bitCount) const {
+uint64_t HormannProtocol::reverseKey(uint64_t code, uint8_t bitCount) const {
     uint64_t reversed = 0;
     for(uint8_t i = 0; i < bitCount; i++) {
         reversed <<= 1;
@@ -42,11 +45,53 @@ uint64_t HormannDecoder::reverseKey(uint64_t code, uint8_t bitCount) const {
     return reversed;
 }
 
-bool HormannDecoder::checkPattern() const {
+bool HormannProtocol::checkPattern() const {
     return ((decodeData & HORMANN_HSM_PATTERN) == HORMANN_HSM_PATTERN);
 }
 
-void HormannDecoder::feed(bool level, uint32_t duration) {
+void HormannProtocol::yield(uint64_t hexValue) {
+    switch (hormanEncoderState) {
+    case HormanEncoderStepStart:
+        samplesToSend.clear();
+        // Convert hexValue to a bitset using 'bitCount' bits (LSB first)
+        for (uint8_t i = 0; i < bitCount; i++) {
+            binaryValue[i] = (hexValue >> i) & 1ULL;
+        }
+        hormanEncoderState = HormanEncoderStepStartBit;
+        break;
+    case HormanEncoderStepStartBit:
+        // Send start high pulse: duration = te_short * 24 (e.g., 500*24 = 12000)
+        samplesToSend.push_back(te_short * 24);
+        hormanEncoderState = HormanEncoderStepLowStart;
+        break;
+    case HormanEncoderStepLowStart:
+        // Send low pulse: duration = te_short (500)
+        samplesToSend.push_back(te_short);
+        hormanEncoderState = HormanEncoderStepDurations;
+        break;
+    case HormanEncoderStepDurations:
+        for (size_t i = 0; i < bitCount; i++) {
+            if (binaryValue[i]) {
+                samplesToSend.push_back(te_long);
+                samplesToSend.push_back(te_short);
+            } else {
+                samplesToSend.push_back(te_short);
+                samplesToSend.push_back(te_long);
+            }
+        }
+        samplesToSend.push_back(te_short * 5);
+        for (size_t i = 0; i < samplesToSend.size(); i++) {
+            Serial.println(samplesToSend[i]);
+        }
+        hormanEncoderState = HormanEncoderStepReady;
+        break;
+    default:
+        break;
+    }
+}
+
+
+void HormannProtocol::feed(bool level, uint32_t duration) {
     switch(state) {
     case StepReset:
         if(level && DURATION_DIFF(duration, te_short * 24) < te_delta * 24) {
@@ -102,7 +147,7 @@ void HormannDecoder::feed(bool level, uint32_t duration) {
     }
 }
 
-bool HormannDecoder::decode(long long int* samples, size_t sampleCount) {
+bool HormannProtocol::decode(long long int* samples, size_t sampleCount) {
     reset();
     for(size_t i = 0; i < sampleCount; i++) {
         if(samples[i] > 0) {
@@ -117,7 +162,7 @@ bool HormannDecoder::decode(long long int* samples, size_t sampleCount) {
     return false;
 }
 
-String HormannDecoder::getCodeString() const {
+String HormannProtocol::getCodeString() const {
     ScreenManager& screenMgr = ScreenManager::getInstance();
 
     char buf[256];
@@ -136,11 +181,11 @@ String HormannDecoder::getCodeString() const {
     } else {
         textarea = screenMgr.getTextArea();
     }
-    Serial.println(buf);
+    //Serial.println(buf);
     lv_textarea_set_text(textarea, buf);
     return String(buf);
 }
 
-bool HormannDecoder::hasValidCode() const {
+bool HormannProtocol::hasValidCode() const {
     return validCodeFound;
 }

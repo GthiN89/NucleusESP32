@@ -4,10 +4,32 @@
 #include <Arduino.h>
 #include <stdint.h>
 #include "math.h"
+#include <bitset>
+#include "globals.h"
 
-class HormannDecoder {
+
+enum HormanEncoderState {
+    HormanEncoderStepStart,
+    HormanEncoderStepStartBit,
+    HormanEncoderStepLowStart,
+    HormanEncoderStepDurations,
+    HormanEncoderStepReady
+};
+
+
+class HormannProtocol {
 public:
-    HormannDecoder();
+     HormannProtocol();
+
+    void yield(uint64_t hexValue);
+
+    HormanEncoderState hormanEncoderState;
+
+    std::vector<uint32_t> samplesToSend;
+
+    std::bitset<64> binaryValue;
+
+    uint8_t bitCount; // We'll encode 44 bits
 
     // Resets internal state.
     void reset();

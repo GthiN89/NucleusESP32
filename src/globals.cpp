@@ -8,8 +8,11 @@ char* current_dir;
 
 uint8_t C1101CurrentState = STATE_IDLE;
 
-
+uint8_t BruteCurrentState = BRUTE_IDLE;
 //bool receiverEnabled;
+EncoderStep encoderState = EncoderStepIddle;
+std::vector<int64_t> samplesToSend;
+
 
 float CC1101_MHZ;
 

@@ -22,9 +22,11 @@
 #include <driver/timer.h>
 #include <typeinfo>
 #include <soc/rtc.h>
+#include <cstdint>
+#include <cmath>
+#include <cstdlib>
 
 
-std::vector<uint32_t> samplesToSend;   // Holds the durations of high/low states
 
 
 
@@ -62,18 +64,14 @@ String fullPath;
 
 RCSwitch mySwitch;
 
-float strongestASKFreqs[4] = {0};  // Store the four strongest ASK/OOK frequencies
-int strongestASKRSSI[4] = {-200}; // Initialize with very low RSSI values
-float strongestFSKFreqs[2] = {0}; // Store the two strongest FSK frequencies (F0 and F1)
-int strongestFSKRSSI[2] = {-200}; // Initialize FSK RSSI values
+// float strongestASKFreqs[4] = {0};  // Store the four strongest ASK/OOK frequencies
+// int strongestASKRSSI[4] = {-200}; // Initialize with very low RSSI values
+// float strongestFSKFreqs[2] = {0}; // Store the two strongest FSK frequencies (F0 and F1)
+// int strongestFSKRSSI[2] = {-200}; // Initialize FSK RSSI values
 
 SignalCollection CC1101_CLASS::allData;
-uint32_t cur_timestamp;
-uint8_t  cur_status;
-uint32_t last_change_time;
-uint32_t pulse_duration;
-bool recordingStarted = false;
-int64_t startRec = false;
+volatile  bool recordingStarted = false;
+volatile  int64_t startRec = false;
 
 RCSwitch CC1101_CLASS::getRCSwitch() {
  return mySwitch;
@@ -82,7 +80,6 @@ RCSwitch CC1101_CLASS::getRCSwitch() {
 
 
 
-std::vector<int64_t> CC1101_CLASS::samplesToSend;
 CC1101_CLASS::ReceivedData CC1101_CLASS::receivedData;
 
 void IRAM_ATTR InterruptHandler(void *arg) {
@@ -91,7 +88,7 @@ void IRAM_ATTR InterruptHandler(void *arg) {
         startRec = esp_timer_get_time();
     }
     static volatile uint64_t DRAM_ATTR lastTime = 0;
-    const uint64_t time = esp_timer_get_time();
+    volatile const uint64_t time = esp_timer_get_time();
     int64_t  duration = time - lastTime;
     lastTime = time;
  
@@ -398,13 +395,13 @@ void CC1101_CLASS::loadPreset() {
     switch (C1101preset) {
     case AM650:
         CC1101_MODULATION = 2;
-        CC1101_DRATE = 115.051;
+        CC1101_DRATE = 3.79372;
         CC1101_RX_BW = 650.00;
         CC1101_DEVIATION = 1.58;
         break;
     case AM270:
         CC1101_MODULATION = 2;
-        CC1101_DRATE = 115.051;
+        CC1101_DRATE = 3.79372;
         CC1101_RX_BW = 270.833333;
         CC1101_DEVIATION = 1.58;
         break;
@@ -683,79 +680,79 @@ bool CC1101_CLASS::CheckReceived() {
 // }
 }
 void CC1101_CLASS::fskAnalyze() {
-    Serial.println(F("ana run"));         
+    // Serial.println(F("ana run"));         
 
-    while (true) { 
+    // while (true) { 
 
-        if (CC1101_MODULATION == 2) {
-            freq = start_freq;
+    //     if (CC1101_MODULATION == 2) {
+    //         freq = start_freq;
 
-            while (freq <= stop_freq) {
-                ELECHOUSE_cc1101.setMHZ(freq);
-                int rssi = ELECHOUSE_cc1101.getRssi();
+    //         while (freq <= stop_freq) {
+    //             ELECHOUSE_cc1101.setMHZ(freq);
+    //             int rssi = ELECHOUSE_cc1101.getRssi();
 
-                if (rssi > -80) { 
+    //             if (rssi > -80) { 
  
-                    for (int i = 0; i < 4; i++) {
-                        if (rssi > strongestASKRSSI[i]) {
+    //                 for (int i = 0; i < 4; i++) {
+    //                     if (rssi > strongestASKRSSI[i]) {
       
-                            for (int j = 3; j > i; j--) {
-                                strongestASKRSSI[j] = strongestASKRSSI[j - 1];
-                                strongestASKFreqs[j] = strongestASKFreqs[j - 1];
-                            }
+    //                         for (int j = 3; j > i; j--) {
+    //                             strongestASKRSSI[j] = strongestASKRSSI[j - 1];
+    //                             strongestASKFreqs[j] = strongestASKFreqs[j - 1];
+    //                         }
 
-                            strongestASKRSSI[i] = rssi;
-                            strongestASKFreqs[i] = freq;
+    //                         strongestASKRSSI[i] = rssi;
+    //                         strongestASKFreqs[i] = freq;
 
 
-                            Serial.println(String("New ASK Frequency: ") + strongestASKFreqs[i] +
-                                           " MHz | RSSI: " + strongestASKRSSI[i]);
+    //                         Serial.println(String("New ASK Frequency: ") + strongestASKFreqs[i] +
+    //                                        " MHz | RSSI: " + strongestASKRSSI[i]);
          
-                            break;
-                        }
-                    }
-                }
+    //                         break;
+    //                     }
+    //                 }
+    //             }
 
-                freq += 0.10; 
-            }
-        } else if (CC1101_MODULATION == 0) {
-            freq = start_freq;
+    //             freq += 0.10; 
+    //         }
+    //     } else if (CC1101_MODULATION == 0) {
+    //         freq = start_freq;
 
-            while (freq <= stop_freq) {
-                ELECHOUSE_cc1101.setMHZ(freq);
-                int rssi = ELECHOUSE_cc1101.getRssi();
+    //         while (freq <= stop_freq) {
+    //             ELECHOUSE_cc1101.setMHZ(freq);
+    //             int rssi = ELECHOUSE_cc1101.getRssi();
 
-                if (rssi > -80) { 
-                    if (rssi > strongestFSKRSSI[0]) {
+    //             if (rssi > -80) { 
+    //                 if (rssi > strongestFSKRSSI[0]) {
 
-                        strongestFSKRSSI[1] = strongestFSKRSSI[0];
-                        strongestFSKFreqs[1] = strongestFSKFreqs[0];
+    //                     strongestFSKRSSI[1] = strongestFSKRSSI[0];
+    //                     strongestFSKFreqs[1] = strongestFSKFreqs[0];
 
-                        strongestFSKRSSI[0] = rssi;
-                        strongestFSKFreqs[0] = freq;
-
-
-                        Serial.println(String("New FSK Frequencies: F0 = ") + strongestFSKFreqs[0] +
-                                       " MHz | RSSI: " + strongestFSKRSSI[0] +
-                                       ", F1 = " + strongestFSKFreqs[1] +
-                                       " MHz | RSSI: " + strongestFSKRSSI[1]);
-                    } else if (rssi > strongestFSKRSSI[1]) {
-
-                        strongestFSKRSSI[1] = rssi;
-                        strongestFSKFreqs[1] = freq;
+    //                     strongestFSKRSSI[0] = rssi;
+    //                     strongestFSKFreqs[0] = freq;
 
 
-                        Serial.println(String("Updated FSK F1: ") + strongestFSKFreqs[1] +
-                                       " MHz | RSSI: " + strongestFSKRSSI[1]);
-                    }
-                }
+    //                     Serial.println(String("New FSK Frequencies: F0 = ") + strongestFSKFreqs[0] +
+    //                                    " MHz | RSSI: " + strongestFSKRSSI[0] +
+    //                                    ", F1 = " + strongestFSKFreqs[1] +
+    //                                    " MHz | RSSI: " + strongestFSKRSSI[1]);
+    //                 } else if (rssi > strongestFSKRSSI[1]) {
 
-                freq += 0.10; 
-            }
-        } else {
-            Serial.println("Unsupported modulation type");
-        }
-    }
+    //                     strongestFSKRSSI[1] = rssi;
+    //                     strongestFSKFreqs[1] = freq;
+
+
+    //                     Serial.println(String("Updated FSK F1: ") + strongestFSKFreqs[1] +
+    //                                    " MHz | RSSI: " + strongestFSKRSSI[1]);
+    //                 }
+    //             }
+
+    //             freq += 0.10; 
+    //         }
+    //     } else {
+    //         Serial.println("Unsupported modulation type");
+    //     }
+    // }
 }
 
 void CC1101_CLASS::enableScanner(float start, float stop) {
@@ -1114,90 +1111,191 @@ SD_RF.closeFile(outputFilePtr);
 }
 
 
+
+
+std::vector<int64_t> CC1101_CLASS::getPulseClusters(const std::vector<int64_t>& samples) {
+    if (samples.empty())
+        return {};
+
+    const int tolerance = 25;
+    // Convert negatives to positive.
+    std::vector<int64_t> vals;
+    vals.reserve(samples.size());
+    for (auto s : samples)
+        vals.push_back(s < 0 ? -s : s);
+
+    // Sort the values.
+    std::sort(vals.begin(), vals.end());
+
+    // Cluster adjacent values that differ by no more than tolerance.
+    std::vector<std::vector<int64_t>> clusters;
+    clusters.push_back({vals[0]});
+    for (size_t i = 1; i < vals.size(); ++i) {
+        if (vals[i] - vals[i - 1] <= tolerance)
+            clusters.back().push_back(vals[i]);
+        else
+            clusters.push_back({vals[i]});
+    }
+
+    // For each cluster, compute a representative value (the median)
+    // and record its count.
+    struct Rep { int64_t rep; size_t count; };
+    std::vector<Rep> reps;
+    for (const auto& cluster : clusters) {
+        size_t n = cluster.size();
+        int64_t median = cluster[n / 2];
+        reps.push_back({ median, n });
+    }
+
+    // Sort the clusters by their representative (ascending).
+    std::sort(reps.begin(), reps.end(), [](const Rep &a, const Rep &b) {
+        return a.rep < b.rep;
+    });
+
+
+    int64_t lowPulse = reps.front().rep;
+    int64_t target = 2 * lowPulse;
+
+
+    size_t candidateIndex = 0;
+    int64_t bestDiff = std::numeric_limits<int64_t>::max();
+    for (size_t i = 1; i < reps.size(); i++) {
+        int64_t diff = std::abs(reps[i].rep - target);
+        if (diff < bestDiff) {
+            bestDiff = diff;
+            candidateIndex = i;
+        }
+    }
+
+    return { lowPulse, reps[candidateIndex].rep };
+}
+
 bool CC1101_CLASS::decode() {
-        if (CC1101_CLASS::receivedData.samples.size() == 0) {
+    if (CC1101_CLASS::receivedData.samples.empty()) {
         Serial.println("No pulses to decode.");
         return false;
     }
- Serial.println(startRec - esp_timer_get_time());
-     if(ansonicDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-         ansonicDecoder.getCodeString();
-         return true;
-     }
 
-    if(hormannDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-         hormannDecoder.getCodeString();
-         return true;
-     }
-     if(CameDecode.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-         CameDecode.getCodeString();
-         return true;
-     }
-     if(NiceFloDecode.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-         NiceFloDecode.getCodeString();
-         return true;
-     }
-   if(SMC5326Decoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-         SMC5326Decoder.getCodeString();
-         return true;
+    std::vector<int64_t> pulses = getPulseClusters(CC1101_CLASS::receivedData.samples);
+
+    if ((DURATION_DIFF(pulses[0], 500) < 200) &&
+        (DURATION_DIFF(pulses[1], 1000) < 200)) {
+            Serial.println("is Hormann");
+        if (hormannProtocol.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+            hormannProtocol.getCodeString();
+            return true;
+        }
     }
-   if(ChamberlainDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-         ChamberlainDecoder.getCodeString();
-         return true;
-     }
 
+    if ((DURATION_DIFF(pulses[0], 320) < 150) &&
+        (DURATION_DIFF(pulses[1], 640) < 150)) {
+            Serial.println("is Came");
+        if (cameProtocol.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+            cameProtocol.getCodeString();
+            return true;
+        }
+    }
 
+    if ((DURATION_DIFF(pulses[0], 555) < 120) &&
+        (DURATION_DIFF(pulses[1], 1111) < 120)) {
+            Serial.println("is Ansonic");
+        if (ansonicDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+            ansonicDecoder.getCodeString();
+            return true;
+        }
+    }
 
-    return false;  
+    if ((DURATION_DIFF(pulses[0], 700) < 200) &&
+        (DURATION_DIFF(pulses[1], 1400) < 200)) {
+            Serial.println("is NiceFlow");
+        if (niceFloProtocol.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+            niceFloProtocol.getCodeString();
+            return true;
+        }
+    }
+
+    if ((DURATION_DIFF(pulses[0], 300) < 200) &&
+        (DURATION_DIFF(pulses[1], 900) < 200)) {
+            Serial.println("is SMC5326");
+        if (SMC5326Decoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+            SMC5326Decoder.getCodeString();
+            return true;
+        }
+    }
+
+    if ((DURATION_DIFF(pulses[0], 1000) < 200) &&
+        (DURATION_DIFF(pulses[1], 3000) < 200)) {
+            Serial.println("is SMC5326");
+        if (ChamberlainDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+            ChamberlainDecoder.getCodeString();
+            return true;
+        }
+    }
+
+    return false;
 }
 
 
 
 
-
 void CC1101_CLASS::sendRaw() {
+            Signal samplesData;
 
+            if(C1101CurrentState != STATE_BRUTE) {
             detachInterrupt(CC1101_CCGDO0A);
             detachInterrupt(CC1101_CCGDO2A);
-
+            samplesData = CC1101_CLASS::allData.getSignal(CC1101_CLASS::allData.signals.size() - 1);
+            }
+            
             CC1101_CLASS::initRaw();
-            Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
+            if(C1101CurrentState == STATE_BRUTE) {
+                CC1101_CLASS::allData.clear();
+                for (size_t i = 0; i < 26; i++)
+                {
+                    samplesData.addSample(samplesToSend[i]);
+                    // Serial.println(" ");
+                    // Serial.print(samplesToSend[i]);
+                    // Serial.println(", ");
+                }
+            }
 
-            Signal samplesData = CC1101_CLASS::allData.getSignal(CC1101_CLASS::allData.signals.size() - 1);
+        //    Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
+
+           
             CC1101_CLASS::levelFlag = samplesData.samples[0] > 0; 
-            Serial.println(F("Transmitting"));
-            Serial.println(samplesData.samples[0]);
-            levelFlag ? Serial.println(F("true")) : Serial.println(F("False"));
+         //   Serial.println(F("Transmitting"));
+       //     Serial.println(samplesData.samples[0]);
+        //    levelFlag ? Serial.println(F("true")) : Serial.println(F("False"));
 
-            CC1101_CLASS::samplesToSend.clear();
+            samplesToSend.clear();
             for (size_t j = 0; j < samplesData.samples.size(); ++j) {
                 if (samplesData.samples[j] > 0){
-                CC1101_CLASS::samplesToSend.push_back(samplesData.samples[j]);
+                samplesToSend.push_back(samplesData.samples[j]);
                 } else {
-                    CC1101_CLASS::samplesToSend.push_back(-samplesData.samples[j]);
+                    samplesToSend.push_back(-samplesData.samples[j]);
                 }
 
-                if (samplesData.samples[j] > 20000 || samplesData.samples[j] < -20000) {
-                CC1101_CLASS::samplesToSend.clear();
-                }
+                // if (samplesData.samples[j] > 50000 || samplesData.samples[j] < -50000) {
+                // samplesToSend.clear();
+                // }
             }
 
-            for (size_t i = 0; i < CC1101_CLASS::samplesToSend.size(); ++i){
-                Serial.print(CC1101_CLASS::samplesToSend[i]);
-                Serial.print(", ");
-            }
+            // for (size_t i = 0; i < samplesToSend.size(); i++)
+            // {
+            //         Serial.println(" ");
+            //         Serial.print(samplesToSend[i]);
+            //         Serial.println(", ");
+            // }
+            
 
-            Serial.println("do send");
-
-            for (size_t i = 0; i < CC1101_CLASS::samplesToSend.size(); i++) {
-
+            for (size_t i = 0; i < samplesToSend.size(); i++) {
                 
                 gpio_set_level(CC1101_CCGDO0A, CC1101_CLASS::levelFlag);
                 CC1101_CLASS::levelFlag = !CC1101_CLASS::levelFlag;
-                delayMicroseconds(CC1101_CLASS::samplesToSend[i]); 
+                delayMicroseconds(samplesToSend[i]); 
                 
             }
-            Serial.println(F("Transmission complete"));
+        //    Serial.println(F("Transmission complete"));
             CC1101_CLASS::disableTransmit();
 
 }

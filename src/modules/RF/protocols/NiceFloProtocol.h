@@ -1,18 +1,13 @@
-#ifndef CAME_DECODER_H
-#define CAME_DECODER_H
+#ifndef NICE_FLO_DECODER_H
+#define NICE_FLO_DECODER_H
 
 #include <Arduino.h>
 #include <stdint.h>
 #include "math.h"
 
-struct Sample {
-    bool level;
-    uint32_t duration; // in microseconds
-};
-
-class CameDecoder {
+class NiceFloProtocol {
 public:
-    CameDecoder();
+    NiceFloProtocol();
 
     // resets internal state
     void reset();
@@ -36,15 +31,12 @@ private:
 
     DecoderStep state;
 
-    const uint32_t te_short;  // 320 us
-    const uint32_t te_long;   // 640 us
-    const uint32_t te_delta;  // 150 us tolerance
-    const uint8_t  min_count_bit; // 12 bits
+      std::bitset<12> binaryValue; 
 
-    static const uint8_t CAME_12_COUNT_BIT = 12;
-    static const uint8_t AIRFORCE_COUNT_BIT = 18;
-    static const uint8_t CAME_24_COUNT_BIT = 24;
-    static const uint8_t PRASTEL_COUNT_BIT = 25;
+    const uint32_t te_short;  // 700 us
+    const uint32_t te_long;   // 1400 us
+    const uint32_t te_delta;  // 200 us tolerance
+    const uint8_t  min_count_bit; // 12 bits
 
     uint32_t decodeData;
     uint8_t  decodeCountBit;
@@ -54,9 +46,13 @@ private:
     uint32_t finalCode;
     uint8_t  finalBitCount;
 
+
+
     inline void addBit(uint8_t bit);
+    void toBits(unsigned int hexValue);
     uint32_t reverseKey(uint32_t code, uint8_t bitCount) const;
+    void yield(unsigned int hexValue);
     void feed(bool level, uint32_t duration);
 };
 
-#endif // CAME_DECODER_H
+#endif // NICE_FLO_DECODER_H
