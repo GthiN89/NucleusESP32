@@ -56,7 +56,8 @@ void CameProtocol::yield(unsigned int hexValue) {
         toBits(hexValue);
         encoderState = EncodeStepStartBit;
         break;
-    case EncodeStepStartBit:   
+    case EncodeStepStartBit:
+        samplesToSend.push_back(11520);   
         samplesToSend.push_back(320);
         encoderState = EncoderStepDurations;
         break;
@@ -83,11 +84,23 @@ void CameProtocol::yield(unsigned int hexValue) {
                 samplesToSend.push_back(640); 
             }
         }
-        samplesToSend.push_back(11520);
-        for (size_t i = 0; i < samplesToSend.size(); i++)
+         samplesToSend.push_back(11520);
+        samplesToSend.push_back(320);
+                for (size_t i = 0; i < 12; i++) 
         {
-            Serial.println(samplesToSend[i]);
+            if (binaryValue[i]) {
+                samplesToSend.push_back(640);
+                samplesToSend.push_back(320);
+            } else {
+                samplesToSend.push_back(320);
+                samplesToSend.push_back(640); 
+            }
         }
+        // for (size_t i = 0; i < samplesToSend.size(); i++)
+        // {
+        //     Serial.println(samplesToSend[i]);
+        // }
+        delay(5);
         
             encoderState = EncoderStepReady;
 
