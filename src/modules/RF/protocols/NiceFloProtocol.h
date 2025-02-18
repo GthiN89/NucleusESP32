@@ -9,17 +9,12 @@ class NiceFloProtocol {
 public:
     NiceFloProtocol();
 
-    // resets internal state
     void reset();
-
-    // feeds an array of samples; returns true if a valid code was detected.
     bool decode(long long int* samples, size_t sampleCount);
-
-    // returns a string with the decoded key and its reverse.
     String getCodeString() const;
-
-    // returns true if a valid code was detected.
     bool hasValidCode() const;
+    void yield(unsigned int hexValue);
+
 
 private:
     enum DecoderStep {
@@ -51,7 +46,6 @@ private:
     inline void addBit(uint8_t bit);
     void toBits(unsigned int hexValue);
     uint32_t reverseKey(uint32_t code, uint8_t bitCount) const;
-    void yield(unsigned int hexValue);
     void feed(bool level, uint32_t duration);
 };
 

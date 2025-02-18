@@ -88,6 +88,7 @@ void setup() {
 
 }
 
+
  void CC1101Loop() {
     if(C1101CurrentState == STATE_ANALYZER) {
                // delay(50);
@@ -144,24 +145,24 @@ void setup() {
     }
 
     if(C1101CurrentState == STATE_BRUTE) {
-        if(BruteCurrentState == CAME_12bit) {
-            if(RFbruteForcer.Came12BitBrute()){
+     if (BruteCurrentState == CAME_12bit) {
+            if (RFbruteForcer.Came12BitBrute()) {
                 C1101CurrentState = STATE_IDLE;
-            }      
-        
-        };
+            }
+            Serial.println(RFbruteForcer.counter);
+            Serial.println(F("CAME codes sent"));
+        }
 
-        Serial.println(RFbruteForcer.counter);
-        Serial.print(F("CAME codes send"));
+        if (BruteCurrentState == NICE_12bit) {
+            if (RFbruteForcer.Nice12BitBrute()) {
+                C1101CurrentState = STATE_IDLE;
+            }
+            Serial.println(RFbruteForcer.counter);
+            Serial.println(F("NICE codes sent"));
+        }
+
     }
-
-    if(C1101CurrentState == STATE_IDLE) {
-        updatetransmitLabel = false;
-        delay(20);
-        runningModule = MODULE_NONE;
-    }  
 }
- 
  void IRLoop() {
    
    if(IRCurrentState == IR_STATE_PLAYBACK) {

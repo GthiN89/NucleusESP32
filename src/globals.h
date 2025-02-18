@@ -148,6 +148,8 @@ extern uint8_t C1101CurrentState;
 enum BruteProtocol {
   CAME_12bit,
   NICE_12bit,
+  ANSONIC_12bit,
+  Hormann_44bit,
   BRUTE_IDLE,
 };
 

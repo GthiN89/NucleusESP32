@@ -29,7 +29,9 @@ public:
     lv_obj_t* topLabel_container_;
     lv_obj_t *mbox_container;
     lv_obj_t* teslaScreen_;
+    lv_obj_t* BruteScreen_;
     lv_obj_t* detectLabel;
+    lv_obj_t * BruteCounterLabel;
     static ScreenManager& getInstance();
 
     ScreenManager(const ScreenManager&) = delete;
@@ -44,6 +46,7 @@ public:
     void createRFdetectScreen();
     void createFileExplorerScreen();
     void createTeslaScreen();
+    void createBruteScreen();
     void createIRMenuScreen();
     void createIRRecScreen();
     void init_neon_theme(void);

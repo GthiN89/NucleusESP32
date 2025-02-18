@@ -104,7 +104,7 @@ void IRAM_ATTR InterruptHandler(void *arg) {
             CC1101_CLASS::receivedData.lastReceiveTime = esp_timer_get_time();
             samplecount++;
         }
-        if (duration > 25000 || duration < -25000) {
+        if (duration > 50000 or duration < -50000) {
                 CC1101_CLASS::receivedData.samples.clear();
         }
         interrupts();
@@ -1117,57 +1117,39 @@ std::vector<int64_t> CC1101_CLASS::getPulseClusters(const std::vector<int64_t>& 
     if (samples.empty())
         return {};
 
-    const int tolerance = 25;
-    // Convert negatives to positive.
-    std::vector<int64_t> vals;
-    vals.reserve(samples.size());
-    for (auto s : samples)
-        vals.push_back(s < 0 ? -s : s);
 
-    // Sort the values.
-    std::sort(vals.begin(), vals.end());
+    
+         std::vector<uint16_t> shortPulses;
+         std::vector<uint16_t> longPulses;
+        for (size_t i = 0; i < 10; i++)
+        {
+           if (shortPulses.empty() && longPulses.empty() && samples[i] > 0 and samples[i] <10000) {
+                 shortPulses.push_back(samples[i]);
 
-    // Cluster adjacent values that differ by no more than tolerance.
-    std::vector<std::vector<int64_t>> clusters;
-    clusters.push_back({vals[0]});
-    for (size_t i = 1; i < vals.size(); ++i) {
-        if (vals[i] - vals[i - 1] <= tolerance)
-            clusters.back().push_back(vals[i]);
-        else
-            clusters.push_back({vals[i]});
-    }
+                 Serial.println(samples[i]);
+                 longPulses.push_back(-samples[i + 1]);
 
-    // For each cluster, compute a representative value (the median)
-    // and record its count.
-    struct Rep { int64_t rep; size_t count; };
-    std::vector<Rep> reps;
-    for (const auto& cluster : clusters) {
-        size_t n = cluster.size();
-        int64_t median = cluster[n / 2];
-        reps.push_back({ median, n });
-    }
+                 continue;
+             }
+             if (shortPulses.empty() && longPulses.empty() && samples[i] < 0 and samples[i] < -10000) {
+                shortPulses.push_back(-samples[i]);
+                Serial.println(-samples[i]);
+                longPulses.push_back(samples[i + 1]);
+                Serial.println(samples[i + 1]);
+                continue;
+            }
 
-    // Sort the clusters by their representative (ascending).
-    std::sort(reps.begin(), reps.end(), [](const Rep &a, const Rep &b) {
-        return a.rep < b.rep;
-    });
-
-
-    int64_t lowPulse = reps.front().rep;
-    int64_t target = 2 * lowPulse;
-
-
-    size_t candidateIndex = 0;
-    int64_t bestDiff = std::numeric_limits<int64_t>::max();
-    for (size_t i = 1; i < reps.size(); i++) {
-        int64_t diff = std::abs(reps[i].rep - target);
-        if (diff < bestDiff) {
-            bestDiff = diff;
-            candidateIndex = i;
         }
-    }
 
-    return { lowPulse, reps[candidateIndex].rep };
+            shortPulseAvg = std::accumulate(shortPulses.begin(), shortPulses.end(), 0) /
+                             (shortPulses.empty() ? 1 : shortPulses.size());
+            longPulseAvg = std::accumulate(longPulses.begin(), longPulses.end(), 0) /
+                            (longPulses.empty() ? 1 : longPulses.size());
+
+    if(shortPulseAvg > longPulseAvg) {
+        return { longPulseAvg, shortPulseAvg};
+    }        
+    return { shortPulseAvg, longPulseAvg};
 }
 
 bool CC1101_CLASS::decode() {
@@ -1177,7 +1159,9 @@ bool CC1101_CLASS::decode() {
     }
 
     std::vector<int64_t> pulses = getPulseClusters(CC1101_CLASS::receivedData.samples);
-
+    Serial.println("Pulses:");
+    Serial.println(pulses[0]);
+    Serial.println(pulses[1]);
     if ((DURATION_DIFF(pulses[0], 500) < 200) &&
         (DURATION_DIFF(pulses[1], 1000) < 200)) {
             Serial.println("is Hormann");

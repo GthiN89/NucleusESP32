@@ -82,7 +82,15 @@ void EVENTS::btn_event_Brute_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
         Serial.println("Brute force clicked");
-        //    CC1101.enableTransmit();
+        screenMgr.createBruteScreen();
+
+    }
+}
+
+void EVENTS::btn_event_Brute_CAME(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        Serial.println("Brute force clicked");
             runningModule = MODULE_CC1101;
             C1101CurrentState = STATE_BRUTE;
             BruteCurrentState = CAME_12bit;
@@ -90,6 +98,16 @@ void EVENTS::btn_event_Brute_run(lv_event_t* e) {
     }
 }
 
+void EVENTS::btn_event_Brute_NICE(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        Serial.println("Brute force clicked");
+            runningModule = MODULE_CC1101;
+            C1101CurrentState = STATE_BRUTE;
+            BruteCurrentState = NICE_12bit;
+
+    }
+}
 
 void EVENTS::btn_event_detectForce_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);

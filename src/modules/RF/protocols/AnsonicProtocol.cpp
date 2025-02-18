@@ -20,7 +20,7 @@ AnsonicProtocol::AnsonicProtocol()
       validCodeFound(false),
       finalCode(0),
       finalBitCount(0) {
-    //Serial.println("AnsonicProtocol: Constructed.");
+    Serial.println("AnsonicProtocol: Constructed.");
 }
 
 //
@@ -34,7 +34,7 @@ void AnsonicProtocol::reset() {
     validCodeFound = false;
     finalCode = 0;
     finalBitCount = 0;
-    //Serial.println("AnsonicProtocol: Reset state.");
+    Serial.println("AnsonicProtocol: Reset state.");
 }
 
 void AnsonicProtocol::toBits(unsigned int hexValue) {
@@ -51,42 +51,106 @@ void AnsonicProtocol::addBit(uint8_t bit) {
     Serial.print("Bit added: ");
     Serial.print(bit);
     Serial.print(", decodeData now: 0x");
-    //Serial.println(decodeData, HEX);
+    Serial.println(decodeData, HEX);
 }
 
 void AnsonicProtocol::yield(uint32_t hexValue) {
+    Serial.print(F("yield() called with hexValue: "));
+    Serial.println(hexValue);
+    
     switch (encoderState) {
     case EncoderStepStart:
+        Serial.println(F("State: EncoderStepStart"));
+        Serial.println(F("Clearing samplesToSend and converting hexValue to 12-bit binary."));
         samplesToSend.clear();
         binaryValue = std::bitset<12>(hexValue);
+        Serial.print(F("Binary representation: "));
+        Serial.println(binaryValue.to_string().c_str());
         encoderState = EncodeStepStartBit;
+        Serial.println(F("Transition to state: EncodeStepStartBit"));
         break;
     
     case EncodeStepStartBit:
-        samplesToSend.push_back(te_short * 35);  // Header LOW pulse
+        Serial.println(F("State: EncodeStepStartBit"));
+        Serial.print(F("Pushing start bit (te_short): "));
+        Serial.println(te_short);
         samplesToSend.push_back(te_short);       // Start bit HIGH pulse
         encoderState = EncoderStepDurations;
+        Serial.println(F("Transition to state: EncoderStepDurations"));
         break;
 
     case EncoderStepDurations:
+        Serial.println(F("State: EncoderStepDurations"));
+        Serial.println(F("Encoding 12-bit binary into durations (first pass):"));
         for (size_t i = 0; i < 12; i++) {
+            Serial.print(F("Bit "));
+            Serial.print(i);
+            Serial.print(F(" ("));
+            Serial.print(binaryValue[i] ? "1" : "0");
+            Serial.println(F(")"));
             if (binaryValue[i]) {
+                Serial.print(F("Pushing te_short: "));
+                Serial.println(te_short);
                 samplesToSend.push_back(te_short);
+                Serial.print(F("Pushing te_long: "));
+                Serial.println(te_long);
                 samplesToSend.push_back(te_long);
             } else {
+                Serial.print(F("Pushing te_long: "));
+                Serial.println(te_long);
                 samplesToSend.push_back(te_long);
+                Serial.print(F("Pushing te_short: "));
+                Serial.println(te_short);
                 samplesToSend.push_back(te_short);
             }
         }
+        Serial.print(F("Pushing end pulse (te_short * 4): "));
+        Serial.println(te_short * 4);
         samplesToSend.push_back(te_short * 4);  // End pulse
+        Serial.print(F("Pushing header LOW pulse (te_short * 35): "));
+        Serial.println(te_short * 35);
+        samplesToSend.push_back(te_short * 35);  // Header LOW pulse
+
+        Serial.println(F("Encoding 12-bit binary into durations (second pass):"));
+        for (size_t i = 0; i < 12; i++) {
+            Serial.print(F("Bit "));
+            Serial.print(i);
+            Serial.print(F(" ("));
+            Serial.print(binaryValue[i] ? "1" : "0");
+            Serial.println(F(")"));
+            if (binaryValue[i]) {
+                Serial.print(F("Pushing te_short: "));
+                Serial.println(te_short);
+                samplesToSend.push_back(te_short);
+                Serial.print(F("Pushing te_long: "));
+                Serial.println(te_long);
+                samplesToSend.push_back(te_long);
+            } else {
+                Serial.print(F("Pushing te_long: "));
+                Serial.println(te_long);
+                samplesToSend.push_back(te_long);
+                Serial.print(F("Pushing te_short: "));
+                Serial.println(te_short);
+                samplesToSend.push_back(te_short);
+            }
+        }
+        Serial.print(F("Pushing second end pulse (te_short * 4): "));
+        Serial.println(te_short * 4);
+        samplesToSend.push_back(te_short * 4);  // End pulse
+        Serial.print(F("Pushing second header LOW pulse (te_short * 35): "));
+        Serial.println(te_short * 35);
+        samplesToSend.push_back(te_short * 35);  // Header LOW pulse
 
         encoderState = EncoderStepReady;
+        Serial.println(F("Transition to state: EncoderStepReady"));
         break;
 
     default:
+        Serial.println(F("State: Unknown"));
         break;
     }
 }
+
 
 
 //
@@ -98,84 +162,84 @@ void AnsonicProtocol::feed(bool level, uint32_t duration) {
     Serial.print("Feed: level = ");
     Serial.print(level ? "HIGH" : "LOW");
     Serial.print(", duration = ");
-    //Serial.println(duration);
+    Serial.println(duration);
 
     switch(state) {
     case StepReset:
-        //Serial.println("StepReset: Looking for header...");
+        Serial.println("StepReset: Looking for header...");
         if (!level && DURATION_DIFF(duration, te_short * 35) < te_delta * 35) {
             state = StepFoundStartBit;
-            //Serial.println("Header detected, moving to StepFoundStartBit.");
+            Serial.println("Header detected, moving to StepFoundStartBit.");
         }
         break;
 
     case StepFoundStartBit:
         if (!level) {
-            //Serial.println("StepFoundStartBit: Waiting for rising edge.");
+            Serial.println("StepFoundStartBit: Waiting for rising edge.");
             break;
         } else if (DURATION_DIFF(duration, te_short) < te_delta) {
             state = StepSaveDuration;
             decodeData = 0;
             decodeCountBit = 0;
-            //Serial.println("Start bit detected, moving to StepSaveDuration.");
+            Serial.println("Start bit detected, moving to StepSaveDuration.");
         } else {
             state = StepReset;
-            //Serial.println("Invalid start bit duration, resetting state.");
+            Serial.println("Invalid start bit duration, resetting state.");
         }
         break;
 
     case StepSaveDuration:
         if (!level) { // Falling edge: save interval.
             Serial.print("StepSaveDuration: LOW edge detected, duration = ");
-            //Serial.println(duration);
+            Serial.println(duration);
             if (duration >= (te_short * 4)) {
                 state = StepFoundStartBit;
-                //Serial.println("Long gap detected, returning to StepFoundStartBit.");
+                Serial.println("Long gap detected, returning to StepFoundStartBit.");
                 if (decodeCountBit >= min_count_bit) {
                     finalCode = decodeData;
                     finalBitCount = decodeCountBit;
                     validCodeFound = true;
                     Serial.print("Valid code found: 0x");
-                    //Serial.println(finalCode, HEX);
+                    Serial.println(finalCode, HEX);
                 }
                 break;
             }
             te_last = duration;
             Serial.print("Storing te_last = ");
-            //Serial.println(te_last);
+            Serial.println(te_last);
             state = StepCheckDuration;
         } else {
             state = StepReset;
-            //Serial.println("StepSaveDuration: Unexpected HIGH level, resetting state.");
+            Serial.println("StepSaveDuration: Unexpected HIGH level, resetting state.");
         }
         break;
 
     case StepCheckDuration:
         if (level) {
             Serial.print("StepCheckDuration: HIGH edge detected, duration = ");
-            //Serial.println(duration);
+            Serial.println(duration);
             uint32_t diff1 = DURATION_DIFF(te_last, te_short);
             uint32_t diff2 = DURATION_DIFF(duration, te_long);
             Serial.print("Diff (te_last vs TE_SHORT): ");
-            //Serial.println(diff1);
+            Serial.println(diff1);
             Serial.print("Diff (duration vs TE_LONG): ");
-            //Serial.println(diff2);
+            Serial.println(diff2);
             if (diff1 < te_delta && diff2 < te_delta) {
                 addBit(1);
-                //Serial.println("Bit '1' detected, adding bit.");
+                Serial.println("Bit '1' detected, adding bit.");
                 state = StepSaveDuration;
             } else if (DURATION_DIFF(te_last, te_long) < te_delta &&
                        DURATION_DIFF(duration, te_short) < te_delta) {
                 addBit(0);
-                //Serial.println("Bit '0' detected, adding bit.");
+                Serial.println("Bit '0' detected, adding bit.");
                 state = StepSaveDuration;
             } else {
                 state = StepReset;
-                //Serial.println("Duration pattern mismatch, resetting state.");
+                Serial.println("Duration pattern mismatch, resetting state.");
             }
         } else {
             state = StepReset;
-            //Serial.println("StepCheckDuration: Unexpected LOW level, resetting state.");
+            Serial.println("StepCheckDuration: Unexpected LOW level, resetting state.");
         }
         break;
 
@@ -221,8 +285,8 @@ String AnsonicProtocol::getCodeString() const {
             data,
             btn,
             CNT_TO_DIP(cnt));
-    //Serial.println("Generated code string:");
-    //Serial.println(buf);
+    Serial.println("Generated code string:");
+    Serial.println(buf);
 
 
     ScreenManager& screenMgr = ScreenManager::getInstance();
@@ -295,7 +359,7 @@ void AnsonicProtocol::transmit(uint32_t code, uint8_t bitCount) {
         delayMicroseconds(samplesToSend[i]);
     }
 
-    //Serial.println("AnsonicProtocol: Transmission complete.");
+    Serial.println("AnsonicProtocol: Transmission complete.");
 
     // Free the allocated transmission buffer.
     delete[] samplesToSend;
