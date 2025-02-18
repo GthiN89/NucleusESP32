@@ -4,7 +4,8 @@ Nucleus ESP is a budget-friendly yellow device for various hacking applications.
 
 ## Project Overview
 
-I modified the device by desoldering the RGB diode to use it as a GPIO. Later, I disconnected the audio amplifier and photoresistor to free up additional GPIOs.  
+I modified the device by desoldering the RGB diode to use it as a GPIO. Later, I disconnected the audio amplifier and photoresistor to free up additional GPIOs.
+
 This is my first project in C, which I began in early summer, with prior experience in PHP and some FPGA tinkering. I'm learning as I go, figuring things out by experimenting.
 
 **Status**: Work in Progress (WIP)  
@@ -25,6 +26,9 @@ With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol f
 - **Dark Mode for GUI**: Aesthetic improvement as part of "Neon Green" version.
 - **CYD 2USB Compatibility**: Binary is included in the repo.
 - **Focus on CC1101 Module for CYD Version**: Future versions will target more powerful ESP32 S3 hardware.
+- **Integration of Decoders and Encoders for Ansonic, Came, Nice, Hormann, and SMC5326**.
+- **Support for a Second Decoder Using an RC Switch (User-Selectable)**.
+- **Brute Force Attack Capabilities for Came A and Nice Protocols** (New!).
 
 ### Known Issues
 - **Large File Transmission**: Bigger files take longer to load, but they transmit just fine.
@@ -46,7 +50,6 @@ With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol f
 - Sour Apple  
 - Wi-Fi Deauther  
 - Python Interpreter  
-
 
 ## Timing and Transmission Quality
 
