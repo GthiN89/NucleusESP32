@@ -88,6 +88,30 @@ void setup() {
 
 }
 
+void bruteForceTask(void *pvParameters) {
+
+
+        if (BruteCurrentState == CAME_12bit) {
+            Serial.println("came");
+            if (RFbruteForcer.Came12BitBrute()) {
+                C1101CurrentState = STATE_IDLE;
+            }
+            Serial.println(RFbruteForcer.counter);
+            Serial.println(F("CAME codes sent"));
+        }
+
+        if (BruteCurrentState == NICE_12bit) {
+            Serial.println("nice");
+            if (RFbruteForcer.Nice12BitBrute()) {
+                C1101CurrentState = STATE_IDLE;
+            }
+            Serial.println(RFbruteForcer.counter);
+            Serial.println(F("NICE codes sent"));
+        }
+
+      //  vTaskDelay(10 / portTICK_PERIOD_MS); // Prevent watchdog resets
+    
+}
 
  void CC1101Loop() {
     if(C1101CurrentState == STATE_ANALYZER) {
@@ -145,21 +169,18 @@ void setup() {
     }
 
     if(C1101CurrentState == STATE_BRUTE) {
-     if (BruteCurrentState == CAME_12bit) {
-            if (RFbruteForcer.Came12BitBrute()) {
-                C1101CurrentState = STATE_IDLE;
-            }
-            Serial.println(RFbruteForcer.counter);
-            Serial.println(F("CAME codes sent"));
-        }
+            C1101CurrentState = STATE_IDLE;
 
-        if (BruteCurrentState == NICE_12bit) {
-            if (RFbruteForcer.Nice12BitBrute()) {
-                C1101CurrentState = STATE_IDLE;
-            }
-            Serial.println(RFbruteForcer.counter);
-            Serial.println(F("NICE codes sent"));
-        }
+    xTaskCreatePinnedToCore(
+    bruteForceTask,  // Task function
+    "BruteForceTask",
+    8192,  // Stack size
+    NULL,  // Parameters
+    10,  // Highest user priority (22)
+    NULL,
+    1  // Run on Core 1
+);
+
 
     }
 }
@@ -218,6 +239,10 @@ void setup() {
        if(updatetransmitLabel) {
         String text = "Transmitting\n Codes send: " + String(codesSend);
         lv_label_set_text(label_sub, text.c_str());        
+    }
+    if(RFbruteForcer.sendingFlag) {
+         String text = String(RFbruteForcer.counter) + "/4096";
+         lv_label_set_text(screenMgrM.getTextAreaRCSwitchMethod(), text.c_str());
     }
 
 }

@@ -14,7 +14,7 @@ namespace BRUTE {
 class CC1101_BRUTE {
 public:
     int16_t counter;
-
+    bool sendingFlag;
     bool Came12BitBrute(); 
     bool Nice12BitBrute();
     bool Ansonic12BitBrute();

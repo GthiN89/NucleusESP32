@@ -84,10 +84,10 @@ void CameProtocol::yield(unsigned int hexValue) {
             }
         }
         samplesToSend.push_back(11520);
-        // for (size_t i = 0; i < samplesToSend.size(); i++)
-        // {
-        //     Serial.println(samplesToSend[i]);
-        // }
+        for (size_t i = 0; i < samplesToSend.size(); i++)
+        {
+            Serial.println(samplesToSend[i]);
+        }
         
             encoderState = EncoderStepReady;
 

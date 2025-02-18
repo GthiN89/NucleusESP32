@@ -723,45 +723,7 @@ void ScreenManager::createTeslaScreen() {
 }
 
 void ScreenManager::createBruteScreen() {
-//     ContainerHelper containerHelper;
-//     BruteScreen_ = lv_obj_create(NULL);
-//     lv_scr_load(BruteScreen_);
-//   //  lv_obj_delete(previous_screen);
-//   //  previous_screen = BruteScreen_;
-//     lv_obj_set_flex_flow(BruteScreen_, LV_FLEX_FLOW_COLUMN);
-//     lv_obj_set_flex_align(BruteScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-//     lv_obj_t * topLabel_container_;
-//     containerHelper.createContainer(&topLabel_container_, BruteScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-//     lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
-
-//     lv_obj_t * topLabel = lv_label_create(topLabel_container_);
-//     lv_obj_align(topLabel, LV_ALIGN_CENTER, 0, 0);
-//     lv_label_set_text(topLabel, "Came + NICE brute forcer");
-
-//     BruteCounterLabel = lv_label_create(topLabel_container_);
-//     lv_obj_align(topLabel, LV_ALIGN_CENTER, 30, 0);
-//     lv_label_set_text(topLabel, "Just run it");
-
-//     lv_obj_t* CAME = lv_button_create(BruteScreen_);
-//     lv_obj_t * CAMELabel = lv_label_create(CAME);
-//     lv_label_set_text(CAME, "CAME");
-//     lv_obj_align_to(CAME, BruteScreen_, LV_ALIGN_BOTTOM_LEFT, 0, 0);
-//     lv_obj_align_to(CAME, CAMELabel, LV_ALIGN_CENTER, 0, 0);
-//     lv_obj_set_size(CAME, 120, 60);
-
-//     lv_obj_add_event_cb(CAME, EVENTS::btn_event_Brute_CAME, LV_EVENT_CLICKED, NULL);
-//     apply_neon_theme_button(CAME);  
-
-//         lv_obj_t* NICE = lv_button_create(BruteScreen_);
-//     lv_obj_t * NICELabel = lv_label_create(CAME);
-//     lv_label_set_text(NICE, "CAME");
-//     lv_obj_align_to(NICE, BruteScreen_, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
-//     lv_obj_align_to(NICE, NICELabel, LV_ALIGN_CENTER, 0, 0);
-//     lv_obj_set_size(NICE, 120, 60);
-
-//     lv_obj_add_event_cb(NICE, EVENTS::btn_event_Brute_NICE, LV_EVENT_CLICKED, NULL);
-//     apply_neon_theme_button(NICE);  
 
     ContainerHelper containerHelper;
     teslaScreen_ = lv_obj_create(NULL);
@@ -779,8 +741,8 @@ void ScreenManager::createBruteScreen() {
     lv_obj_align(topLabel, LV_ALIGN_CENTER, 0, 0);
     lv_label_set_text(topLabel, "Came + NICE brute forcer\n Push the button.");
     text_area_ = lv_label_create(topLabel_container_);
-    lv_obj_align(topLabel, LV_ALIGN_CENTER, 0, 0);
-    lv_label_set_text(topLabel, "0/4096");
+    lv_obj_align(text_area_, LV_ALIGN_CENTER, 30, 0);
+    lv_label_set_text(text_area_, "0/4096");
 
     lv_obj_t* cameButton = lv_button_create(teslaScreen_);
     lv_obj_t * cameButtonlbl = lv_label_create(cameButton);

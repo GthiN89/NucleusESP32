@@ -516,7 +516,7 @@ bool CC1101_CLASS::CheckReceived() {
             return false;
     }
      else if (samplecount > 10 and
-            (esp_timer_get_time() - startRec) > 3000000) {
+            (esp_timer_get_time() - startRec) > 500000) {
         CC1101_CLASS::receivedData.sampleCount = 0;
         samplecount = 0;
         CC1101_CLASS::receivedData.lastReceiveTime = 0;
