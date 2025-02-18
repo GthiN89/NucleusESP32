@@ -5,10 +5,15 @@
 #include <stdint.h>
 #include <String.h>
 #include "math.h"
+#include "globals.h"
+#include <bitset>
 
-class Smc5326Decoder {
+class Smc5326Protocol {
 public:
-    Smc5326Decoder();
+    Smc5326Protocol();
+
+    std::bitset<25> binaryValue; 
+
 
     // Resets internal state.
     void reset();
@@ -25,6 +30,8 @@ public:
 
     // Returns true if a valid code has been detected.
     bool hasValidCode() const;
+
+    void yield(uint32_t hexValue);
 
 private:
     enum DecoderStep {
@@ -57,6 +64,8 @@ private:
 
     // Helper: add a bit to the decode data.
     void addBit(uint8_t bit);
+
+
 
     // Helper: generate an event string from event bits.
     String getEventString(uint8_t event) const;

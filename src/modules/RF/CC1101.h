@@ -6,13 +6,13 @@
 #include "ESPiLight.h"
 #include "SPI.h"
 #include <driver/timer.h>
-//decoders
+//decoders/encoders
 #include "protocols/HormannProtocol.h" 
 #include "protocols/CameProtocol.h" 
 #include "protocols/NiceFloProtocol.h"
-#include "protocols/AnsonicDecoder.h"
-#include "protocols/Smc5326Decoder.h"
-#include "protocols/ChamberlainCodeDecoder.h"
+#include "protocols/AnsonicProtocol.h"
+#include "protocols/Smc5326Protocol.h"
+
 
 #define SAMPLE_SIZE 1024
 #define MAX_SIGNAL_LENGTH 10000000  
@@ -194,11 +194,10 @@ private:
     //decoder instances
     HormannProtocol hormannProtocol;
     CameProtocol cameProtocol;
-    AnsonicDecoder ansonicDecoder;
+    AnsonicProtocol ansonicProtocol;
     NiceFloProtocol niceFloProtocol;
-    Smc5326Decoder  SMC5326Decoder;
+    Smc5326Protocol  smc5326Protocol;
 
-    ChamberlainCodeDecoder ChamberlainDecoder;
 
 
     uint16_t spaceAvg = 0;

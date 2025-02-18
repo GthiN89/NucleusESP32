@@ -13,9 +13,9 @@
     ((dip & 0x0020) ? '1' : '0'), ((dip & 0x0010) ? '1' : '0'), ((dip & 0x0001) ? '1' : '0'),     \
     ((dip & 0x0008) ? '1' : '0')
 
-class AnsonicDecoder {
+class AnsonicProtocol {
 public:
-    AnsonicDecoder();
+    AnsonicProtocol();
 
     // Resets the decoder to its initial state.
     void reset();
@@ -31,10 +31,12 @@ public:
 
     // Returns true if a valid code has been decoded.
     bool hasValidCode() const;
-
+    void toBits(unsigned int hexValue);
     // Transmits the given code using the Ansonic protocol.
     // The code is transmitted with the specified bit count.
     void transmit(uint32_t code, uint8_t bitCount);
+
+    void yield(uint32_t hexValue);
 
 private:
     // Adds a bit to the decoded data.
@@ -45,6 +47,9 @@ private:
     const uint32_t te_long;
     const uint32_t te_delta;
     const uint8_t  min_count_bit;
+
+        std::bitset<12> binaryValue; 
+
 
     // Decoder state machine steps.
     enum DecoderStep {

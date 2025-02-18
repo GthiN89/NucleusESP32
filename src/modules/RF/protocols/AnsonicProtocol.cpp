@@ -1,4 +1,4 @@
-#include "AnsonicDecoder.h"
+#include "AnsonicProtocol.h"
 #include <Arduino.h>
 #include <stdio.h>
 #include <string.h>
@@ -7,10 +7,11 @@
 #include "globals.h"
 
 
-AnsonicDecoder::AnsonicDecoder()
+AnsonicProtocol::AnsonicProtocol()
     : te_short(555),
       te_long(1111),
       te_delta(120),
+    binaryValue(0),
       min_count_bit(12),
       state(StepReset),
       decodeData(0),
@@ -19,13 +20,13 @@ AnsonicDecoder::AnsonicDecoder()
       validCodeFound(false),
       finalCode(0),
       finalBitCount(0) {
-    //Serial.println("AnsonicDecoder: Constructed.");
+    //Serial.println("AnsonicProtocol: Constructed.");
 }
 
 //
 // Reset the decoder state.
 //
-void AnsonicDecoder::reset() {
+void AnsonicProtocol::reset() {
     state = StepReset;
     decodeData = 0;
     decodeCountBit = 0;
@@ -33,13 +34,18 @@ void AnsonicDecoder::reset() {
     validCodeFound = false;
     finalCode = 0;
     finalBitCount = 0;
-    //Serial.println("AnsonicDecoder: Reset state.");
+    //Serial.println("AnsonicProtocol: Reset state.");
 }
+
+void AnsonicProtocol::toBits(unsigned int hexValue) {
+    binaryValue = std::bitset<12>(hexValue);
+}
+
 
 //
 // Add a bit to the decoded data.
 //
-void AnsonicDecoder::addBit(uint8_t bit) {
+void AnsonicProtocol::addBit(uint8_t bit) {
     decodeData = (decodeData << 1) | bit;
     decodeCountBit++;
     Serial.print("Bit added: ");
@@ -48,12 +54,47 @@ void AnsonicDecoder::addBit(uint8_t bit) {
     //Serial.println(decodeData, HEX);
 }
 
+void AnsonicProtocol::yield(uint32_t hexValue) {
+    switch (encoderState) {
+    case EncoderStepStart:
+        samplesToSend.clear();
+        binaryValue = std::bitset<12>(hexValue);
+        encoderState = EncodeStepStartBit;
+        break;
+    
+    case EncodeStepStartBit:
+        samplesToSend.push_back(te_short * 35);  // Header LOW pulse
+        samplesToSend.push_back(te_short);       // Start bit HIGH pulse
+        encoderState = EncoderStepDurations;
+        break;
+
+    case EncoderStepDurations:
+        for (size_t i = 0; i < 12; i++) {
+            if (binaryValue[i]) {
+                samplesToSend.push_back(te_short);
+                samplesToSend.push_back(te_long);
+            } else {
+                samplesToSend.push_back(te_long);
+                samplesToSend.push_back(te_short);
+            }
+        }
+        samplesToSend.push_back(te_short * 4);  // End pulse
+
+        encoderState = EncoderStepReady;
+        break;
+
+    default:
+        break;
+    }
+}
+
+
 //
 // Feed a single pulse to the decoder.
 // @param level: true for HIGH pulse, false for LOW pulse.
 // @param duration: pulse duration in microseconds.
 //
-void AnsonicDecoder::feed(bool level, uint32_t duration) {
+void AnsonicProtocol::feed(bool level, uint32_t duration) {
     Serial.print("Feed: level = ");
     Serial.print(level ? "HIGH" : "LOW");
     Serial.print(", duration = ");
@@ -149,7 +190,7 @@ void AnsonicDecoder::feed(bool level, uint32_t duration) {
 // Positive values represent HIGH pulses; negative values represent LOW pulses.
 // Returns true if a valid code is found.
 //
-bool AnsonicDecoder::decode(long long int* samples, size_t sampleCount) {
+bool AnsonicProtocol::decode(long long int* samples, size_t sampleCount) {
     reset();
     for (size_t i = 0; i < sampleCount; i++) {
         if (samples[i] > 0) {
@@ -165,7 +206,7 @@ bool AnsonicDecoder::decode(long long int* samples, size_t sampleCount) {
 }
 
 
-String AnsonicDecoder::getCodeString() const {
+String AnsonicProtocol::getCodeString() const {
     uint32_t data = finalCode;
     uint16_t cnt = data & 0xFFF;
     uint32_t btn = ((data >> 1) & 0x3);
@@ -191,12 +232,12 @@ String AnsonicDecoder::getCodeString() const {
     return String(buf);
 }
 
-bool AnsonicDecoder::hasValidCode() const {
+bool AnsonicProtocol::hasValidCode() const {
     return validCodeFound;
 }
 
 
-void AnsonicDecoder::transmit(uint32_t code, uint8_t bitCount) {
+void AnsonicProtocol::transmit(uint32_t code, uint8_t bitCount) {
     // // Detach interrupts to prevent interference during transmission.
     // detachInterrupt(CC1101_CCGDO0A);
     // detachInterrupt(CC1101_CCGDO2A);
@@ -254,7 +295,7 @@ void AnsonicDecoder::transmit(uint32_t code, uint8_t bitCount) {
         delayMicroseconds(samplesToSend[i]);
     }
 
-    //Serial.println("AnsonicDecoder: Transmission complete.");
+    //Serial.println("AnsonicProtocol: Transmission complete.");
 
     // Free the allocated transmission buffer.
     delete[] samplesToSend;

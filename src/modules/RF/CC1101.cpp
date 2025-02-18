@@ -1199,8 +1199,8 @@ bool CC1101_CLASS::decode() {
     if ((DURATION_DIFF(pulses[0], 555) < 120) &&
         (DURATION_DIFF(pulses[1], 1111) < 120)) {
             Serial.println("is Ansonic");
-        if (ansonicDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-            ansonicDecoder.getCodeString();
+        if (ansonicProtocol.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+            ansonicProtocol.getCodeString();
             return true;
         }
     }
@@ -1217,20 +1217,13 @@ bool CC1101_CLASS::decode() {
     if ((DURATION_DIFF(pulses[0], 300) < 200) &&
         (DURATION_DIFF(pulses[1], 900) < 200)) {
             Serial.println("is SMC5326");
-        if (SMC5326Decoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-            SMC5326Decoder.getCodeString();
+        if (smc5326Protocol.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+            smc5326Protocol.getCodeString();
             return true;
         }
     }
 
-    if ((DURATION_DIFF(pulses[0], 1000) < 200) &&
-        (DURATION_DIFF(pulses[1], 3000) < 200)) {
-            Serial.println("is SMC5326");
-        if (ChamberlainDecoder.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
-            ChamberlainDecoder.getCodeString();
-            return true;
-        }
-    }
+   
 
     return false;
 }

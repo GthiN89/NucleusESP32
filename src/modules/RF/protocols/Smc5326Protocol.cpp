@@ -1,7 +1,8 @@
-#include "Smc5326Decoder.h"
+#include "smc5326Protocol.h"
 #include "GUI/ScreenManager.h"  // Assumes a singleton ScreenManager for GUI updates.
 #include <stdio.h>
 #include <string.h>
+
 
 // DIP display macros from the original protocol.
 #define DIP_P 0b11 // (+)
@@ -13,7 +14,7 @@
 
 // In the original code the macro extracts 2-bit fields at positions 0xE,0xC,...,0x0.
 
-Smc5326Decoder::Smc5326Decoder()
+Smc5326Protocol::Smc5326Protocol()
     : te_short(300),
       te_long(900),
       te_delta(200),
@@ -31,7 +32,7 @@ Smc5326Decoder::Smc5326Decoder()
 {
 }
 
-void Smc5326Decoder::reset() {
+void Smc5326Protocol::reset() {
     state = StepReset;
     decodeData = 0;
     decodeCountBit = 0;
@@ -44,12 +45,12 @@ void Smc5326Decoder::reset() {
     lastData = 0;
 }
 
-void Smc5326Decoder::addBit(uint8_t bit) {
+void Smc5326Protocol::addBit(uint8_t bit) {
     decodeData = (decodeData << 1) | bit;
     decodeCountBit++;
 }
 
-String Smc5326Decoder::getEventString(uint8_t event) const {
+String Smc5326Protocol::getEventString(uint8_t event) const {
     char buf[64] = "";
     if (((event >> 6) & 0x3) == 0x3) strcat(buf, "B1 ");
     if (((event >> 4) & 0x3) == 0x3) strcat(buf, "B2 ");
@@ -58,7 +59,42 @@ String Smc5326Decoder::getEventString(uint8_t event) const {
     return String(buf);
 }
 
-void Smc5326Decoder::feed(bool level, uint32_t duration) {
+void Smc5326Protocol::yield(uint32_t hexValue) {
+    switch (encoderState) {
+    case EncoderStepStart:
+        samplesToSend.clear();
+        binaryValue = std::bitset<25>(hexValue); // SMC5326 uses a 25-bit format
+        encoderState = EncodeStepStartBit;
+        break;
+    
+    case EncodeStepStartBit:
+        samplesToSend.push_back(te_short * 24); // Header LOW pulse
+        samplesToSend.push_back(te_short);      // Start bit HIGH pulse
+        encoderState = EncoderStepDurations;
+        break;
+
+    case EncoderStepDurations:
+        for (size_t i = 0; i < 25; i++) {
+            if (binaryValue[i]) {
+                samplesToSend.push_back(te_long);
+                samplesToSend.push_back(te_short);
+            } else {
+                samplesToSend.push_back(te_short);
+                samplesToSend.push_back(te_long);
+            }
+        }
+        samplesToSend.push_back(te_long * 2); // End pulse
+
+        encoderState = EncoderStepReady;
+        break;
+
+    default:
+        break;
+    }
+}
+
+
+void Smc5326Protocol::feed(bool level, uint32_t duration) {
     switch(state) {
     case StepReset:
         // Look for preamble: a falling edge (level==false) with duration near (te_short * 24)
@@ -124,7 +160,7 @@ void Smc5326Decoder::feed(bool level, uint32_t duration) {
     }
 }
 
-bool Smc5326Decoder::decode(long long int* samples, size_t sampleCount) {
+bool Smc5326Protocol::decode(long long int* samples, size_t sampleCount) {
     reset();
     for(size_t i = 0; i < sampleCount; i++) {
         if(samples[i] > 0)
@@ -137,7 +173,7 @@ bool Smc5326Decoder::decode(long long int* samples, size_t sampleCount) {
     return false;
 }
 
-String Smc5326Decoder::getCodeString() {
+String Smc5326Protocol::getCodeString() {
     // Extract a 16‐bit field from the decoded key as in the original:
     uint32_t data_field = (finalData >> 9) & 0xFFFF;
 
@@ -187,6 +223,6 @@ String Smc5326Decoder::getCodeString() {
     return String(finalStr);
 }
 
-bool Smc5326Decoder::hasValidCode() const {
+bool Smc5326Protocol::hasValidCode() const {
     return validCodeFound;
 }

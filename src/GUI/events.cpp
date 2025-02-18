@@ -21,7 +21,7 @@ using namespace std;
 #define MAX_PATH_LENGTH 256
 CC1101_CLASS CC1101EV;
 SDcard& SD_EVN = SDcard::getInstance();
-                   AnsonicDecoder decoder;
+                   AnsonicProtocol decoder;
 
 
 int SpamDevice = 1;
