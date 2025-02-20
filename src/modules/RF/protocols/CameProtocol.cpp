@@ -114,7 +114,7 @@ void CameProtocol::yield(unsigned int hexValue) {
 void CameProtocol::feed(bool level, uint32_t duration) {    
     switch(DecoderState) {
     case DecoderStepReset:
-        if(!level && DURATION_DIFF(duration, te_short * 56) < te_delta * 52) {
+        if(!level && DURATION_DIFF(duration, te_short * 32) < te_delta * 32) {
             DecoderState = DecoderStepFoundStartBit;
         }
         break;

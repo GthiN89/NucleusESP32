@@ -22,8 +22,9 @@ bool CC1101_BRUTE::Came12BitBrute()
     int i = 0;
         counter = 0;
 
-    while(i < 4097 ) {
+    while(true ) {
     i++;
+    i=5;
  //   Serial.println(i);
     encoderState = EncoderStepStart;
     while(encoderState != EncoderStepReady){

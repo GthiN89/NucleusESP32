@@ -187,6 +187,7 @@ public:
     void enableScanner(float start, float stop);
     void emptyReceive();
     std::vector<int64_t> getPulseClusters(const std::vector<int64_t>& samples);
+    void filterSignal();
     bool decode();
 
 

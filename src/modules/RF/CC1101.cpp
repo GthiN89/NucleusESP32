@@ -25,6 +25,7 @@
 #include <cstdint>
 #include <cmath>
 #include <cstdlib>
+#include "protocols/math.h"
 
 
 
@@ -1121,7 +1122,7 @@ std::vector<int64_t> CC1101_CLASS::getPulseClusters(const std::vector<int64_t>& 
     
          std::vector<uint16_t> shortPulses;
          std::vector<uint16_t> longPulses;
-        for (size_t i = 0; i < 10; i++)
+        for (size_t i = 4; i < 12; i++)
         {
            if (shortPulses.empty() && longPulses.empty() && samples[i] > 0 and samples[i] <10000) {
                  shortPulses.push_back(samples[i]);
@@ -1157,6 +1158,8 @@ bool CC1101_CLASS::decode() {
         Serial.println("No pulses to decode.");
         return false;
     }
+
+    filterSignal();
 
     std::vector<int64_t> pulses = getPulseClusters(CC1101_CLASS::receivedData.samples);
     Serial.println("Pulses:");
@@ -1389,6 +1392,126 @@ void CC1101_CLASS::enableTransmit()
 
  //   mySwitch.enableTransmit(CC1101_CCGDO0A);
 }
+
+void CC1101_CLASS::filterSignal() {
+ //since commong libs implement procesing of analog signal, instead fo war timing, i implement simple siltering method by myself.
+    //will start from 4 th sample BC i recognize patterns
+    uint16_t shortMin = 0;
+    uint16_t longMin = 0;
+    uint16_t shortPulseAvg = 0;
+    uint16_t longPulseAvg = 0;
+    bool inverted = false;
+    uint16_t shortCount = 1;
+    uint16_t longCount = 1;
+    uint8_t errCount = 0;
+
+    if(CC1101_CLASS::receivedData.samples[3] > 0){
+        shortPulseAvg = CC1101_CLASS::receivedData.samples[3];
+        longPulseAvg = -CC1101_CLASS::receivedData.samples[4];
+    } else {
+        longPulseAvg = -CC1101_CLASS::receivedData.samples[3];
+        shortPulseAvg = CC1101_CLASS::receivedData.samples[4];
+    }
+
+    if(shortPulseAvg > longPulseAvg){
+        uint16_t buff = shortPulseAvg;
+        longPulseAvg = shortPulseAvg;
+        shortPulseAvg = buff;
+    }
+
+    shortMin = shortPulseAvg * 10 / 12;
+    longMin = longPulseAvg * 10 / 12;
+    Serial.println(shortPulseAvg);
+    Serial.println(shortMin);
+    Serial.println(longPulseAvg);
+    Serial.println(longMin);
+    Serial.println("filter");
+
+    uint16_t tresholShort = shortPulseAvg / 4 + shortPulseAvg;
+    uint16_t tresholdLong = longPulseAvg / 4 + longPulseAvg;
+
+//simply calculate average value of short and long signal
+//to save time and resources, ignore negative values
+//in case high signal longer than long * 15 assume signal is inverted
+    for(int i = 5; i < CC1101_CLASS::receivedData.samples.size(); i++){
+        if(CC1101_CLASS::receivedData.samples[i] > 0){
+            Serial.println(CC1101_CLASS::receivedData.samples[i]);
+            if(CC1101_CLASS::receivedData.samples[i] > longPulseAvg * 5) {
+
+                if(CC1101_CLASS::receivedData.samples[i + 1] < -longPulseAvg * 5){
+                    CC1101_CLASS::receivedData.samples[i] =  CC1101_CLASS::receivedData.samples[i + 1] - CC1101_CLASS::receivedData.samples[i];
+                    CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin() + i + 1);
+                    i--;
+                continue;
+                } 
+                inverted = true;
+                Serial.println("inverted");
+                continue;
+            }
+            if(CC1101_CLASS::receivedData.samples[i] > tresholdLong) {
+                errCount++;
+                continue;
+            }
+            if(CC1101_CLASS::receivedData.samples[i] > tresholShort) {
+                longPulseAvg = longPulseAvg + CC1101_CLASS::receivedData.samples[i];
+                longCount++;
+            } else if(CC1101_CLASS::receivedData.samples[i] > shortMin) {
+                shortPulseAvg = shortPulseAvg + CC1101_CLASS::receivedData.samples[i];
+                shortCount++;
+            } 
+        }
+    }
+
+    shortPulseAvg = shortPulseAvg / shortCount;
+    longPulseAvg = longPulseAvg / longCount;
+    
+
+    Serial.println("Averages");
+    Serial.println(shortPulseAvg);
+    Serial.println(longPulseAvg);
+    
+    if(inverted) {
+        for(int i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++) {
+            CC1101_CLASS::receivedData.samples[i] = -CC1101_CLASS::receivedData.samples[i];
+        }
+    }
+
+    for(int i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++) {
+
+            if(CC1101_CLASS::receivedData.samples[i] > tresholdLong) {
+
+                continue;
+            }
+
+        if(CC1101_CLASS::receivedData.samples[i] > 0) {
+
+            if(CC1101_CLASS::receivedData.samples[i] > tresholShort) {
+                CC1101_CLASS::receivedData.samples[i] = longPulseAvg;
+            } else {
+                CC1101_CLASS::receivedData.samples[i] = shortPulseAvg;
+            } 
+            
+        } else {
+
+            if(-CC1101_CLASS::receivedData.samples[i] > tresholdLong  * 5){
+                continue;
+            }else if(-CC1101_CLASS::receivedData.samples[i] > tresholShort) {
+                CC1101_CLASS::receivedData.samples[i] = -longPulseAvg;
+            } else {
+                CC1101_CLASS::receivedData.samples[i] = -shortPulseAvg;
+            } 
+        }
+    }
+
+    Serial.println("filtered");
+    for(int i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++) {
+        Serial.print(CC1101_CLASS::receivedData.samples[i]);
+        Serial.print(", ");
+    }   
+    Serial.println("errors: " + errCount);
+}
+
+
 
 void CC1101_CLASS::disableTransmit()
 {
