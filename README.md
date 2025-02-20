@@ -14,7 +14,7 @@ Currently at **version Neon Green**.
 
 ## Features Implemented
 
-With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol for replay using a simple bit-bang method, with plans to upgrade it to more precise timing (previously, I sampled every 430 microseconds).
+With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol for replay using a simple bit-bang pooler method, and later, started to use interrupt as i should to more precise timing (previously, I sampled every 430 microseconds).
 
 **TV-B-GONE**: Fully operational. Can turn TVs on and off.
 
