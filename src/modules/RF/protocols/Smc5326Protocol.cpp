@@ -1,4 +1,4 @@
-#include "smc5326Protocol.h"
+#include "Smc5326Protocol.h"
 #include "GUI/ScreenManager.h"  // Assumes a singleton ScreenManager for GUI updates.
 #include <stdio.h>
 #include <string.h>

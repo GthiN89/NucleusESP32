@@ -50,10 +50,9 @@ int receiverGPIO;
 String rawString;
 uint16_t  sample[SAMPLE_SIZE];
 int error_toleranz = 200;
-uint8_t samplecount = 0;
+
 
 bool CC1101_is_initialized = false;
-bool receiverEnabled = false;
 bool CC1101_recieve_is_running = false;
 bool CC1101_transmit_is_running = false;
 bool CC1101_isiddle = true;
@@ -93,7 +92,7 @@ void IRAM_ATTR InterruptHandler(void *arg) {
     int64_t  duration = time - lastTime;
     lastTime = time;
  
-    if (!gpio_get_level(CC1101_CCGDO2A)) {
+    if (gpio_get_level(CC1101_CCGDO2A)) {
         duration = -duration;
     }
 
@@ -103,10 +102,11 @@ void IRAM_ATTR InterruptHandler(void *arg) {
         if (CC1101_CLASS::receivedData.samples.size() < SAMPLE_SIZE) {
             CC1101_CLASS::receivedData.samples.push_back(duration);
             CC1101_CLASS::receivedData.lastReceiveTime = esp_timer_get_time();
-            samplecount++;
-        }
+            CC1101_CLASS::receivedData.sampleCount++;
+                 }
         if (duration > 50000 or duration < -50000) {
                 CC1101_CLASS::receivedData.samples.clear();
+                CC1101_CLASS::receivedData.sampleCount = 0;
         }
         interrupts();
     }
@@ -235,16 +235,16 @@ void CC1101_CLASS::enableReceiver() {
     gpio_isr_handler_add(GPIO_NUM_4, InterruptHandler, NULL);
 
   //  ELECHOUSE_cc1101.SetRx();
-    receiverEnabled = true;
 
         CC1101_CLASS::receivedData.samples.clear();
         CC1101_CLASS::receivedData.lastReceiveTime = 0;
         CC1101_CLASS::receivedData.sampleCount = 0;
         CC1101_CLASS::receivedData.signals.clear();
-        CC1101_CLASS::receivedData.normalizedCount = 0;
+
+   recordingStarted = true;
 
         delay(500);
-    recordingStarted = true;
+ 
 
     interrupts();
 }
@@ -363,13 +363,11 @@ void CC1101_CLASS::enableReceiverCustom() {
     gpio_isr_handler_add(GPIO_NUM_4, InterruptHandler, NULL);
 
   //  ELECHOUSE_cc1101.SetRx();
-    receiverEnabled = true;
 
         CC1101_CLASS::receivedData.samples.clear();
         CC1101_CLASS::receivedData.lastReceiveTime = 0;
         CC1101_CLASS::receivedData.sampleCount = 0;
         CC1101_CLASS::receivedData.signals.clear();
-        CC1101_CLASS::receivedData.normalizedCount = 0;
 
         delay(500);
 
@@ -505,181 +503,62 @@ void CC1101_CLASS::loadPreset() {
     Serial.print("preset loaded");
 }
 
+    uint64_t timeBuffer;
+    uint16_t timeTrigger = 0;;
+
 bool CC1101_CLASS::CheckReceived() {
-    if(samplecount > 1024) {
+    CC1101_CLASS::receivedData.sampleCount =  CC1101_CLASS::receivedData.samples.size();
+    if(CC1101_CLASS::receivedData.sampleCount + 2 > SAMPLE_SIZE) {
         CC1101_CLASS::receivedData.sampleCount = 0;
-        samplecount = 0;
         CC1101_CLASS::receivedData.lastReceiveTime = 0;
         return true;
     }
-    else if (samplecount < 10 or
-            (esp_timer_get_time() - CC1101_CLASS::receivedData.lastReceiveTime) > 3000000) {
+    else if (CC1101_CLASS::receivedData.sampleCount < 24
+     //or (esp_timer_get_time() - CC1101_CLASS::receivedData.lastReceiveTime) > 3000000
+     ) {
             return false;
     }
-     else if (samplecount > 10 and
-            (esp_timer_get_time() - startRec) > 500000) {
+     else if (CC1101_CLASS::receivedData.sampleCount < 24
+    and (esp_timer_get_time() - CC1101_CLASS::receivedData.lastReceiveTime) > 300000
+     ) {
+        CC1101_CLASS::receivedData.samples.clear();
         CC1101_CLASS::receivedData.sampleCount = 0;
-        samplecount = 0;
+        CC1101_CLASS::receivedData.lastReceiveTime = 0;
+            return false;
+    }
+     else if (CC1101_CLASS::receivedData.sampleCount > 24 and
+            (esp_timer_get_time() - startRec) > 50000) {
+        CC1101_CLASS::receivedData.sampleCount = 0;
         CC1101_CLASS::receivedData.lastReceiveTime = 0;
         return true;
     
     }
+
+    if(CC1101_CLASS::receivedData.sampleCount > 24) {
+        if(CC1101_CLASS::receivedData.samples[0] > 0) {
+            timeBuffer = esp_timer_get_time();
+            timeTrigger = timeBuffer +  ((-CC1101_CLASS::receivedData.samples[1] + CC1101_CLASS::receivedData.samples[0]) * 12); 
+            Serial.println("timeTrigger");
+        } else {
+            timeBuffer = esp_timer_get_time();
+            timeTrigger = timeBuffer + ((-CC1101_CLASS::receivedData.samples[0] + CC1101_CLASS::receivedData.samples[1]) * 12); 
+            Serial.println("timeTrigger");
+        }
+        timeBuffer = esp_timer_get_time();
+        timeTrigger = timeBuffer + 1920000;
+        Serial.println("timeTrigger");
+    }
+
+    if(CC1101_CLASS::receivedData.sampleCount > 24 and timeTrigger and esp_timer_get_time() > timeTrigger){
+        timeTrigger = 0;
+        CC1101_CLASS::receivedData.sampleCount = 0;
+        CC1101_CLASS::receivedData.lastReceiveTime = 0;
+        return true;
+    }
+
     return false;
-//     constexpr unsigned long SIGNAL_TIMEOUT = 25000;
-//     constexpr uint16_t SHORT_PULSE_MIN = 50;
-//     constexpr uint16_t LONG_PULSE_MAX = 1500;
-//     constexpr uint16_t TOLERANCE_PERCENT = 20;
-
-//     localSampleCount = 0;
-//     noInterrupts();
-//     localSampleCount = samplecount;
-//     interrupts();
-
-
-    
-
-//     uint64_t currentTime = esp_timer_get_time();
-//     uint64_t signalDuration = currentTime - CC1101_CLASS::receivedData.lastReceiveTime;
-
-//     // if (!CC1101_CLASS::receivedData.samples.empty()) {
-//     //     if (CC1101_CLASS::receivedData.samples[0] > 2500 ||
-//     //         CC1101_CLASS::receivedData.samples[0] < -2500) {
-//     //         CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin());
-//     //         CC1101_CLASS::receivedData.startstate = !CC1101_CLASS::receivedData.startstate;
-//     //     }
-//     // }
-
-//     if (signalDuration > SIGNAL_TIMEOUT || localSampleCount >= SAMPLE_SIZE) {
-//         // if (!CC1101_CLASS::receivedData.samples.empty() &&
-//         //     (CC1101_CLASS::receivedData.samples[0] > 2500 ||
-//         //      CC1101_CLASS::receivedData.samples[0] < -2500)) {
-//         //     CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin());
-//         //     CC1101_CLASS::receivedData.startstate = !CC1101_CLASS::receivedData.startstate;
-//         // }
-
-//         CC1101_CLASS::receivedData.sampleCount = 0;
-//         std::vector<uint16_t> shortPulses;
-//         std::vector<uint16_t> longPulses;
-//         shortPulseAvg = 0;
-//         longPulseAvg = 0;
-//         uint16_t samplesCount = CC1101_CLASS::receivedData.samples.size();
-
-//         //this merge signals splited by false edge detection
-//         auto &samples = CC1101_CLASS::receivedData.samples;
-//         for (size_t i = 1; i < samples.size(); ++i) {
-//             if ((samples[i - 1] < 0) && (samples[i] < 0)) {
-//                 samples[i - 1] += samples[i];
-//                 samples.erase(samples.begin() + i);
-//                 --i;
-//             }
-//             if ((samples[i - 1] > 0) && (samples[i] > 0)) {
-//                 samples[i - 1] += samples[i];
-//                 samples.erase(samples.begin() + i);
-//                 --i;
-//             }
-//             if ((samples[i - 1] < 0) && (samples[i] > 10000)) {
-//                 samples[i - 1] += -samples[i];
-//                 samples.erase(samples.begin() + i);
-//                 --i;
-//             }
-//         }
-
-//         for (uint32_t i = 0; i < samplesCount; i++) {
-//             uint16_t sample = CC1101_CLASS::receivedData.samples[i];
-//             if ((sample < SHORT_PULSE_MIN && sample > 0) ||
-//                 (sample > -SHORT_PULSE_MIN && sample < 0)) {
-//                 continue;
-//             }
-//             if ((sample > LONG_PULSE_MAX && sample > 0) ||
-//                 (sample < -LONG_PULSE_MAX && sample < 0)) {
-//                 continue;
-//             }
-//             if (shortPulses.empty() && longPulses.empty() && sample > 0) {
-//                 shortPulses.push_back(sample);
-//                 Serial.println("short");
-//                 Serial.println(sample);
-//                 longPulses.push_back(-CC1101_CLASS::receivedData.samples[i + 1]);
-//                 Serial.println("long");
-//                 Serial.println(-CC1101_CLASS::receivedData.samples[i + 1]);
-//                 continue;
-//             }
-//             if (shortPulses.empty() && longPulses.empty() && sample < 0) {
-//                 shortPulses.push_back(-sample);
-//                 Serial.println("short");
-//                 Serial.println(-sample);
-//                 longPulses.push_back(CC1101_CLASS::receivedData.samples[i + 1]);
-//                 Serial.println("long");
-//                 Serial.println(CC1101_CLASS::receivedData.samples[i + 1]);
-//                 continue;
-//             }
-
-//             shortPulseAvg = std::accumulate(shortPulses.begin(), shortPulses.end(), 0) /
-//                             (shortPulses.empty() ? 1 : shortPulses.size());
-//             longPulseAvg = std::accumulate(longPulses.begin(), longPulses.end(), 0) /
-//                            (longPulses.empty() ? 1 : longPulses.size());
-
-//             uint16_t shortTolerance = (shortPulseAvg * TOLERANCE_PERCENT) / 100;
-//             uint16_t longTolerance = (longPulseAvg * TOLERANCE_PERCENT) / 100;
-
-//             if (sample > 0) {
-//                 if (static_cast<int>(sample - shortPulseAvg) <= shortTolerance) {
-//                     shortPulses.push_back(sample);
-//                 } else if (!longPulses.empty() ||
-//                            static_cast<int>(sample - longPulseAvg) <= longTolerance) {
-//                     longPulses.push_back(sample);
-//                 }
-//             } else {
-//                 if (static_cast<int>(-sample + shortPulseAvg) <= -shortTolerance) {
-//                     shortPulses.push_back(-sample);
-//                 } else if (!longPulses.empty() ||
-//                            static_cast<int>(-sample + longPulseAvg) <= -longTolerance) {
-//                     longPulses.push_back(-sample);
-//                 }
-//             }
-//         }
-
-//         shortPulseAvg = std::accumulate(shortPulses.begin(), shortPulses.end(), 0) /
-//                         (shortPulses.empty() ? 1 : shortPulses.size());
-//         longPulseAvg = std::accumulate(longPulses.begin(), longPulses.end(), 0) /
-//                        (longPulses.empty() ? 1 : longPulses.size());
-
-//         if (longPulseAvg < shortPulseAvg)
-//             std::swap(longPulseAvg, shortPulseAvg);
-
-//         if (CC1101_CLASS::receivedData.samples.empty())
-//             return false;
-
-//         std::vector<uint16_t> pauses;
-//         for (const auto &sample : CC1101_CLASS::receivedData.samples) {
-//             if (-sample > (4 * longPulseAvg))
-//                 pauses.push_back(-sample);
-//         }
-//         pauseAVG = std::accumulate(pauses.begin(), pauses.end(), 0) /
-//                    (pauses.empty() ? 1 : pauses.size());
-
-//         Signal data;
-//         Serial.println(F("Pulse Analysis:"));
-//         Serial.print(F("Short pulses avg: ")); Serial.println(shortPulseAvg);
-//         Serial.print(F("Long pulses avg: ")); Serial.println(longPulseAvg);
-//         Serial.print(F("Pause avg: ")); Serial.println(pauseAVG);
-
-//         Serial.println(F("Raw samples: "));
-//         CC1101_CLASS::receivedData.sampleCount = 0;
-//         for (const auto &sample : CC1101_CLASS::receivedData.samples) {
-//             Serial.print(sample);
-//             data.addSample(sample);
-//             Serial.print(" ");
-//             CC1101_CLASS::receivedData.sampleCount++;
-//         }
-
-//         // Only finalize reception if the time elapsed since the last signal is > 150000 micros.
-
-//             CC1101_CLASS::allData.addSignal(data);
-
-
-//     return true;
-// }
 }
+
 void CC1101_CLASS::fskAnalyze() {
     // Serial.println(F("ana run"));         
 
@@ -778,7 +657,6 @@ void CC1101_CLASS::enableScanner(float start, float stop) {
     pinMode(CCGDO2A, INPUT);
 
     // Start scanning on second core
-    CC1101_CLASS::startSignalAnalyseTask();
 }
 void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength) {
     uint8_t dataByte;
@@ -793,82 +671,9 @@ void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pul
         }
     }    
 }
- void CC1101_CLASS::signalAnalyseTask(void* pvParameters) {
-    //CC1101_CLASS *cc1101 = static_cast<CC1101_CLASS *>(pvParameters);
-
-    // Initialize scanning parameters
-    const uint32_t subghz_frequency_list[] = {
-        300000000, 303875000, 304250000, 310000000, 315000000, 318000000,  //  300-348 MHz
-        390000000, 418000000, 433075000, 433420000, 433920000, 434420000, 434775000, 438900000,  //  387-464 MHz
-        868350000, 868000000, 915000000, 925000000  //  779-928 MHz
-    };
-    int num_frequencies = sizeof(subghz_frequency_list) / sizeof(subghz_frequency_list[0]);
-    int rssi = 0;
-    int mark_rssi = -100;
-    float mark_freq = 0;
- //   long compare_freq = 0;
-
-    Serial.println(F("\r\nScanning predefined frequency list, press any key to stop..."));
 
 
-    ELECHOUSE_cc1101.Init();
-    ELECHOUSE_cc1101.setRxBW(58);
-    ELECHOUSE_cc1101.SetRx();
 
-
-    for (int i = 0; i < num_frequencies; ++i) {
-        float freq = subghz_frequency_list[i] / 1000000.0;  // Convert to MHz
-        ELECHOUSE_cc1101.setMHZ(freq);
-        rssi = ELECHOUSE_cc1101.getRssi();
-
-        if (rssi > -75) {  
-            if (rssi > mark_rssi) {
-                mark_rssi = rssi;
-                mark_freq = freq;
-            }
-        }
-
-        // Print progress
-        Serial.print(F("Scanning at "));
-        Serial.print(freq, 6);
-        Serial.print(F(" MHz, RSSI: "));
-        Serial.println(rssi);
-
-        if (Serial.available()) { 
-            break;
-        }
-    }
-
-    if (mark_rssi > -75) {  
-        Serial.print(F("\r\nSignal found at "));
-        Serial.print(F("Freq: "));
-        Serial.print(mark_freq);
-  
-  
-      
-  Serial.print(F(" MHz, RSSI: "));
-  Serial.println(mark_rssi);
-} else {
-  Serial.println(F("\r\nNo strong signal found."));
-}
-
-Serial.println(F("\r\nScanning stopped."));
-
-ELECHOUSE_cc1101.SetRx();
-}
-
-
-void CC1101_CLASS::startSignalAnalyseTask() {
-    xTaskCreatePinnedToCore(
-        CC1101_CLASS::signalAnalyseTask,  // Function to run
-        "SignalAnalyseTask",              // Task name
-        8192,                             // Stack size
-        this,                             // Task parameter (pass instance)
-        1,                                // Priority
-        NULL,                             // Task handle
-        1                                 // Core 1
-    );
-}
 
 
 void CC1101_CLASS::signalAnalyse(){
@@ -1114,61 +919,31 @@ SD_RF.closeFile(outputFilePtr);
 
 
 
-std::vector<int64_t> CC1101_CLASS::getPulseClusters(const std::vector<int64_t>& samples) {
-    if (samples.empty())
-        return {};
-
-
-    
-         std::vector<uint16_t> shortPulses;
-         std::vector<uint16_t> longPulses;
-        for (size_t i = 4; i < 12; i++)
-        {
-           if (shortPulses.empty() && longPulses.empty() && samples[i] > 0 and samples[i] <10000) {
-                 shortPulses.push_back(samples[i]);
-
-                 Serial.println(samples[i]);
-                 longPulses.push_back(-samples[i + 1]);
-
-                 continue;
-             }
-             if (shortPulses.empty() && longPulses.empty() && samples[i] < 0 and samples[i] < -10000) {
-                shortPulses.push_back(-samples[i]);
-                Serial.println(-samples[i]);
-                longPulses.push_back(samples[i + 1]);
-                Serial.println(samples[i + 1]);
-                continue;
-            }
-
-        }
-
-            shortPulseAvg = std::accumulate(shortPulses.begin(), shortPulses.end(), 0) /
-                             (shortPulses.empty() ? 1 : shortPulses.size());
-            longPulseAvg = std::accumulate(longPulses.begin(), longPulses.end(), 0) /
-                            (longPulses.empty() ? 1 : longPulses.size());
-
-    if(shortPulseAvg > longPulseAvg) {
-        return { longPulseAvg, shortPulseAvg};
-    }        
-    return { shortPulseAvg, longPulseAvg};
-}
 
 bool CC1101_CLASS::decode() {
     if (CC1101_CLASS::receivedData.samples.empty()) {
         Serial.println("No pulses to decode.");
         return false;
     }
+            Serial.println("decode.");
+
 
     filterSignal();
-
-    std::vector<int64_t> pulses = getPulseClusters(CC1101_CLASS::receivedData.samples);
+    Serial.println("count:");
+    Serial.println(CC1101_CLASS::receivedData.samples.size());
     Serial.println("Pulses:");
     Serial.println(pulses[0]);
     Serial.println(pulses[1]);
+    delay(5);
+    Serial.println("filtered values\n");
+    for(int i = 0; i < CC1101.receivedData.filtered.size(); i++) {
+        Serial.print(CC1101.receivedData.filtered[i]);
+        Serial.print(", ");
+    }
     if ((DURATION_DIFF(pulses[0], 500) < 200) &&
         (DURATION_DIFF(pulses[1], 1000) < 200)) {
             Serial.println("is Hormann");
-        if (hormannProtocol.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        if (hormannProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             hormannProtocol.getCodeString();
             return true;
         }
@@ -1177,7 +952,7 @@ bool CC1101_CLASS::decode() {
     if ((DURATION_DIFF(pulses[0], 320) < 150) &&
         (DURATION_DIFF(pulses[1], 640) < 150)) {
             Serial.println("is Came");
-        if (cameProtocol.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        if (cameProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             cameProtocol.getCodeString();
             return true;
         }
@@ -1186,7 +961,7 @@ bool CC1101_CLASS::decode() {
     if ((DURATION_DIFF(pulses[0], 555) < 120) &&
         (DURATION_DIFF(pulses[1], 1111) < 120)) {
             Serial.println("is Ansonic");
-        if (ansonicProtocol.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        if (ansonicProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             ansonicProtocol.getCodeString();
             return true;
         }
@@ -1195,7 +970,7 @@ bool CC1101_CLASS::decode() {
     if ((DURATION_DIFF(pulses[0], 700) < 200) &&
         (DURATION_DIFF(pulses[1], 1400) < 200)) {
             Serial.println("is NiceFlow");
-        if (niceFloProtocol.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        if (niceFloProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             niceFloProtocol.getCodeString();
             return true;
         }
@@ -1204,7 +979,7 @@ bool CC1101_CLASS::decode() {
     if ((DURATION_DIFF(pulses[0], 300) < 200) &&
         (DURATION_DIFF(pulses[1], 900) < 200)) {
             Serial.println("is SMC5326");
-        if (smc5326Protocol.decode(CC1101_CLASS::receivedData.samples.data(), CC1101_CLASS::receivedData.samples.size())) {
+        if (smc5326Protocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             smc5326Protocol.getCodeString();
             return true;
         }
@@ -1393,123 +1168,147 @@ void CC1101_CLASS::enableTransmit()
  //   mySwitch.enableTransmit(CC1101_CCGDO0A);
 }
 
-void CC1101_CLASS::filterSignal() {
- //since commong libs implement procesing of analog signal, instead fo war timing, i implement simple siltering method by myself.
-    //will start from 4 th sample BC i recognize patterns
-    uint16_t shortMin = 0;
-    uint16_t longMin = 0;
-    uint16_t shortPulseAvg = 0;
-    uint16_t longPulseAvg = 0;
-    bool inverted = false;
-    uint16_t shortCount = 1;
-    uint16_t longCount = 1;
-    uint8_t errCount = 0;
+//filtering 
 
-    if(CC1101_CLASS::receivedData.samples[3] > 0){
-        shortPulseAvg = CC1101_CLASS::receivedData.samples[3];
-        longPulseAvg = -CC1101_CLASS::receivedData.samples[4];
-    } else {
-        longPulseAvg = -CC1101_CLASS::receivedData.samples[3];
-        shortPulseAvg = CC1101_CLASS::receivedData.samples[4];
+std::vector<int> CC1101_CLASS::detectPeaks(const Histogram& hist) {
+    int expectedPeaks = 3;
+    std::vector<std::pair<int, int>> peakCandidates;  // Pair: (frequency count, bin index)
+    // Skip the first and last bin; compare each bin with its immediate neighbors.
+    for (size_t i = 1; i + 1 < hist.bins.size(); i++) {
+        if (hist.bins[i] > hist.bins[i - 1] && hist.bins[i] >= hist.bins[i + 1])
+            peakCandidates.push_back({hist.bins[i], (int)i});
     }
-
-    if(shortPulseAvg > longPulseAvg){
-        uint16_t buff = shortPulseAvg;
-        longPulseAvg = shortPulseAvg;
-        shortPulseAvg = buff;
+    // Sort candidate peaks by frequency (highest count first).
+    std::sort(peakCandidates.begin(), peakCandidates.end(),
+              [](const std::pair<int, int>& a, const std::pair<int, int>& b) {
+    return a.first > b.first;
+    });
+    std::vector<int> peakBins;
+    // Select up to expectedPeaks bins as the peaks.
+    for (int i = 0; i < std::min(expectedPeaks, (int)peakCandidates.size()); i++) {
+        peakBins.push_back(peakCandidates[i].second);
     }
-
-    shortMin = shortPulseAvg * 10 / 12;
-    longMin = longPulseAvg * 10 / 12;
-    Serial.println(shortPulseAvg);
-    Serial.println(shortMin);
-    Serial.println(longPulseAvg);
-    Serial.println(longMin);
-    Serial.println("filter");
-
-    uint16_t tresholShort = shortPulseAvg / 4 + shortPulseAvg;
-    uint16_t tresholdLong = longPulseAvg / 4 + longPulseAvg;
-
-//simply calculate average value of short and long signal
-//to save time and resources, ignore negative values
-//in case high signal longer than long * 15 assume signal is inverted
-    for(int i = 5; i < CC1101_CLASS::receivedData.samples.size(); i++){
-        if(CC1101_CLASS::receivedData.samples[i] > 0){
-            Serial.println(CC1101_CLASS::receivedData.samples[i]);
-            if(CC1101_CLASS::receivedData.samples[i] > longPulseAvg * 5) {
-
-                if(CC1101_CLASS::receivedData.samples[i + 1] < -longPulseAvg * 5){
-                    CC1101_CLASS::receivedData.samples[i] =  CC1101_CLASS::receivedData.samples[i + 1] - CC1101_CLASS::receivedData.samples[i];
-                    CC1101_CLASS::receivedData.samples.erase(CC1101_CLASS::receivedData.samples.begin() + i + 1);
-                    i--;
-                continue;
-                } 
-                inverted = true;
-                Serial.println("inverted");
-                continue;
-            }
-            if(CC1101_CLASS::receivedData.samples[i] > tresholdLong) {
-                errCount++;
-                continue;
-            }
-            if(CC1101_CLASS::receivedData.samples[i] > tresholShort) {
-                longPulseAvg = longPulseAvg + CC1101_CLASS::receivedData.samples[i];
-                longCount++;
-            } else if(CC1101_CLASS::receivedData.samples[i] > shortMin) {
-                shortPulseAvg = shortPulseAvg + CC1101_CLASS::receivedData.samples[i];
-                shortCount++;
-            } 
-        }
-    }
-
-    shortPulseAvg = shortPulseAvg / shortCount;
-    longPulseAvg = longPulseAvg / longCount;
-    
-
-    Serial.println("Averages");
-    Serial.println(shortPulseAvg);
-    Serial.println(longPulseAvg);
-    
-    if(inverted) {
-        for(int i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++) {
-            CC1101_CLASS::receivedData.samples[i] = -CC1101_CLASS::receivedData.samples[i];
-        }
-    }
-
-    for(int i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++) {
-
-            if(CC1101_CLASS::receivedData.samples[i] > tresholdLong) {
-
-                continue;
-            }
-
-        if(CC1101_CLASS::receivedData.samples[i] > 0) {
-
-            if(CC1101_CLASS::receivedData.samples[i] > tresholShort) {
-                CC1101_CLASS::receivedData.samples[i] = longPulseAvg;
-            } else {
-                CC1101_CLASS::receivedData.samples[i] = shortPulseAvg;
-            } 
-            
-        } else {
-
-            if(-CC1101_CLASS::receivedData.samples[i] > tresholdLong  * 5){
-                continue;
-            }else if(-CC1101_CLASS::receivedData.samples[i] > tresholShort) {
-                CC1101_CLASS::receivedData.samples[i] = -longPulseAvg;
-            } else {
-                CC1101_CLASS::receivedData.samples[i] = -shortPulseAvg;
-            } 
-        }
-    }
-
-    Serial.println("filtered");
-    for(int i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++) {
-        Serial.print(CC1101_CLASS::receivedData.samples[i]);
-        Serial.print(", ");
-    }   
-    Serial.println("errors: " + errCount);
+    // Sort the peak bin indices so that they are in increasing order.
+    std::sort(peakBins.begin(), peakBins.end());
+    return peakBins;
 }
+
+bool CC1101_CLASS::checkReversed(int64_t big) {
+    for(int i = 0; i < CC1101.receivedData.samples.size(); i++) {
+        if(CC1101.receivedData.samples[i] > (big *13)) return true;
+    }
+    return false;
+}
+
+void CC1101_CLASS::reverseLogicState() {
+    for(int i = 0; i < CC1101.receivedData.samples.size(); i++) {
+        CC1101.receivedData.samples[i] = -CC1101.receivedData.samples[i];
+    }
+}
+
+void CC1101_CLASS::filterAll() {
+    CC1101.receivedData.filtered.clear();
+    int64_t shortMin = pulses[0] * 0.7;
+    int64_t shortMax = pulses[0] * 1.3;
+    int64_t longMin  = pulses[1] * 0.7;
+    int64_t longMax  = pulses[1] * 1.3;
+    int64_t spaceMin = pulses[1] * 13;
+    int64_t space    = pulses[1] * 18;
+    Serial.println(spaceMin);
+
+    for (int i = 0; i < CC1101.receivedData.samples.size(); i++) {
+        int64_t sample = CC1101.receivedData.samples[i];
+        if (sample > 0) {
+            if (sample > spaceMin) {
+                CC1101.receivedData.filtered.push_back(space);
+            } else if (sample > shortMin && sample < shortMax) {
+                CC1101.receivedData.filtered.push_back(pulses[0]);
+            } else if (sample > longMin && sample < longMax) {
+                CC1101.receivedData.filtered.push_back(pulses[1]);
+            }
+        } else {
+            sample = -sample;
+            if (sample > spaceMin) {
+                CC1101.receivedData.filtered.push_back(-space);
+            } else if (sample > shortMin && sample < shortMax) {
+                CC1101.receivedData.filtered.push_back(-pulses[0]);
+            } else if (sample > longMin && sample < longMax) {
+                CC1101.receivedData.filtered.push_back(-pulses[1]);
+            }
+        }
+    }
+}
+
+
+void CC1101_CLASS::filterSignal() {
+    if (CC1101.receivedData.samples.empty()) return;
+
+    vector<int64_t> absArr;
+    for (auto x : CC1101.receivedData.samples)
+        absArr.push_back(abs(x));
+
+    if (absArr.empty()) return;
+
+    sort(absArr.begin(), absArr.end());
+
+    vector<vector<int64_t>> groups;
+    vector<int64_t> currGroup;
+    currGroup.push_back(absArr[0]);
+    int64_t groupMin = absArr[0];
+
+    for (size_t i = 1; i < absArr.size(); i++) {
+        int64_t x = absArr[i];
+        if (x <= static_cast<int64_t>(1.3 * groupMin)) {
+            currGroup.push_back(x);
+        } else {
+            groups.push_back(currGroup);
+            currGroup.clear();
+            currGroup.push_back(x);
+            groupMin = x;
+        }
+    }
+    if (!currGroup.empty())
+        groups.push_back(currGroup);
+
+    if (groups.empty()) return;
+
+    if (groups.size() == 1) {
+        sort(groups[0].begin(), groups[0].end());
+        int64_t median = computeMedian(&groups[0]);
+
+        pulses.clear();
+        pulses.push_back(median);
+        return;
+    }
+
+    vector<pair<int64_t, int64_t>> groupStats; // {count, median}
+    for (auto &g : groups) {
+        sort(g.begin(), g.end());
+        groupStats.push_back({ static_cast<int64_t>(g.size()), computeMedian(&g) });
+    }
+
+    // Fix: Explicitly define types instead of `auto`
+    sort(groupStats.begin(), groupStats.end(), [](const pair<int64_t, int64_t> &a, const pair<int64_t, int64_t> &b) {
+        return (a.first == b.first) ? (a.second < b.second) : (a.first > b.first);
+    });
+
+    if (groupStats.size() < 2) return;
+
+    int64_t rep1 = groupStats[0].second;
+    int64_t rep2 = groupStats[1].second;
+    int64_t small = (rep1 + rep2) / 3;
+    int64_t big = small * 2;
+    if(checkReversed(big)){reverseLogicState();};
+
+    pulses.clear();
+    pulses.push_back(small);
+    pulses.push_back(big);
+    filterAll();
+
+
+}
+
+
 
 
 

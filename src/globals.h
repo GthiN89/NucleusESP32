@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <bitset>
 
     enum State {
         IDLE,

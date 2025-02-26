@@ -11,7 +11,7 @@ AnsonicProtocol::AnsonicProtocol()
     : te_short(555),
       te_long(1111),
       te_delta(120),
-    binaryValue(0),
+        binaryValue(0),
       min_count_bit(12),
       state(StepReset),
       decodeData(0),
