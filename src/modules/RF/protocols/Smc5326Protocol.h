@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <stdint.h>
-#include <String.h>
+#include <string.h>
 #include "math.h"
 #include "globals.h"
 #include <bitset>

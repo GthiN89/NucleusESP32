@@ -12,15 +12,10 @@
 #include "protocols/NiceFloProtocol.h"
 #include "protocols/AnsonicProtocol.h"
 #include "protocols/Smc5326Protocol.h"
+#include "protocols/math.h"
 
 
-#define SAMPLE_SIZE 1024
-#define MAX_SIGNAL_LENGTH 10000000  
-#define RAW_BUF_SIZE   2048     // Maximum number of raw samples
-#define TE_MIN_COUNT   5        // Minimum number of high pulses required to calculate TE
-#define GAP_MULTIPLIER 10       // A low pulse longer than GAP_MULTIPLIER * TE is considered a gap
-const float BIN_RAW_GAP_MULTIPLIER = 10.0;  // A low pulse longer than (TE * GAP_MULTIPLIER) is considered a gap
-const uint16_t BIN_RAW_TE_MIN_COUNT = 5;  // Minimum number of high pulses to compute TE
+#define SAMPLE_SIZE 768
 
 //---------------------------------------------------------------------------//
 //-----------------------------Presets-Variables-----------------------------//
@@ -98,6 +93,12 @@ struct SignalCollection {
     }
 };
 
+struct Histogram {
+    std::vector<int> bins;  // Frequency count for each bin.
+    int binSize;            // The resolution of each bin.
+    int minVal;             // Minimum pulse value in the window.
+};
+
 
 
 
@@ -148,6 +149,7 @@ public:
 
     struct ReceivedData {
         std::vector<int64_t> samples;
+        std::vector<int64_t> filtered;
         std::vector<Signal> signals;
         volatile unsigned long lastReceiveTime = 0;
         volatile unsigned long sampleCount = 0;
@@ -180,15 +182,15 @@ public:
     void initRaw();
     void sendRaw();
     void sendSamples(int timings[], int timingsLength, bool levelFlag);
-    static void signalAnalyseTask(void* pvParameters);
-    void startSignalAnalyseTask();
     void fskAnalyze();
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
     void enableScanner(float start, float stop);
     void emptyReceive();
-    std::vector<int64_t> getPulseClusters(const std::vector<int64_t>& samples);
+    void filterSignal();
     bool decode();
-
+    bool checkReversed(int64_t big);
+    void reverseLogicState();
+    void filterAll(); 
 
 private:
     //decoder instances
@@ -205,9 +207,13 @@ private:
     uint16_t sampleSmooth[SAMPLE_SIZE];
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
-
+    Histogram buildHistogram(const std::vector<int>& window, int binSize, int& maxVal);
+    std::vector<int> detectPeaks(const Histogram& hist);
     bool levelFlag;                         // Current GPIO level
     timer_idx_t timerIndex = TIMER_0;               // Timer index
+    std::vector<uint16_t> pulses;
+    int DURATION_DIFF1(int x, int y); 
+
 };
 
 

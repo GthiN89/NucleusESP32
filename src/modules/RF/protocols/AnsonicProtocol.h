@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "math.h"
+#include <bitset>
 
 #define DIP_PATTERN "%c%c%c%c%c%c%c%c%c%c"
 #define CNT_TO_DIP(dip)                                                                         \

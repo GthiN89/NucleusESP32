@@ -571,7 +571,6 @@ void EVENTS::btn_event_detect_run(lv_event_t* e) {
     CC1101EV.loadPreset();
     CC1101EV.enableScanner(300, 925);
     Serial.println("Scanner2");
-    CC1101EV.startSignalAnalyseTask();
  //   delay(5);
     C1101CurrentState = STATE_DETECT;
     runningModule = MODULE_CC1101;
