@@ -800,6 +800,41 @@ void ScreenManager::createBTMenu() {
     apply_neon_theme_button(btn_c1101Others_menu); 
 }
 
+void ScreenManager::createRFRemotesMenu() {
+    lv_obj_t *rfRemoteMenu = lv_obj_create(NULL);
+    ScreenManager::apply_neon_theme(rfRemoteMenu);
+    lv_scr_load(rfRemoteMenu);                   
+    lv_obj_delete(previous_screen);
+    previous_screen = rfRemoteMenu;
+
+    lv_obj_t *btn_Remote_Encoders = lv_btn_create(rfRemoteMenu);
+    lv_obj_set_pos(btn_Remote_Encoders, 25, 10);
+    lv_obj_set_size(btn_Remote_Encoders, 150, 50);
+    lv_obj_add_event_cb(btn_Remote_Encoders, EVENTS::btn_event_SourApple, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *label_btn_Remote_Encoders = lv_label_create(btn_Remote_Encoders);
+    lv_label_set_text(label_btn_Remote_Encoders, "Encoders");
+    lv_obj_center(label_btn_Remote_Encoders);
+    apply_neon_theme_button(btn_Remote_Encoders); 
+
+    lv_obj_t *btn_Brute_menu = lv_btn_create(lv_scr_act());
+    lv_obj_set_pos(btn_Brute_menu, 25, 70);
+    lv_obj_set_size(btn_Brute_menu, 200, 50);
+    lv_obj_add_event_cb(btn_Brute_menu, EVENTS::btn_event_Brute_run, LV_EVENT_ALL, NULL);
+    lv_obj_t *label_Brute_menu = lv_label_create(btn_Brute_menu);
+    lv_label_set_text(label_Brute_menu, "BruteForcers");
+    lv_obj_center(label_Brute_menu);
+    apply_neon_theme_button(btn_Brute_menu); 
+
+    lv_obj_t *btn_c1101Others_menu = lv_btn_create(lv_scr_act());
+    lv_obj_set_pos(btn_c1101Others_menu, 25, 250);
+    lv_obj_set_size(btn_c1101Others_menu, 200, 50);
+    lv_obj_t *label_c1101Others_menu = lv_label_create(btn_c1101Others_menu);
+    lv_label_set_text(label_c1101Others_menu, "Back");
+    lv_obj_center(label_c1101Others_menu);
+    lv_obj_add_event_cb(btn_c1101Others_menu, EVENTS::btn_event_mainMenu_run, LV_EVENT_CLICKED, NULL);
+    apply_neon_theme_button(btn_c1101Others_menu); 
+
+}
 void ScreenManager::createRFMenu() {
     lv_obj_t *rfMenu = lv_obj_create(NULL);
     ScreenManager::apply_neon_theme(rfMenu);
@@ -816,14 +851,14 @@ void ScreenManager::createRFMenu() {
     lv_obj_center(label_playZero_menu);
     apply_neon_theme_button(btn_playZero_menu); 
 
-    lv_obj_t *btn_Brute_menu = lv_btn_create(lv_scr_act());
-    lv_obj_set_pos(btn_Brute_menu, 25, 70);
-    lv_obj_set_size(btn_Brute_menu, 200, 50);
-    lv_obj_add_event_cb(btn_Brute_menu, EVENTS::btn_event_Brute_run, LV_EVENT_ALL, NULL);
-    lv_obj_t *label_Brute_menu = lv_label_create(btn_Brute_menu);
-    lv_label_set_text(label_Brute_menu, "BruteForce");
-    lv_obj_center(label_Brute_menu);
-    apply_neon_theme_button(btn_Brute_menu); 
+    lv_obj_t *btn_Remotes_menu = lv_btn_create(lv_scr_act());
+    lv_obj_set_pos(btn_Remotes_menu, 25, 70);
+    lv_obj_set_size(btn_Remotes_menu, 200, 50);
+    lv_obj_add_event_cb(btn_Remotes_menu, EVENTS::btn_event_Brute_run, LV_EVENT_ALL, NULL);
+    lv_obj_t *label_Remotes_menu = lv_label_create(btn_Remotes_menu);
+    lv_label_set_text(label_Remotes_menu, "Remotes");
+    lv_obj_center(label_Remotes_menu);
+    apply_neon_theme_button(btn_Remotes_menu); 
 
     lv_obj_t *btn_c1101Alanalyzer_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_c1101Alanalyzer_menu, 25, 130);

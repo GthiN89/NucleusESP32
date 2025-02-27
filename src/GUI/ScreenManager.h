@@ -54,6 +54,7 @@ public:
     static void apply_neon_theme(lv_obj_t * obj);
     void createJammerMenu();
     void draw_image();
+    void createRFRemotesMenu();
 
     lv_obj_t* customPreset;
     lv_obj_t *input_datarate;
