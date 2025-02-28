@@ -18,6 +18,8 @@ using namespace std;
 #include "modules/RF/Radio.h"
 #include "main.h"
 #include "modules/IR/ir.h"
+
+
 #define MAX_PATH_LENGTH 256
 CC1101_CLASS CC1101EV;
 SDcard& SD_EVN = SDcard::getInstance();
@@ -81,8 +83,15 @@ void EVENTS::btn_event_Replay_run(lv_event_t* e) {
 void EVENTS::btn_event_Brute_run(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-        Serial.println("Brute force clicked");
         screenMgr.createBruteScreen();
+
+    }
+}
+
+void EVENTS::btn_event_Remotes_run(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        screenMgr.createRFRemotesMenu();
 
     }
 }
@@ -90,11 +99,9 @@ void EVENTS::btn_event_Brute_run(lv_event_t* e) {
 void EVENTS::btn_event_Brute_CAME(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-        Serial.println("Brute force clicked");
             runningModule = MODULE_CC1101;
             C1101CurrentState = STATE_BRUTE;
             BruteCurrentState = CAME_12bit;
-
     }
 }
 
@@ -286,7 +293,7 @@ void EVENTS::sendCapturedEvent(lv_event_t * e) {
         lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
             char selected_text_type[32];
-            lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text_type, sizeof(selected_text_type)); 
+            lv_dropdown_get_selected_str(screenMgr.dropdown_2, selected_text_type, sizeof(selected_text_type)); 
          if(strcmp(selected_text_type, "Raw") == 0) {
         CC1101EV.sendRaw();   
     } else if(strcmp(selected_text_type, "RC-Switch") == 0) {
@@ -369,6 +376,20 @@ void EVENTS::btn_event_IR_START_READ(lv_event_t * e) {
     }
 }
 
+void EVENTS::createEncoderSreen(lv_event_t * e){
+     screenMgr.createEncoderSreen();
+
+ }
+
+ void EVENTS::sendEncodeddEvent(lv_event_t * e) {
+    RFProtocol protocols[] = { CAME, NICE };
+    RFProtocol protocol = protocols[lv_dropdown_get_selected(screenMgr.dropdown_1)];
+    int64_t code = std::stoi(lv_textarea_get_text(screenMgr.textarea_encoder));
+    int16_t bitLenght = lv_spinbox_get_value(screenMgr.spinbox_bitLenght);
+    int8_t repeats = lv_spinbox_get_value(screenMgr.spinbox_repeats);
+    CC1101EV.sendEncoded(protocol, bitLenght, repeats,code);
+ }
+
  void EVENTS::btn_event_SourApple(lv_event_t * e){
     // screenMgr.createSourAppleScreen();
     // sourApple sa;
@@ -428,7 +449,7 @@ void EVENTS::ta_preset_event_cb(lv_event_t * e) {
     if (code == LV_EVENT_VALUE_CHANGED) {
      char selected_text[32];
      lv_event_code_t code = lv_event_get_code(e);
-    lv_dropdown_get_selected_str(screenMgr.C1101preset_dropdown_, selected_text, sizeof(selected_text));  
+    lv_dropdown_get_selected_str(screenMgr.dropdown_1, selected_text, sizeof(selected_text));  
     Serial.println(selected_text);
     C1101preset = convert_str_to_enum(selected_text);
     CC1101EV.loadPreset();
@@ -449,7 +470,7 @@ void EVENTS::ta_rf_type_event_cb(lv_event_t * e) {
      lv_event_code_t code = lv_event_get_code(e);
      lv_obj_t* text_area = screenMgr.getTextArea();
 
-    lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text, sizeof(selected_text)); 
+    lv_dropdown_get_selected_str(screenMgr.dropdown_2, selected_text, sizeof(selected_text)); 
 
     if (code == LV_EVENT_VALUE_CHANGED) {
         C1101preset = convert_str_to_enum(selected_text);
@@ -522,8 +543,8 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     strncpy(frequency_buffer, lv_textarea_get_text(ta), sizeof(frequency_buffer) - 1);
     frequency_buffer[sizeof(frequency_buffer) - 1] = '\0'; 
     CC1101_MHZ = atof(frequency_buffer);
-    lv_dropdown_get_selected_str(screenMgr.C1101preset_dropdown_, selected_text, sizeof(selected_text));  
-    lv_dropdown_get_selected_str(screenMgr.C1101type_dropdown_, selected_text_type, sizeof(selected_text_type)); 
+    lv_dropdown_get_selected_str(screenMgr.dropdown_1, selected_text, sizeof(selected_text));  
+    lv_dropdown_get_selected_str(screenMgr.dropdown_2, selected_text_type, sizeof(selected_text_type)); 
 
     lv_textarea_set_text(text_area, "Waiting for signal.\n");
     if(strcmp(selected_text_type, "Raw") == 0) {
@@ -571,6 +592,7 @@ void EVENTS::btn_event_detect_run(lv_event_t* e) {
     CC1101EV.loadPreset();
     CC1101EV.enableScanner(300, 925);
     Serial.println("Scanner2");
+    CC1101EV.startSignalAnalyseTask();
  //   delay(5);
     C1101CurrentState = STATE_DETECT;
     runningModule = MODULE_CC1101;
