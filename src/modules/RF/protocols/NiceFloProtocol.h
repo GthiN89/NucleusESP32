@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <stdint.h>
 #include "math.h"
+#include <bitset>
 
 class NiceFloProtocol {
 public:
