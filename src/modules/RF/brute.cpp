@@ -14,7 +14,7 @@ bool CC1101_BRUTE::Came12BitBrute()
     pinMode(CC1101_CCGDO0A, OUTPUT);
     digitalWrite(CC1101_CCGDO0A, LOW);
     cc1101.setFrequency(433.92);
-    cc1101.setCC1101Preset(C1101preset);
+    cc1101.setCC1101Preset(AM650);
     cc1101.loadPreset();
     cc1101.initRaw();
     encoderState = EncoderStepStart;    

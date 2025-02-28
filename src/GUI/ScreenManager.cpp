@@ -60,10 +60,11 @@ ScreenManager::ScreenManager()
       button_container_IR_REC1_(nullptr),
       button_container_IR_REC2_(nullptr),
       quareLine_container(nullptr),
-      detect_dropdown_(nullptr),
       teslaScreen_(nullptr),
       BruteScreen_(nullptr),
-      BruteCounterLabel(nullptr)
+      BruteCounterLabel(nullptr),
+      EncodeScreen_(nullptr),
+      keyboard_encoder(nullptr)
       
   
 {
@@ -107,7 +108,7 @@ lv_obj_t *ScreenManager::getKeyboardFreq()
 
 lv_obj_t *ScreenManager::getPresetDropdown()
 {
-    return C1101preset_dropdown_;
+    return dropdown_1;
 }
 
 lv_obj_t *ScreenManager::getSyncDropdown()
@@ -120,9 +121,7 @@ lv_obj_t *ScreenManager::getdetectLabel(){
     return detectLabel;
 }
 
-lv_obj_t *ScreenManager::getDetectDropdown(){
-    return detect_dropdown_;
-}
+
 
 lv_obj_t *ScreenManager::getSquareLineContainer(){
     return quareLine_container;
@@ -159,8 +158,8 @@ void ScreenManager::createReplayScreen() {
     lv_obj_set_style_pad_right(secondLabel_container_, 0, LV_PART_MAIN);
 
 
-   C1101preset_dropdown_ = lv_dropdown_create(secondLabel_container_);
-    lv_dropdown_set_options(C1101preset_dropdown_, "AM650\n"
+   dropdown_1 = lv_dropdown_create(secondLabel_container_);
+    lv_dropdown_set_options(dropdown_1, "AM650\n"
                                 "AM270\n"
                                 "FM238\n"
                                 "FM476\n"
@@ -175,16 +174,16 @@ void ScreenManager::createReplayScreen() {
                                 "CSTM"
                                 );
 
-    lv_obj_add_event_cb(C1101preset_dropdown_, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, C1101preset_dropdown_);
-    lv_obj_set_width(C1101preset_dropdown_, 120);  
-    C1101type_dropdown_ = lv_dropdown_create(secondLabel_container_);
-    lv_dropdown_set_options(C1101type_dropdown_, "Raw\n"
+    lv_obj_add_event_cb(dropdown_1, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, dropdown_1);
+    lv_obj_set_width(dropdown_1, 120);  
+    dropdown_2 = lv_dropdown_create(secondLabel_container_);
+    lv_dropdown_set_options(dropdown_2, "Raw\n"
                                 "RC-Switch\n"
                                 "ESPiLight\n"
                                 "RTL_433\n"
                                 );
-    lv_obj_set_width(C1101type_dropdown_, 120);  
-    lv_obj_add_event_cb(C1101type_dropdown_, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, C1101type_dropdown_);
+    lv_obj_set_width(dropdown_2, 120);  
+    lv_obj_add_event_cb(dropdown_2, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, dropdown_2);
 
 
     // Create main text area
@@ -722,8 +721,92 @@ void ScreenManager::createTeslaScreen() {
     apply_neon_theme_button(sendButton);  
 }
 
-void ScreenManager::createBruteScreen() {
+void ScreenManager::createEncoderSreen() {
 
+    
+
+    ContainerHelper containerHelper;
+    teslaScreen_ = lv_obj_create(NULL);
+    lv_scr_load(teslaScreen_);
+    lv_obj_delete(previous_screen);
+    previous_screen = teslaScreen_;
+    lv_obj_set_flex_flow(teslaScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(teslaScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+
+
+
+    lv_obj_t * topLabel_container_;
+    containerHelper.createContainer(&topLabel_container_, teslaScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
+    lv_obj_t * topLabel = lv_label_create(topLabel_container_);
+    lv_obj_align(topLabel, LV_ALIGN_CENTER, 0, 0);
+    lv_label_set_text(topLabel, "RF Remote encoder");
+
+    containerHelper.createContainer(&secondLabel_container_, teslaScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+
+    lv_obj_t * EncoderLabel = lv_label_create(secondLabel_container_);
+    lv_obj_align(EncoderLabel, LV_ALIGN_CENTER, 0, 0);
+    lv_label_set_text(EncoderLabel, "Encoder:");
+    
+    dropdown_1 = lv_dropdown_create(secondLabel_container_);
+    lv_dropdown_set_options(dropdown_1, "Came\n"
+                                "Nice\n"
+                                );
+    lv_obj_set_width(dropdown_1, 120);  
+    lv_obj_add_event_cb(dropdown_1, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, dropdown_2);   
+
+
+    lv_obj_t * bitLenght_container_;
+    containerHelper.createContainer(&bitLenght_container_, teslaScreen_, LV_FLEX_FLOW_ROW,35, 240);
+     lv_obj_t* bitLenghtlabel = lv_label_create(bitLenght_container_);
+     lv_label_set_text(bitLenghtlabel, "Bit Lenght:");
+    
+     spinbox_bitLenght = SpinBox::createSpinbox(bitLenght_container_, bitLenght, 12, 64, 1, NULL, "bitLenght");
+
+    lv_obj_t * repeats_container_;
+    containerHelper.createContainer(&repeats_container_, teslaScreen_, LV_FLEX_FLOW_ROW,35, 240);
+    lv_obj_t* repeats_label = lv_label_create(repeats_container_);
+    lv_label_set_text(repeats_label, "Repeats:");
+    
+     spinbox_repeats =  SpinBox::createSpinbox(repeats_container_, repeats,3 , 1, 64, NULL, "repeats");
+
+    lv_obj_t * code_container_;
+    containerHelper.createContainer(&code_container_, teslaScreen_, LV_FLEX_FLOW_ROW,70, 240);
+
+    textarea_encoder = lv_textarea_create(code_container_);
+    lv_obj_set_size(textarea_encoder, 240, 70);
+    lv_textarea_set_placeholder_text(textarea_encoder, "Code (decimal)");
+    lv_obj_set_scrollbar_mode(textarea_encoder, LV_SCROLLBAR_MODE_OFF); 
+    lv_obj_add_event_cb(textarea_encoder, ta_event_cb, LV_EVENT_FOCUSED, this);
+
+    containerHelper.createContainer(&button_container_RCSwitchMethod2_, teslaScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+
+
+    lv_obj_t *playButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Play");
+    lv_obj_t *exitButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Exit");
+
+
+    lv_obj_add_event_cb(playButton, EVENTS::sendEncodeddEvent, LV_EVENT_CLICKED, NULL); 
+    lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
+
+    keyboard_encoder = KeyboardHelper::createKeyboard(teslaScreen_, LV_KEYBOARD_MODE_NUMBER);
+    lv_obj_add_flag(keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
+    lv_keyboard_set_textarea(keyboard_encoder, textarea_encoder);
+
+
+}
+
+void ScreenManager::ta_event_cb(lv_event_t * e) {
+        lv_event_code_t code = lv_event_get_code(e);
+        ScreenManager* instance = static_cast<ScreenManager*>(lv_event_get_user_data(e));
+        if (code == LV_EVENT_FOCUSED)
+            lv_obj_clear_flag(instance->keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
+        else if (code == LV_EVENT_DEFOCUSED)
+            lv_obj_add_flag(instance->keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
+    }
+
+void ScreenManager::createBruteScreen() {
 
     ContainerHelper containerHelper;
     teslaScreen_ = lv_obj_create(NULL);
@@ -810,7 +893,7 @@ void ScreenManager::createRFRemotesMenu() {
     lv_obj_t *btn_Remote_Encoders = lv_btn_create(rfRemoteMenu);
     lv_obj_set_pos(btn_Remote_Encoders, 25, 10);
     lv_obj_set_size(btn_Remote_Encoders, 150, 50);
-    lv_obj_add_event_cb(btn_Remote_Encoders, EVENTS::btn_event_SourApple, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn_Remote_Encoders, EVENTS::createEncoderSreen, LV_EVENT_CLICKED, NULL);
     lv_obj_t *label_btn_Remote_Encoders = lv_label_create(btn_Remote_Encoders);
     lv_label_set_text(label_btn_Remote_Encoders, "Encoders");
     lv_obj_center(label_btn_Remote_Encoders);
@@ -854,7 +937,7 @@ void ScreenManager::createRFMenu() {
     lv_obj_t *btn_Remotes_menu = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(btn_Remotes_menu, 25, 70);
     lv_obj_set_size(btn_Remotes_menu, 200, 50);
-    lv_obj_add_event_cb(btn_Remotes_menu, EVENTS::btn_event_Brute_run, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(btn_Remotes_menu, EVENTS::btn_event_Remotes_run, LV_EVENT_ALL, NULL);
     lv_obj_t *label_Remotes_menu = lv_label_create(btn_Remotes_menu);
     lv_label_set_text(label_Remotes_menu, "Remotes");
     lv_obj_center(label_Remotes_menu);

@@ -98,6 +98,10 @@ struct SignalCollection {
     }
 };
 
+enum RFProtocol {
+    CAME,
+    NICE
+};
 
 
 
@@ -188,6 +192,7 @@ public:
     void emptyReceive();
     std::vector<int64_t> getPulseClusters(const std::vector<int64_t>& samples);
     bool decode();
+    void sendEncoded(RFProtocol protocol,int16_t bitLenght, int8_t repeats, int64_t code);
 
 
 private:
