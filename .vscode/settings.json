@@ -76,5 +76,6 @@
         "stop_token": "cpp"
     },
     "idf.portWin": "COM33",
-    "C_Cpp.errorSquiggles": "disabled"
+    "C_Cpp.errorSquiggles": "disabled",
+    "idf.pythonInstallPath": "/usr/bin/python3"
 }

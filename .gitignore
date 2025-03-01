@@ -3,3 +3,9 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+key.pub
+ed25519
+ed25519.pub
+.vscode/settings.json
+.gitignore
+.vscode/settings.json
