@@ -14,7 +14,7 @@ Currently at **version Neon Green**.
 
 ## Features Implemented
 
-With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol for replay using a simple bit-bang method, with plans to upgrade it to more precise timing (previously, I sampled every 430 microseconds).
+With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol for replay using a simple bit-bang pooler method, and later, started to use interrupt as i should to more precise timing (previously, I sampled every 430 microseconds).
 
 **TV-B-GONE**: Fully operational. Can turn TVs on and off.
 
@@ -28,7 +28,7 @@ With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol f
 - **Focus on CC1101 Module for CYD Version**: Future versions will target more powerful ESP32 S3 hardware.
 - **Integration of Decoders and Encoders for Ansonic, Came, Nice, Hormann, and SMC5326**.
 - **Support for a Second Decoder Using an RC Switch (User-Selectable)**.
-- **Brute Force Attack Capabilities for Came A and Nice Protocols** (New!).
+- **Brute Force Attack Capabilities for Came and Nice Protocols** (New!).
 
 ### Known Issues
 - **Large File Transmission**: Bigger files take longer to load, but they transmit just fine.

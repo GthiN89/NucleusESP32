@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <stdint.h>
-#include <String.h>
+#include <string.h>
 
 class HoltekHT12xDecoder {
 public:

@@ -79,6 +79,9 @@ static void save_RF_to_sd_event(lv_event_t * e);
 static void cancelBgone(lv_event_t * e);
 static void btn_event_Brute_CAME(lv_event_t* e); 
 static void btn_event_Brute_NICE(lv_event_t* e); 
+static void btn_event_Remotes_run(lv_event_t* e);
+static void createEncoderSreen(lv_event_t * e);
+static void sendEncodeddEvent(lv_event_t * e);
 
 //file Explorer
 static void confirm_delete_event_handler(lv_event_t * e);

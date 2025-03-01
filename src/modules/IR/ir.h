@@ -9,7 +9,7 @@
 #include <IRutils.h>
 #include "codes.h"
 #include <vector>
-#include <LVGL.h>
+#include <lvgl.h>
 
 
 #define IR_TX 26

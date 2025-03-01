@@ -15,6 +15,7 @@ class CC1101_BRUTE {
 public:
     int16_t counter;
     bool sendingFlag;
+    int8_t repeat = 3;
     bool Came12BitBrute(); 
     bool Nice12BitBrute();
     bool Ansonic12BitBrute();

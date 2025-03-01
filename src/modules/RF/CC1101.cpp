@@ -1402,3 +1402,52 @@ void CC1101_CLASS::disableTransmit()
 void CC1101_CLASS::saveSignal() {
 //;
 }
+
+void CC1101_CLASS::sendEncoded(RFProtocol protocol,int16_t bitLenght, int8_t repeats, int64_t code){
+    Serial.println(protocol != CAME);
+    Serial.println(bitLenght);
+    Serial.println(code);
+    Serial.println(repeats);
+
+
+
+    pinMode(CC1101_CCGDO0A, OUTPUT);
+    digitalWrite(CC1101_CCGDO0A, LOW);
+    setFrequency(433.92);
+    setCC1101Preset(AM650);
+    loadPreset();
+    ELECHOUSE_cc1101.setRxBW(850);
+    ELECHOUSE_cc1101.setPA(12);
+    initRaw();
+    encoderState = EncoderStepStart;    
+ //   Serial.println(F("Came12BitBrute"));
+    int i = 0;
+
+    while(i < repeats ) {
+    i++;
+ //   Serial.println(i);
+    encoderState = EncoderStepStart;
+    while(encoderState != EncoderStepReady){
+        switch (protocol) {
+            case CAME:
+                cameProtocol.yield(code);
+                break;
+            case NICE:
+                niceFloProtocol.yield(code);
+            break;
+        };
+    }
+
+    for (size_t j = 0; j < samplesToSend.size(); j=j+2) {
+                
+                gpio_set_level(CC1101_CCGDO0A, HIGH);
+                delayMicroseconds(samplesToSend[j]); 
+                gpio_set_level(CC1101_CCGDO0A, LOW);
+                delayMicroseconds(samplesToSend[j+1]);                 
+        }
+        gpio_set_level(CC1101_CCGDO0A, LOW);
+
+    }
+   
+
+}

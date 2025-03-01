@@ -20,9 +20,11 @@ struct SubGHzScreen {
 class ScreenManager {
 public:
 
-    lv_obj_t* C1101preset_dropdown_;
-    lv_obj_t* C1101type_dropdown_;
-    lv_obj_t*  detect_dropdown_;
+    int16_t bitLenght;
+    int16_t repeats;
+    lv_obj_t* dropdown_1;
+    lv_obj_t* dropdown_2;
+    lv_obj_t* Encoder_dropdown_;
     lv_obj_t* ReplayScreen_;
     lv_obj_t* IRRecScreen_;
     SubGHzScreen* SubGHzCustomScreen_;
@@ -32,6 +34,10 @@ public:
     lv_obj_t* BruteScreen_;
     lv_obj_t* detectLabel;
     lv_obj_t * BruteCounterLabel;
+    lv_obj_t * EncodeScreen_;
+    lv_obj_t * spinbox_bitLenght;
+    lv_obj_t * spinbox_repeats; 
+    lv_obj_t * keyboard_encoder;
     static ScreenManager& getInstance();
 
     ScreenManager(const ScreenManager&) = delete;
@@ -54,14 +60,19 @@ public:
     static void apply_neon_theme(lv_obj_t * obj);
     void createJammerMenu();
     void draw_image();
+    void createRFRemotesMenu();
+    void createEncoderSreen();
+    static void ta_event_cb(lv_event_t * e);
 
     lv_obj_t* customPreset;
+    lv_obj_t* BitLengh;
     lv_obj_t *input_datarate;
     lv_obj_t *input_bandwidth;
     lv_obj_t *input_deviation;
     lv_obj_t *dropdown_modulation;
     lv_obj_t *text_area_IR;
     lv_obj_t *text_area_SubGHzCustom;
+    lv_obj_t *textarea_encoder;
 
     lv_obj_t* getFreqInput();  
     lv_obj_t* getTextArea();  

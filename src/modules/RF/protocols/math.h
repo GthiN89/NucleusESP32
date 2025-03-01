@@ -1,8 +1,13 @@
-#pragma once
-#define DURATION_DIFF(x, y)             (((x) < (y)) ? ((y) - (x)) : ((x) - (y)))
-#include <bitset>
+#ifndef MATH_H
+#define MATH_H
 
+#include <vector>
+#include <algorithm>
+#include <cstdint>
 
+using namespace std;
+
+#define DURATION_DIFF(x, y) (((x) < (y)) ? ((y) - (x)) : ((x) - (y)))
 
 typedef struct {
     const uint16_t te_long;
@@ -11,5 +16,8 @@ typedef struct {
     const uint8_t min_count_bit_for_found;
 } SubGhzBlockConst;
 
+// Function Declarations (Prototypes)
+int64_t computeMedian(vector<int64_t>* nums);
+int64_t medianOfTwo(int64_t a, int64_t b);
 
-
+#endif // MATH_H

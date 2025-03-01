@@ -2,7 +2,7 @@
 #define FILE_EXPLORER_H
 
 #include "lvgl.h"
-#include <SDFAT.h>
+#include <SdFat.h>
 #include <SPI.h>
 #include "modules/ETC/SDcard.h"
 
