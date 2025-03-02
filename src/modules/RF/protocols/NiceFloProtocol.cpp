@@ -55,8 +55,7 @@ void NiceFloProtocol::yield(unsigned int hexValue) {
         toBits(hexValue);
         encoderState = EncodeStepStartBit;
         break;
-    case EncodeStepStartBit:
-        samplesToSend.push_back(25200);   
+    case EncodeStepStartBit:  
         samplesToSend.push_back(700);
         encoderState = EncoderStepDurations;
         break;
@@ -95,7 +94,7 @@ void NiceFloProtocol::yield(unsigned int hexValue) {
                 samplesToSend.push_back(1400); 
             }
         }
-        samplesToSend.push_back(11520);
+        samplesToSend.push_back(25200);
 
         // for (size_t i = 0; i < samplesToSend.size(); i++)
         // {

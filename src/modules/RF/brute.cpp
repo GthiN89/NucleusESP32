@@ -51,11 +51,11 @@ bool CC1101_BRUTE::Nice12BitBrute()
     pinMode(CC1101_CCGDO0A, OUTPUT);
     digitalWrite(CC1101_CCGDO0A, LOW);
     cc1101.setFrequency(433.92);
-    cc1101.setCC1101Preset(C1101preset);
+    cc1101.setCC1101Preset(AM650);
     cc1101.loadPreset();
     cc1101.initRaw();
     encoderState = EncoderStepStart;    
-
+ //   Serial.println(F("Came12BitBrute"));
     int i = 0;
         counter = 0;
 
@@ -69,13 +69,13 @@ bool CC1101_BRUTE::Nice12BitBrute()
 
     for (size_t j = 0; j < samplesToSend.size(); j=j+2) {
                 
-                gpio_set_level(CC1101_CCGDO0A, LOW);
-                delayMicroseconds(samplesToSend[j]); 
                 gpio_set_level(CC1101_CCGDO0A, HIGH);
+                delayMicroseconds(samplesToSend[j]); 
+                gpio_set_level(CC1101_CCGDO0A, LOW);
                 delayMicroseconds(samplesToSend[j+1]);                 
         }
             gpio_set_level(CC1101_CCGDO0A, LOW);
-    delayMicroseconds(10);   
+    delayMicroseconds(1000);   
     counter++;
     }
     sendingFlag = false;

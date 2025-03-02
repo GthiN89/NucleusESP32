@@ -1407,7 +1407,6 @@ void CC1101_CLASS::sendEncoded(RFProtocol protocol,int16_t bitLenght, int8_t rep
     }
 
     for (size_t j = 0; j < samplesToSend.size(); j=j+2) {
-                
                 gpio_set_level(CC1101_CCGDO0A, HIGH);
                 delayMicroseconds(samplesToSend[j]); 
                 gpio_set_level(CC1101_CCGDO0A, LOW);
