@@ -13,7 +13,7 @@ const std::map<CC1101_PRESET, std::string> FlipperSubFile::presetMapping = {
 void FlipperSubFile::generateRaw(
     File32& file,
     CC1101_PRESET presetName,
-    const std::vector<byte>& customPresetData,
+    const std::vector<uint8_t>& customPresetData,
     std::ostringstream & samples,
     float frequency
 ) {
@@ -34,7 +34,7 @@ void FlipperSubFile::writeHeader(File32& file, float frequency) {
     file.println();
 }
 
-void FlipperSubFile::writePresetInfo(File32& file, CC1101_PRESET presetName, const std::vector<byte>& customPresetData) {
+void FlipperSubFile::writePresetInfo(File32& file, CC1101_PRESET presetName, const std::vector<uint8_t>& customPresetData) {
     file.print("Preset: ");
     file.println(getPresetName(presetName).c_str());
 

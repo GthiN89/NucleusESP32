@@ -36,7 +36,7 @@ private:
      * @param presetName The CC1101 preset being used.
      * @param customPresetData Custom data for CUSTOM preset.
      */
-    void writePresetInfo(File32& file, CC1101_PRESET presetName, const std::vector<byte>& customPresetData);
+    void writePresetInfo(File32& file, CC1101_PRESET presetName, const std::vector<uint8_t>& customPresetData);
 
     /**
      * Writes the raw protocol data to the file.

@@ -24,7 +24,7 @@ void XPT2046_Bitbang::begin() {
 
 }
 
-int XPT2046_Bitbang::readSPI(byte command) {
+int XPT2046_Bitbang::readSPI(uint8_t command) {
     int result = 0;
 
     for (int i = 7; i >= 0; i--) {

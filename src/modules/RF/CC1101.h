@@ -3,7 +3,7 @@
 
 #include "../../globals.h"
 #include "RCSwitch.h"
-#include "ESPiLight.h"
+
 #include "SPI.h"
 #include <driver/timer.h>
 //decoders/encoders
@@ -104,7 +104,6 @@ enum RFProtocol {
 };
 
 
-
 struct CC1101TH {
     std::map<int, uint8_t> valueMap = {
         {-70, 0x88},
@@ -150,9 +149,13 @@ public:
     int CC1101_MODULATION;
 
 
+
+
+
     struct ReceivedData {
         std::vector<int64_t> samples;
         std::vector<Signal> signals;
+        std::vector<int64_t> filtered;
         volatile unsigned long lastReceiveTime = 0;
         volatile unsigned long sampleCount = 0;
         volatile unsigned long normalizedCount = 0;
@@ -190,8 +193,11 @@ public:
     void sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength);
     void enableScanner(float start, float stop);
     void emptyReceive();
-    std::vector<int64_t> getPulseClusters(const std::vector<int64_t>& samples);
+    void filterSignal();
     bool decode();
+    bool checkReversed(int64_t big);
+    void reverseLogicState();
+    void filterAll(); 
     void sendEncoded(RFProtocol protocol,int16_t bitLenght, int8_t repeats, int64_t code);
 
 
@@ -213,6 +219,8 @@ private:
 
     bool levelFlag;                         // Current GPIO level
     timer_idx_t timerIndex = TIMER_0;               // Timer index
+    std::vector<uint16_t> pulses;
+   
 };
 
 

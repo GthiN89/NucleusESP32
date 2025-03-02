@@ -362,7 +362,7 @@ static void delay_us(uint32_t delay_us)
 }
 
 /**
- * @brief Write one byte to LCD panel
+ * @brief Write one uint8_t to LCD panel
  *
  * @param[in] panel_io Pointer to panel IO instance
  * @param[in] dc_bit   DC bit
@@ -429,13 +429,13 @@ static esp_err_t spi_write_package(esp_lcd_panel_io_3wire_spi_t *panel_io, bool 
     ESP_RETURN_ON_ERROR(set_line_level(panel_io, CS, !cs_idle_level), TAG, "Set CS level failed");
     delay_us(time_us);
     ESP_RETURN_ON_ERROR(set_line_level(panel_io, SCL, scl_active_befor_level), TAG, "Set SCL level failed");
-    // Send data byte by byte
+    // Send data uint8_t by uint8_t
     for (int i = 0; i < data_bytes; i++) {
-        // Only set DC bit for the first byte
+        // Only set DC bit for the first uint8_t
         if (i == 0) {
-            ESP_RETURN_ON_ERROR(spi_write_byte(panel_io, data_dc_bit, swap_data & 0xff), TAG, "SPI write byte failed");
+            ESP_RETURN_ON_ERROR(spi_write_byte(panel_io, data_dc_bit, swap_data & 0xff), TAG, "SPI write uint8_t failed");
         } else {
-            ESP_RETURN_ON_ERROR(spi_write_byte(panel_io, DATA_NO_DC_BIT, swap_data & 0xff), TAG, "SPI write byte failed");
+            ESP_RETURN_ON_ERROR(spi_write_byte(panel_io, DATA_NO_DC_BIT, swap_data & 0xff), TAG, "SPI write uint8_t failed");
         }
         swap_data >>= 8;
     }

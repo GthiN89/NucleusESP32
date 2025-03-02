@@ -32,7 +32,7 @@ private:
     uint8_t _misoPin;
     uint8_t _clkPin;
     uint8_t _csPin;
-    int readSPI(byte command);
+    int readSPI(uint8_t command);
     struct Calibration {
         int xMin;
         int xMax;

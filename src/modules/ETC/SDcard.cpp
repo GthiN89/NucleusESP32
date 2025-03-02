@@ -244,7 +244,7 @@ lv_fs_res_t SDcard::readNextFileInDir(File32* dir, char* fn, size_t fn_len) {
 }
 
 
-bool SDcard::writeFile(File32* file, const std::vector<byte>& data, unsigned long writeDelay) {
+bool SDcard::writeFile(File32* file, const std::vector<uint8_t>& data, unsigned long writeDelay) {
     if (!file || !file->isOpen()) {
         return false;
     }

@@ -37,7 +37,7 @@ public:
     bool fileExists(const char* filePath);
     size_t readFile(File32* file, void* buf, size_t bytesToRead);
     bool read_sd_card_flipper_file(String filename);
-    bool writeFile(File32* file, const std::vector<byte>& data, unsigned long writeDelay);
+    bool writeFile(File32* file, const std::vector<uint8_t>& data, unsigned long writeDelay);
 
     // Directory operations
     lv_fs_res_t readNextFileInDir(File32* dir, char* fn, size_t fn_len);

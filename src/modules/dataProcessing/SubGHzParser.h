@@ -5,6 +5,13 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <SPI.h>
+#include <map>
+#include <string>
+#include "modules/RF/CC1101.h"
+#include "GUI/events.h"
+#include "modules/ETC/SDcard.h"
+#include "SD.h"
 
 using Frequency = uint32_t;  
 using PresetString = String; 
@@ -39,12 +46,17 @@ struct RFDetect {
 
 class SubGHzParser {
 public:
-    SubGHzParser();
+  //  SubGHzParser();
     bool loadFile(const char* filename); //spfs
     SubGHzData parseContent();
     const String& getFileContent() const { return file_content; }
     void sendRawData(const std::vector<RawDataElement>& rawData);
     void setRegisters();
+CC1101_CLASS CC1101;
+EVENTS events1;
+SubGHzData data;
+ELECHOUSE_CC1101 ELECCC1101;
+SDcard& SD_SUB = SDcard::getInstance();  
 
 private:
     String file_content;

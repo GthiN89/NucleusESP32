@@ -129,7 +129,7 @@ Important settings are:
 - Only the R5G6B5 format is supported on these panels.
 
   ```h
-  /*Color depth: 1 (1 byte per pixel), 8 (RGB332), 16 (RGB565), 32 (ARGB8888)*/
+  /*Color depth: 1 (1 uint8_t per pixel), 8 (RGB332), 16 (RGB565), 32 (ARGB8888)*/
   #define LV_COLOR_DEPTH 16
   ```
 

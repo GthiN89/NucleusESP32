@@ -28,7 +28,7 @@ IR_CLASS ir;
 RCSwitch mySwitch1;
 
 BRUTE::CC1101_BRUTE RFbruteForcer;
-
+CC1101_CLASS CC1101;
 
 SDcard& SD_CARD = SDcard::getInstance();
 
