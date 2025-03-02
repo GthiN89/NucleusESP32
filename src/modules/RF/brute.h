@@ -4,7 +4,9 @@
 #include "protocols/CameProtocol.h"
 #include "protocols/NiceFloProtocol.h"
 #include "protocols/AnsonicProtocol.h"
-#include "protocols/Holtek_HT12xDecoder.h"
+#include "protocols/Holtek_HT12xProtocol.h"
+#include "protocols/ChamberlainCodeProtocol.h"
+#include "protocols/LinearProtocol.h"
 #include "protocols/HormannProtocol.h"
 #include "protocols/Smc5326Protocol.h"
 #include "globals.h"
@@ -19,13 +21,23 @@ public:
     bool Came12BitBrute(); 
     bool Nice12BitBrute();
     bool Ansonic12BitBrute();
+    bool Holtek12BitBrute();
+    bool ChamberlainCodeBrute(uint8_t bitCount);
+    bool Chamberlain7BitBrute();
+    bool Chamberlain8BitBrute();
+    bool Chamberlain9BitBrute();
+    bool Linear10BitBrute();
 
 private:
     CameProtocol    cameProtocol;
     NiceFloProtocol niceFloProtocol;
     AnsonicProtocol ansonicProtocol;
+    HoltekHT12xProtocol holtekProtocol;
+    ChamberlainCodeProtocol chamberlainProtocol;
+    LinearProtocol linearProtocol;
     HormannProtocol hormannProtocol;
     Smc5326Protocol smc5326Protocol;
+
 
 };
 

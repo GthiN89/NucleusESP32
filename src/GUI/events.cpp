@@ -110,6 +110,14 @@ void EVENTS::btn_event_Brute(lv_event_t* e) {
                 runningModule = MODULE_CC1101;
                 C1101CurrentState = STATE_BRUTE;
                 BruteCurrentState = NICE_12bit;
+            } else if (selected == 2) { // FSK selected
+                runningModule = MODULE_CC1101;
+                C1101CurrentState = STATE_BRUTE;
+                BruteCurrentState = ANSONIC_12bit;
+            } else if (selected == 3) { // FSK selected
+                runningModule = MODULE_CC1101;
+                C1101CurrentState = STATE_BRUTE;
+                BruteCurrentState = Holtek_12bit;
             }
     }
 }

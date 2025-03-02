@@ -109,6 +109,47 @@ void bruteForceTask(void *pvParameters) {
             Serial.println(F("NICE codes sent"));
         }
 
+        if (BruteCurrentState == ANSONIC_12bit) {
+            if (RFbruteForcer.Ansonic12BitBrute()) {
+                C1101CurrentState = STATE_IDLE;
+            }
+            Serial.println(RFbruteForcer.counter);
+        }
+
+        if (BruteCurrentState == Holtek_12bit) {
+            if (RFbruteForcer.Holtek12BitBrute()) {
+                C1101CurrentState = STATE_IDLE;
+            }
+            Serial.println(RFbruteForcer.counter);
+        }
+        if (BruteCurrentState == Chamberlain_9bit) {
+            if (RFbruteForcer.Chamberlain9BitBrute()) {
+                C1101CurrentState = STATE_IDLE;
+            }
+            Serial.println(RFbruteForcer.counter);
+        }
+        if (BruteCurrentState == Chamberlain_9bit) {
+            if (RFbruteForcer.Chamberlain9BitBrute()) {
+                C1101CurrentState = STATE_IDLE;
+            }
+        }
+        if (BruteCurrentState == Chamberlain_8bit) {
+            if (RFbruteForcer.Chamberlain8BitBrute()) {
+                C1101CurrentState = STATE_IDLE;
+            }
+        }
+        if (BruteCurrentState == Chamberlain_7bit) {
+            if (RFbruteForcer.Chamberlain7BitBrute()) {
+                C1101CurrentState = STATE_IDLE;
+            }
+        }
+        if (BruteCurrentState == Linear_10bit) {
+            if (RFbruteForcer.Linear10BitBrute()) {
+                C1101CurrentState = STATE_IDLE;
+            }
+        }
+
+
       //  vTaskDelay(10 / portTICK_PERIOD_MS); // Prevent watchdog resets
     
 }

@@ -150,7 +150,15 @@ enum BruteProtocol {
   CAME_12bit,
   NICE_12bit,
   ANSONIC_12bit,
-  Hormann_44bit,
+  Holtek_12bit,
+  Chamberlain_9bit,
+  Chamberlain_8bit,
+  Chamberlain_7bit,
+  Linear_10bit,
+  Linear_8bit,
+  UNILARM_24bit,
+  SMC5326_24bit,
+  PT2260_24bit,
   BRUTE_IDLE,
 };
 

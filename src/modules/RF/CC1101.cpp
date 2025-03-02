@@ -92,7 +92,7 @@ void IRAM_ATTR InterruptHandler(void *arg) {
     int64_t  duration = time - lastTime;
     lastTime = time;
  
-    if (gpio_get_level(CC1101_CCGDO2A)) {
+    if (!gpio_get_level(CC1101_CCGDO2A)) {
         duration = -duration;
     }
 
@@ -505,17 +505,17 @@ void CC1101_CLASS::loadPreset() {
 }
 
 bool CC1101_CLASS::CheckReceived() {
-    if(samplecount > 1024) {
+    if(samplecount > 512) {
         CC1101_CLASS::receivedData.sampleCount = 0;
         samplecount = 0;
         CC1101_CLASS::receivedData.lastReceiveTime = 0;
         return true;
     }
-    else if (samplecount < 10 or
+    else if (samplecount < 24 or
             (esp_timer_get_time() - CC1101_CLASS::receivedData.lastReceiveTime) > 3000000) {
             return false;
     }
-     else if (samplecount > 10 and
+     else if (samplecount > 24 and
             (esp_timer_get_time() - startRec) > 500000) {
         CC1101_CLASS::receivedData.sampleCount = 0;
         samplecount = 0;

@@ -765,10 +765,7 @@ void ScreenManager::createEncoderSreen() {
     
      spinbox_repeats =  SpinBox::createSpinbox(repeats_container_, repeats,3 , 1, 64, NULL, "repeats", 60);
 
-     keyboard_encoder = KeyboardHelper::createKeyboard(appScreen_, LV_KEYBOARD_MODE_NUMBER);
-     lv_obj_add_flag(keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
-     lv_keyboard_set_textarea(keyboard_encoder, textarea_encoder);
-
+  
     lv_obj_t * code_container_;
     containerHelper.createContainer(&code_container_, appScreen_, LV_FLEX_FLOW_ROW,70, 240);
 
@@ -778,6 +775,11 @@ void ScreenManager::createEncoderSreen() {
     lv_textarea_set_placeholder_text(textarea_encoder, "Code (decimal)");
     lv_obj_set_scrollbar_mode(textarea_encoder, LV_SCROLLBAR_MODE_OFF); 
     lv_obj_add_event_cb(textarea_encoder, ta_event_cb, LV_EVENT_FOCUSED, this);
+
+    keyboard_encoder = KeyboardHelper::createKeyboard(appScreen_, LV_KEYBOARD_MODE_NUMBER);
+    lv_obj_add_flag(keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
+    lv_keyboard_set_textarea(keyboard_encoder, textarea_encoder);
+
 
 
     containerHelper.createContainer(&button_container_RCSwitchMethod2_, appScreen_, LV_FLEX_FLOW_ROW, 25, 240);
@@ -836,8 +838,14 @@ void ScreenManager::createBruteScreen() {
     lv_label_set_text(EncoderLabel, "Encoder:");
     
     dropdown_1 = lv_dropdown_create(secondLabel_container_);
-    lv_dropdown_set_options(dropdown_1, "Came\n"
-                                "Nice\n"
+    lv_dropdown_set_options(dropdown_1, "Came 12bit\n"
+                                "Nice 12bit\n"
+                                "Ansonic 12bit\n"
+                                "Holtek 12bit\n"
+                                "Chamberlain 7bit\n"
+                                "Chamberlain 8bit\n"
+                                "Chamberlain 9bit\n"
+                                "Linear 10bit\n"
                                 );
     lv_obj_set_width(dropdown_1, 120);  
     lv_obj_add_event_cb(dropdown_1, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, dropdown_2);   
