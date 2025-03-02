@@ -1371,20 +1371,13 @@ void CC1101_CLASS::saveSignal() {
 //;
 }
 
-void CC1101_CLASS::sendEncoded(RFProtocol protocol,int16_t bitLenght, int8_t repeats, int64_t code){
-    Serial.println(protocol != CAME);
-    Serial.println(bitLenght);
-    Serial.println(code);
-    Serial.println(repeats);
-
-
-
+void CC1101_CLASS::sendEncoded(RFProtocol protocol, float frequency, int16_t bitLenght, int8_t repeats, int64_t code){
     pinMode(CC1101_CCGDO0A, OUTPUT);
     digitalWrite(CC1101_CCGDO0A, LOW);
-    setFrequency(433.92);
+    Serial.println(frequency);
+    setFrequency(frequency);
     setCC1101Preset(AM650);
     loadPreset();
-    ELECHOUSE_cc1101.setRxBW(850);
     ELECHOUSE_cc1101.setPA(12);
     initRaw();
     encoderState = EncoderStepStart;    

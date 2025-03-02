@@ -33,12 +33,7 @@ ScreenManager &ScreenManager::getInstance()
 }
 
 ScreenManager::ScreenManager()
-    : ReplayScreen_(nullptr),
-      IRRecScreen_(nullptr),
-      SubGHzCustomScreen_(nullptr),
-      SourAppleScreen_(nullptr), 
-      BTSpamScreen_(nullptr),
-      fileExplorerScreen(nullptr),   
+    : fileExplorerScreen(nullptr),   
       text_area_(nullptr),
       customPreset(nullptr),
       kb_freq_(nullptr),
@@ -60,12 +55,9 @@ ScreenManager::ScreenManager()
       button_container_IR_REC1_(nullptr),
       button_container_IR_REC2_(nullptr),
       quareLine_container(nullptr),
-      teslaScreen_(nullptr),
-      BruteScreen_(nullptr),
+      appScreen_(nullptr),
       BruteCounterLabel(nullptr),
-      EncodeScreen_(nullptr),
-      keyboard_encoder(nullptr)
-      
+      keyboard_encoder(nullptr)     
   
 {
 }
@@ -130,21 +122,21 @@ lv_obj_t *ScreenManager::getSquareLineContainer(){
 void ScreenManager::createReplayScreen() {
     ContainerHelper containerHelper;    
 
-    ReplayScreen_ = lv_obj_create(NULL);
+    appScreen_ = lv_obj_create(NULL);
 
-    lv_scr_load(ReplayScreen_);
+    lv_scr_load(appScreen_);
 
   //  lv_obj_delete(previous_screen);
     
-    previous_screen = ReplayScreen_;
-    lv_obj_set_flex_flow(ReplayScreen_, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(ReplayScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    previous_screen = appScreen_;
+    lv_obj_set_flex_flow(appScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(appScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
 
-    lv_obj_set_style_pad_column(ReplayScreen_, 1, LV_PART_MAIN);
-    lv_obj_set_style_pad_row(ReplayScreen_, 1, LV_PART_MAIN);
+    lv_obj_set_style_pad_column(appScreen_, 1, LV_PART_MAIN);
+    lv_obj_set_style_pad_row(appScreen_, 1, LV_PART_MAIN);
 
-    containerHelper.createContainer(&topLabel_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&topLabel_container_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
     lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
     lv_obj_set_style_pad_left(topLabel_container_, 10, LV_PART_MAIN);
     lv_obj_set_style_pad_right(topLabel_container_, 0, LV_PART_MAIN);
@@ -152,7 +144,7 @@ void ScreenManager::createReplayScreen() {
     lv_obj_set_size(customPreset, 90, 30);                   
     lv_obj_add_event_cb(customPreset, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, (void *)"freq");
 
-    containerHelper.createContainer(&secondLabel_container_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&secondLabel_container_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
     lv_obj_set_style_border_width(secondLabel_container_, 0, LV_PART_MAIN);
     lv_obj_set_style_pad_left(secondLabel_container_, 0, LV_PART_MAIN);
     lv_obj_set_style_pad_right(secondLabel_container_, 0, LV_PART_MAIN);
@@ -187,15 +179,15 @@ void ScreenManager::createReplayScreen() {
 
 
     // Create main text area
-    text_area_replay = lv_textarea_create(ReplayScreen_);
+    text_area_replay = lv_textarea_create(appScreen_);
     lv_obj_set_size(text_area_replay, 240, 120);
     lv_obj_align(text_area_replay, LV_ALIGN_CENTER, 0, -20);
     lv_textarea_set_text(text_area_replay, "RAW protocol tool.\nPress listen to start.");
     lv_obj_set_scrollbar_mode(text_area_replay, LV_SCROLLBAR_MODE_OFF); 
     lv_textarea_set_cursor_click_pos(text_area_replay, false);
-    containerHelper.createContainer(&quareLine_container, ReplayScreen_, LV_FLEX_FLOW_ROW, 50, 240);
+    containerHelper.createContainer(&quareLine_container, appScreen_, LV_FLEX_FLOW_ROW, 50, 240);
 
-    containerHelper.createContainer(&button_container_RCSwitchMethod1_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&button_container_RCSwitchMethod1_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
 
     lv_obj_t *listenButton = ButtonHelper::createButton(button_container_RCSwitchMethod1_, "Listen");
@@ -206,7 +198,7 @@ void ScreenManager::createReplayScreen() {
     lv_obj_add_event_cb(saveButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL); 
 
 
-    containerHelper.createContainer(&button_container_RCSwitchMethod2_, ReplayScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&button_container_RCSwitchMethod2_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
 
     lv_obj_t *playButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Play");
@@ -251,13 +243,13 @@ void ScreenManager::createCustomSubghzScreen(){
     Serial.println("Bandwith ");
     Serial.println(CC1101SM.CC1101_RX_BW);
     int32_t valueBW = CC1101SM.CC1101_RX_BW;
-    SubGHzCustomScreen_->spinbox = SpinBox::createSpinbox(settingContainer, 0, valueBW, 812, 10, EVENTS::CustomSubGhzHelp_CB, "Bandwith");
+    SubGHzCustomScreen_->spinbox = SpinBox::createSpinbox(settingContainer, 0, valueBW, 812, 10, EVENTS::CustomSubGhzHelp_CB, "Bandwith", 60);
 
     lv_obj_t *settingContainer1;
     containerHelper.createContainer(&settingContainer1, SubGHzCustomScreen_->screen, LV_FLEX_FLOW_ROW, 25, 240);
     lv_obj_t* label2 = lv_label_create(settingContainer1);	
     lv_label_set_text(label2, "Threshold ");
-    SubGHzCustomScreen_->spinbox1 = SpinBox::createSpinbox(settingContainer1, -50, -80 , 80, 10, EVENTS::CustomSubGhzHelp_CB, "Threshold");
+    SubGHzCustomScreen_->spinbox1 = SpinBox::createSpinbox(settingContainer1, -50, -80 , 80, 10, EVENTS::CustomSubGhzHelp_CB, "Threshold", 60);
  
 
     lv_obj_t *settingContainer2;
@@ -267,7 +259,7 @@ void ScreenManager::createCustomSubghzScreen(){
     Serial.println("SyncMode ");    
     Serial.println(CC1101SM.CC1101_SYNC);
      int32_t valueSync = CC1101SM.CC1101_SYNC;
-    SubGHzCustomScreen_->spinbox2 = SpinBox::createSpinbox(settingContainer2, valueSync, 0, 5, 1, EVENTS::CustomSubGhzHelp_CB, "SYNC");
+    SubGHzCustomScreen_->spinbox2 = SpinBox::createSpinbox(settingContainer2, valueSync, 0, 5, 1, EVENTS::CustomSubGhzHelp_CB, "SYNC", 60);
    
     lv_obj_add_event_cb(settingContainer2, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"SYNC");
 
@@ -278,7 +270,7 @@ void ScreenManager::createCustomSubghzScreen(){
     Serial.println("PktFormat ");
     Serial.println(CC1101SM.CC1101_PKT_FORMAT);
     int32_t valuePTK = CC1101SM.CC1101_PKT_FORMAT;
-    SubGHzCustomScreen_->spinbox3 = SpinBox::createSpinbox(settingContainer3, valuePTK, 0, 3, 1, EVENTS::CustomSubGhzHelp_CB, "PktFormat");
+    SubGHzCustomScreen_->spinbox3 = SpinBox::createSpinbox(settingContainer3, valuePTK, 0, 3, 1, EVENTS::CustomSubGhzHelp_CB, "PktFormat", 60);
     lv_obj_add_event_cb(settingContainer3, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"PktFormat");
 
     lv_obj_t *settingContainer4;
@@ -288,7 +280,7 @@ void ScreenManager::createCustomSubghzScreen(){
     Serial.println("Modulatio ");   
     Serial.println(CC1101SM.CC1101_MODULATION);
     int32_t valueMOD = CC1101SM.CC1101_MODULATION;
-    SubGHzCustomScreen_->spinbox4 = SpinBox::createSpinbox(settingContainer4, valueMOD, 1, 4, 1, EVENTS::CustomSubGhzHelp_CB, "Modulatio");
+    SubGHzCustomScreen_->spinbox4 = SpinBox::createSpinbox(settingContainer4, valueMOD, 1, 4, 1, EVENTS::CustomSubGhzHelp_CB, "Modulatio", 60);
     lv_obj_add_event_cb(settingContainer4, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"Modulatio");
 
     lv_obj_t *settingContainer5;
@@ -298,7 +290,7 @@ void ScreenManager::createCustomSubghzScreen(){
     Serial.println("Deviation:  ");
     Serial.println(CC1101SM.CC1101_DEVIATION);
     int32_t valueDEV = CC1101SM.CC1101_DEVIATION;
-    SubGHzCustomScreen_->spinbox5 = SpinBox::createSpinbox(settingContainer5, valueDEV, 0, 200, 5, EVENTS::CustomSubGhzHelp_CB, "Deviation");
+    SubGHzCustomScreen_->spinbox5 = SpinBox::createSpinbox(settingContainer5, valueDEV, 0, 200, 5, EVENTS::CustomSubGhzHelp_CB, "Deviation", 60);
     lv_obj_add_event_cb(settingContainer5, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"Deviation");
 
 
@@ -309,7 +301,7 @@ void ScreenManager::createCustomSubghzScreen(){
     Serial.println("Data  rate:");
     Serial.println(CC1101SM.CC1101_DRATE);
     int32_t DRATE = CC1101SM.CC1101_DRATE;
-    SubGHzCustomScreen_->spinbox6 = SpinBox::createSpinbox(settingContainer6, DRATE, 1, 250, 5, EVENTS::CustomSubGhzHelp_CB, "DataRate");
+    SubGHzCustomScreen_->spinbox6 = SpinBox::createSpinbox(settingContainer6, DRATE, 1, 250, 5, EVENTS::CustomSubGhzHelp_CB, "DataRate", 60);
     lv_obj_add_event_cb(settingContainer6, EVENTS::CustomSubGhzHelp_CB, LV_EVENT_LONG_PRESSED, (void *)"DataRate");
 
     lv_obj_t *button_container;
@@ -338,29 +330,29 @@ void ScreenManager::createCustomSubghzScreen(){
 void ScreenManager::createIRRecScreen() {
     ContainerHelper containerHelper;    
 
-    IRRecScreen_ = lv_obj_create(NULL);
+    appScreen_ = lv_obj_create(NULL);
 
-    lv_scr_load(IRRecScreen_);
+    lv_scr_load(appScreen_);
 
     lv_obj_delete(previous_screen);
     
-    previous_screen = IRRecScreen_;
-    lv_obj_set_flex_flow(IRRecScreen_, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(IRRecScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    previous_screen = appScreen_;
+    lv_obj_set_flex_flow(appScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(appScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
 
-    lv_obj_set_style_pad_column(IRRecScreen_, 1, LV_PART_MAIN);
-    lv_obj_set_style_pad_row(IRRecScreen_, 1, LV_PART_MAIN);
+    lv_obj_set_style_pad_column(appScreen_, 1, LV_PART_MAIN);
+    lv_obj_set_style_pad_row(appScreen_, 1, LV_PART_MAIN);
 
     
     // Create main text area
-    text_area_IR = lv_textarea_create(IRRecScreen_);
+    text_area_IR = lv_textarea_create(appScreen_);
     lv_obj_set_size(text_area_IR, 240, 240);
     lv_obj_align(text_area_IR, LV_ALIGN_CENTER, 0, -20);
     lv_textarea_set_text(text_area_IR, "Press listen to start.");
     lv_obj_set_scrollbar_mode(text_area_IR, LV_SCROLLBAR_MODE_OFF); 
     lv_textarea_set_cursor_click_pos(text_area_IR, false);
-    containerHelper.createContainer(&button_container_IR_REC1_, IRRecScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&button_container_IR_REC1_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
 
      // Listen Button
@@ -371,7 +363,7 @@ void ScreenManager::createIRRecScreen() {
     lv_obj_t* saveButton = ButtonHelper::createButton(button_container_IR_REC1_, "Save");
    // lv_obj_add_event_cb(saveButton, EVENTS::save_signal_event, LV_EVENT_CLICKED, nullptr);
 
-    containerHelper.createContainer(&button_container_IR_REC2_, IRRecScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&button_container_IR_REC2_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
     // Play Button
     lv_obj_t* playButton = ButtonHelper::createButton(button_container_IR_REC2_, "Play");
@@ -695,25 +687,25 @@ void ScreenManager::createJammerMenu() {
 
 void ScreenManager::createTeslaScreen() {
     ContainerHelper containerHelper;
-    teslaScreen_ = lv_obj_create(NULL);
-    lv_scr_load(teslaScreen_);
+    appScreen_ = lv_obj_create(NULL);
+    lv_scr_load(appScreen_);
     lv_obj_delete(previous_screen);
-    previous_screen = teslaScreen_;
-    lv_obj_set_flex_flow(teslaScreen_, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(teslaScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    previous_screen = appScreen_;
+    lv_obj_set_flex_flow(appScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(appScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
     lv_obj_t * topLabel_container_;
-    containerHelper.createContainer(&topLabel_container_, teslaScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&topLabel_container_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
     lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
 
     lv_obj_t * topLabel = lv_label_create(topLabel_container_);
     lv_obj_align(topLabel, LV_ALIGN_CENTER, 0, 0);
     lv_label_set_text(topLabel, "Tesla charger signal\n Push the button.");
 
-    lv_obj_t* sendButton = lv_button_create(teslaScreen_);
+    lv_obj_t* sendButton = lv_button_create(appScreen_);
     lv_obj_t * sendBtnLbl = lv_label_create(sendButton);
     lv_label_set_text(sendBtnLbl, "Send");
-    lv_obj_align_to(sendButton, teslaScreen_, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_align_to(sendButton, appScreen_, LV_ALIGN_BOTTOM_MID, 0, 0);
     lv_obj_align_to(sendBtnLbl, sendButton, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_size(sendButton, 120, 60);
 
@@ -722,28 +714,30 @@ void ScreenManager::createTeslaScreen() {
 }
 
 void ScreenManager::createEncoderSreen() {
-
-    
-
+   
     ContainerHelper containerHelper;
-    teslaScreen_ = lv_obj_create(NULL);
-    lv_scr_load(teslaScreen_);
+    appScreen_ = lv_obj_create(NULL);
+    lv_scr_load(appScreen_);
     lv_obj_delete(previous_screen);
-    previous_screen = teslaScreen_;
-    lv_obj_set_flex_flow(teslaScreen_, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(teslaScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-
-
-
+    previous_screen = appScreen_;
+    lv_obj_set_flex_flow(appScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(appScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
     lv_obj_t * topLabel_container_;
-    containerHelper.createContainer(&topLabel_container_, teslaScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&topLabel_container_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
     lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
     lv_obj_t * topLabel = lv_label_create(topLabel_container_);
     lv_obj_align(topLabel, LV_ALIGN_CENTER, 0, 0);
     lv_label_set_text(topLabel, "RF Remote encoder");
 
-    containerHelper.createContainer(&secondLabel_container_, teslaScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    lv_obj_t * frequency_container_;
+    containerHelper.createContainer(&frequency_container_, appScreen_, LV_FLEX_FLOW_ROW,35, 240);
+    lv_obj_t* frequencyLabel = lv_label_create(frequency_container_);
+    lv_label_set_text(frequencyLabel, "Freq:");
+    
+    spinbox_frequency = SpinBox::createSpinbox(frequency_container_, spinbox_frequency_value, 433920, 1000000, 1, NULL, "Frequency", 80);
+
+    containerHelper.createContainer(&secondLabel_container_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
     lv_obj_t * EncoderLabel = lv_label_create(secondLabel_container_);
     lv_obj_align(EncoderLabel, LV_ALIGN_CENTER, 0, 0);
@@ -758,42 +752,44 @@ void ScreenManager::createEncoderSreen() {
 
 
     lv_obj_t * bitLenght_container_;
-    containerHelper.createContainer(&bitLenght_container_, teslaScreen_, LV_FLEX_FLOW_ROW,35, 240);
+    containerHelper.createContainer(&bitLenght_container_, appScreen_, LV_FLEX_FLOW_ROW,35, 240);
      lv_obj_t* bitLenghtlabel = lv_label_create(bitLenght_container_);
      lv_label_set_text(bitLenghtlabel, "Bit Lenght:");
     
-     spinbox_bitLenght = SpinBox::createSpinbox(bitLenght_container_, bitLenght, 12, 64, 1, NULL, "bitLenght");
+     spinbox_bitLenght = SpinBox::createSpinbox(bitLenght_container_, bitLenght, 12, 64, 1, NULL, "bitLenght", 60);
 
     lv_obj_t * repeats_container_;
-    containerHelper.createContainer(&repeats_container_, teslaScreen_, LV_FLEX_FLOW_ROW,35, 240);
+    containerHelper.createContainer(&repeats_container_, appScreen_, LV_FLEX_FLOW_ROW,35, 240);
     lv_obj_t* repeats_label = lv_label_create(repeats_container_);
     lv_label_set_text(repeats_label, "Repeats:");
     
-     spinbox_repeats =  SpinBox::createSpinbox(repeats_container_, repeats,3 , 1, 64, NULL, "repeats");
+     spinbox_repeats =  SpinBox::createSpinbox(repeats_container_, repeats,3 , 1, 64, NULL, "repeats", 60);
+
+     keyboard_encoder = KeyboardHelper::createKeyboard(appScreen_, LV_KEYBOARD_MODE_NUMBER);
+     lv_obj_add_flag(keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
+     lv_keyboard_set_textarea(keyboard_encoder, textarea_encoder);
 
     lv_obj_t * code_container_;
-    containerHelper.createContainer(&code_container_, teslaScreen_, LV_FLEX_FLOW_ROW,70, 240);
+    containerHelper.createContainer(&code_container_, appScreen_, LV_FLEX_FLOW_ROW,70, 240);
+
 
     textarea_encoder = lv_textarea_create(code_container_);
-    lv_obj_set_size(textarea_encoder, 240, 70);
+    lv_obj_set_size(textarea_encoder, 240, 50);
     lv_textarea_set_placeholder_text(textarea_encoder, "Code (decimal)");
     lv_obj_set_scrollbar_mode(textarea_encoder, LV_SCROLLBAR_MODE_OFF); 
     lv_obj_add_event_cb(textarea_encoder, ta_event_cb, LV_EVENT_FOCUSED, this);
 
-    containerHelper.createContainer(&button_container_RCSwitchMethod2_, teslaScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+
+    containerHelper.createContainer(&button_container_RCSwitchMethod2_, appScreen_, LV_FLEX_FLOW_ROW, 25, 240);
 
 
     lv_obj_t *playButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Play");
     lv_obj_t *exitButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Exit");
-
+    lv_obj_set_size(playButton, 90, 20);
+    lv_obj_set_size(exitButton, 90, 20);
 
     lv_obj_add_event_cb(playButton, EVENTS::sendEncodeddEvent, LV_EVENT_CLICKED, NULL); 
     lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL); 
-
-    keyboard_encoder = KeyboardHelper::createKeyboard(teslaScreen_, LV_KEYBOARD_MODE_NUMBER);
-    lv_obj_add_flag(keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
-    lv_keyboard_set_textarea(keyboard_encoder, textarea_encoder);
-
 
 }
 
@@ -802,49 +798,84 @@ void ScreenManager::ta_event_cb(lv_event_t * e) {
         ScreenManager* instance = static_cast<ScreenManager*>(lv_event_get_user_data(e));
         if (code == LV_EVENT_FOCUSED)
             lv_obj_clear_flag(instance->keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
-        else if (code == LV_EVENT_DEFOCUSED)
+        else {
             lv_obj_add_flag(instance->keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
+        }
     }
 
 void ScreenManager::createBruteScreen() {
 
     ContainerHelper containerHelper;
-    teslaScreen_ = lv_obj_create(NULL);
-    lv_scr_load(teslaScreen_);
+    appScreen_ = lv_obj_create(NULL);
+    lv_scr_load(appScreen_);
     lv_obj_delete(previous_screen);
-    previous_screen = teslaScreen_;
-    lv_obj_set_flex_flow(teslaScreen_, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(teslaScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    previous_screen = appScreen_;
+    lv_obj_set_flex_flow(appScreen_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(appScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
     lv_obj_t * topLabel_container_;
-    containerHelper.createContainer(&topLabel_container_, teslaScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&topLabel_container_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
     lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
-
     lv_obj_t * topLabel = lv_label_create(topLabel_container_);
     lv_obj_align(topLabel, LV_ALIGN_CENTER, 0, 0);
-    lv_label_set_text(topLabel, "Came + NICE brute forcer\n Push the button.");
-    text_area_ = lv_label_create(topLabel_container_);
-    lv_obj_align(text_area_, LV_ALIGN_CENTER, 30, 0);
-    lv_label_set_text(text_area_, "0/4096");
+    lv_label_set_text(topLabel, "RF Remote BruteForcer");
 
-    lv_obj_t* cameButton = lv_button_create(teslaScreen_);
-    lv_obj_t * cameButtonlbl = lv_label_create(cameButton);
-    lv_label_set_text(cameButtonlbl, "CAME");
-    lv_obj_align_to(cameButton, teslaScreen_, LV_ALIGN_OUT_LEFT_MID, 0, 0);
-    lv_obj_align_to(cameButtonlbl, cameButton, LV_ALIGN_OUT_LEFT_MID, 0, 0);
-    lv_obj_set_size(cameButton, 120, 60);
-     lv_obj_t* niceButton = lv_button_create(teslaScreen_);
-    lv_obj_t * niceButtonlbl = lv_label_create(niceButton);
-    lv_label_set_text(niceButtonlbl, "NICE");
-    lv_obj_align_to(niceButton, teslaScreen_, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
-    lv_obj_align_to(niceButtonlbl, niceButton, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
-    lv_obj_set_size(niceButton, 120, 60);
+  
+
+    lv_obj_t * frequency_container_;
+    containerHelper.createContainer(&frequency_container_, appScreen_, LV_FLEX_FLOW_ROW,35, 240);
+    lv_obj_t* frequencyLabel = lv_label_create(frequency_container_);
+    lv_label_set_text(frequencyLabel, "Freq:");
+    
+    spinbox_frequency = SpinBox::createSpinbox(frequency_container_, spinbox_frequency_value, 433920, 1000000, 1, NULL, "Frequency", 80);
+
+    containerHelper.createContainer(&secondLabel_container_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+
+    lv_obj_t * EncoderLabel = lv_label_create(secondLabel_container_);
+    lv_obj_align(EncoderLabel, LV_ALIGN_CENTER, 0, 0);
+    lv_label_set_text(EncoderLabel, "Encoder:");
+    
+    dropdown_1 = lv_dropdown_create(secondLabel_container_);
+    lv_dropdown_set_options(dropdown_1, "Came\n"
+                                "Nice\n"
+                                );
+    lv_obj_set_width(dropdown_1, 120);  
+    lv_obj_add_event_cb(dropdown_1, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, dropdown_2);   
+
+    lv_obj_t * repeats_container_;
+    containerHelper.createContainer(&repeats_container_, appScreen_, LV_FLEX_FLOW_ROW,35, 240);
+    lv_obj_t* repeats_label = lv_label_create(repeats_container_);
+    lv_label_set_text(repeats_label, "Repeats:");
+    
+     spinbox_repeats =  SpinBox::createSpinbox(repeats_container_, repeats,3 , 1, 64, NULL, "repeats", 60);
+
+     keyboard_encoder = KeyboardHelper::createKeyboard(appScreen_, LV_KEYBOARD_MODE_NUMBER);
+     lv_obj_add_flag(keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
+     lv_keyboard_set_textarea(keyboard_encoder, textarea_encoder);
+    
+     lv_obj_t * progress_container_;
+     containerHelper.createContainer(&progress_container_, appScreen_, LV_FLEX_FLOW_ROW, 105, 240);
+     
+     text_area_ = lv_label_create(progress_container_);
+     lv_label_set_text(text_area_, "0/4096");
+     
+     lv_obj_align(text_area_, LV_ALIGN_CENTER, 0, 0);
+     lv_obj_set_style_text_font(text_area_, &lv_font_montserrat_32, LV_PART_MAIN);  
+     
+
+     containerHelper.createContainer(&button_container_RCSwitchMethod2_, appScreen_, LV_FLEX_FLOW_ROW, 25, 240);
 
 
-    lv_obj_add_event_cb(cameButton, EVENTS::btn_event_Brute_CAME, LV_EVENT_CLICKED, NULL);
-    apply_neon_theme_button(cameButton); 
-     lv_obj_add_event_cb(niceButton, EVENTS::btn_event_Brute_NICE, LV_EVENT_CLICKED, NULL);
-    apply_neon_theme_button(niceButton); 
+     lv_obj_t *playButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Play");
+     lv_obj_t *exitButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Exit");
+     lv_obj_set_size(playButton, 90, 20);
+     lv_obj_set_size(exitButton, 90, 20);
+ 
+
+   lv_obj_add_event_cb(playButton, EVENTS::btn_event_Brute, LV_EVENT_CLICKED, NULL);
+   apply_neon_theme_button(playButton); 
+    lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL);
+    apply_neon_theme_button(exitButton); 
 }
 
 

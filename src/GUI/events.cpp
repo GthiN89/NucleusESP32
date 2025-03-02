@@ -96,23 +96,21 @@ void EVENTS::btn_event_Remotes_run(lv_event_t* e) {
     }
 }
 
-void EVENTS::btn_event_Brute_CAME(lv_event_t* e) {
+void EVENTS::btn_event_Brute(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-            runningModule = MODULE_CC1101;
-            C1101CurrentState = STATE_BRUTE;
-            BruteCurrentState = CAME_12bit;
-    }
-}
 
-void EVENTS::btn_event_Brute_NICE(lv_event_t* e) {
-    lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-        Serial.println("Brute force clicked");
-            runningModule = MODULE_CC1101;
-            C1101CurrentState = STATE_BRUTE;
-            BruteCurrentState = NICE_12bit;
-
+            int selected = lv_dropdown_get_selected(screenMgr.dropdown_1); 
+            Serial.println(selected);
+            if (selected == 0) { 
+                runningModule = MODULE_CC1101;
+                C1101CurrentState = STATE_BRUTE;
+                BruteCurrentState = CAME_12bit;
+            } else if (selected == 1) { // FSK selected
+                runningModule = MODULE_CC1101;
+                C1101CurrentState = STATE_BRUTE;
+                BruteCurrentState = NICE_12bit;
+            }
     }
 }
 
@@ -382,12 +380,18 @@ void EVENTS::createEncoderSreen(lv_event_t * e){
  }
 
  void EVENTS::sendEncodeddEvent(lv_event_t * e) {
+    int64_t code;
     RFProtocol protocols[] = { CAME, NICE };
     RFProtocol protocol = protocols[lv_dropdown_get_selected(screenMgr.dropdown_1)];
-    int64_t code = std::stoi(lv_textarea_get_text(screenMgr.textarea_encoder));
+    float frequency = lv_spinbox_get_value(screenMgr.spinbox_frequency) / 1000.0f;
+    if(lv_textarea_get_text(screenMgr.textarea_encoder) != NULL) {
+         code = std::stoi(lv_textarea_get_text(screenMgr.textarea_encoder));} else 
+    {
+         code = 1;
+    }
     int16_t bitLenght = lv_spinbox_get_value(screenMgr.spinbox_bitLenght);
     int8_t repeats = lv_spinbox_get_value(screenMgr.spinbox_repeats);
-    CC1101EV.sendEncoded(protocol, bitLenght, repeats,code);
+    CC1101EV.sendEncoded(protocol, frequency, bitLenght, repeats,code);
  }
 
  void EVENTS::btn_event_SourApple(lv_event_t * e){

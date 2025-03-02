@@ -198,7 +198,7 @@ public:
     bool checkReversed(int64_t big);
     void reverseLogicState();
     void filterAll(); 
-    void sendEncoded(RFProtocol protocol,int16_t bitLenght, int8_t repeats, int64_t code);
+    void sendEncoded(RFProtocol protocol, float frequency, int16_t bitLenght, int8_t repeats, int64_t code);
 
 
 private:

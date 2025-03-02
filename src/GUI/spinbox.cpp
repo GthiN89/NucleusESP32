@@ -18,14 +18,19 @@ void SpinBox::spinbox_decrement_event_cb(lv_event_t* e) {
     }
 }
 
-lv_obj_t* SpinBox::createSpinbox(lv_obj_t* parent, int16_t valueStore, int16_t min, int16_t max, int16_t step, lv_event_cb_t event_cb, const void* user_data) {
+lv_obj_t* SpinBox::createSpinbox(lv_obj_t* parent, int64_t valueStore, int64_t min, int64_t max, int16_t step, lv_event_cb_t event_cb, const void* user_data, uint32_t size) {
     spinbox_obj = lv_spinbox_create(parent);
     lv_spinbox_set_range(spinbox_obj, min, max);
     lv_spinbox_set_step(spinbox_obj, step);
-    lv_spinbox_set_digit_format(spinbox_obj, 3, 0); 
+    if(size == 60){
+        lv_spinbox_set_digit_format(spinbox_obj, 3, 0); 
+    } else {
+        lv_spinbox_set_digit_format(spinbox_obj, 6, 0); 
+    }
+
     lv_spinbox_set_value(spinbox_obj, valueStore);
     lv_obj_add_event_cb(spinbox_obj, event_cb, LV_EVENT_ALL, const_cast<void*>(user_data));
-    lv_obj_set_size(spinbox_obj, 60, 50);
+    lv_obj_set_size(spinbox_obj, size, 50);
     lv_obj_set_style_bg_color(spinbox_obj, lv_color_hex(0x000000), 0); 
 
     lv_obj_t* increment_btn = lv_btn_create(parent);

@@ -21,21 +21,19 @@ class ScreenManager {
 public:
 
     int16_t bitLenght;
+    int16_t spinbox_frequency_value;
     int16_t repeats;
     lv_obj_t* dropdown_1;
     lv_obj_t* dropdown_2;
     lv_obj_t* Encoder_dropdown_;
-    lv_obj_t* ReplayScreen_;
-    lv_obj_t* IRRecScreen_;
     SubGHzScreen* SubGHzCustomScreen_;
     lv_obj_t* topLabel_container_;
     lv_obj_t *mbox_container;
-    lv_obj_t* teslaScreen_;
-    lv_obj_t* BruteScreen_;
+    lv_obj_t* appScreen_;
     lv_obj_t* detectLabel;
     lv_obj_t * BruteCounterLabel;
-    lv_obj_t * EncodeScreen_;
     lv_obj_t * spinbox_bitLenght;
+    lv_obj_t * spinbox_frequency;
     lv_obj_t * spinbox_repeats; 
     lv_obj_t * keyboard_encoder;
     static ScreenManager& getInstance();
@@ -73,6 +71,7 @@ public:
     lv_obj_t *text_area_IR;
     lv_obj_t *text_area_SubGHzCustom;
     lv_obj_t *textarea_encoder;
+    lv_obj_t *frequency_spinbox;
 
     lv_obj_t* getFreqInput();  
     lv_obj_t* getTextArea();  
