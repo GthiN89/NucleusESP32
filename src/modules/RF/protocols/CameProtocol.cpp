@@ -101,9 +101,10 @@ void CameProtocol::yield(unsigned int hexValue) {
         // {
         //     Serial.println(samplesToSend[i]);
         // }
-        delay(5);
+        
         
             encoderState = EncoderStepReady;
+            delay(5);
 
         break;
     default:

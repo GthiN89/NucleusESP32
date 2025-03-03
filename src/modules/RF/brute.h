@@ -22,7 +22,7 @@ public:
     bool Nice12BitBrute();
     bool Ansonic12BitBrute();
     bool Holtek12BitBrute();
-    bool ChamberlainCodeBrute(uint8_t bitCount);
+    bool ChamberlainCodeBrute(uint8_t bitCount); 
     bool Chamberlain7BitBrute();
     bool Chamberlain8BitBrute();
     bool Chamberlain9BitBrute();
@@ -32,7 +32,7 @@ private:
     CameProtocol    cameProtocol;
     NiceFloProtocol niceFloProtocol;
     AnsonicProtocol ansonicProtocol;
-    HoltekHT12xProtocol holtekProtocol;
+    HoltekProtocol holtekProtocol;
     ChamberlainCodeProtocol chamberlainProtocol;
     LinearProtocol linearProtocol;
     HormannProtocol hormannProtocol;

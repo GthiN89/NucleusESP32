@@ -1,89 +1,51 @@
 #ifndef CHAMBERLAIN_CODE_PROTOCOL_H
 #define CHAMBERLAIN_CODE_PROTOCOL_H
 
-#include <cstdint>
-#include <vector>
+#include <Arduino.h>
+#include <stdint.h>
+#include <bitset>
 #include <string>
+#include <vector>
+#include "globals.h"
 
 class ChamberlainCodeProtocol {
 public:
-    // Decoder states
-    enum DecoderState {
-        DecoderReset,
-        DecoderFoundStartBit,
-        DecoderSaveDuration,
-        DecoderCheckDuration
-    };
-
-    // Encoder states
-    enum EncoderState {
-        EncoderIdle,
-        EncoderStart,
-        EncoderReady
-    };
-
     ChamberlainCodeProtocol();
 
-    // --- Decoder interface ---
+    // Resets internal state (encoder and decoder if implemented)
     void reset();
-    void feed(bool level, uint32_t duration);
-    bool decode(const long long int* samples, size_t sampleCount);
-    std::string getCodeString() const;
-    bool hasValidCode() const;
-    uint32_t reverseKey(uint32_t code, uint8_t bitCount) const;
 
-    // --- Encoder interface ---
-    void startEncoding(uint32_t code, uint8_t bitCount);
-    const std::vector<long long int>& getEncodedSamples() const;
+    // Generates transmission samples for a given hex key and bitCount (7, 8, or 9).
+    // This is meant to be called repeatedly (as in Came) until the encoder state is ready.
+    void yield(uint32_t hexValue, uint8_t bitCount);
+
+
+
+    bool isEncoderReady() const { return encoderState == EncoderStepReady; }
+
+    // (Optional) Returns a human-readable string for a given code.
+    String getCodeString(uint32_t hexValue, uint8_t bitCount) const;
 
 private:
-    // Returns the absolute difference.
-    inline uint32_t durationDiff(uint32_t a, uint32_t b) const {
-        return (a > b) ? a - b : b - a;
-    }
+    // Timing constants for Chamberlain protocol
+    const uint32_t te_short;  // 1000 µs
+    const uint32_t te_long;   // 3000 µs
+    const uint32_t te_delta;  // 200 µs tolerance
+    const uint8_t  min_count_bit; // Minimal count for decoding (10)
 
-    // Helpers for decoding:
-    uint64_t chamberlainBitToCode(uint32_t data, uint8_t size) const;
-    bool chamberlainCodeToBit(uint64_t &data, uint8_t size) const;
-    bool checkMaskAndParse();
+    // Precomputed end pulses (to avoid runtime multiplication)
+    // End pulse depends on the least significant bit:
+    static const uint32_t END_HIGH_FOR_1 = 3000;  // te_short * 3
+    static const uint32_t END_LOW_FOR_1  = 42000;  // 1000 * 42
+    static const uint32_t END_HIGH_FOR_0 = 1000;    // te_short
+    static const uint32_t END_LOW_FOR_0  = 44000;   // 1000 * 44
 
-    // Returns a DIP string according to the decoded bit–count.
-    std::string getDIPString() const;
+    // Internal storage for bits.
+    // Since we support up to 9-bit codes, we use a 9-bit bitset.
+    std::bitset<9> binaryValue;
 
-    // --- Protocol constants ---
-    static constexpr uint32_t te_short = 1000;
-    static constexpr uint32_t te_long  = 3000;
-    static constexpr uint32_t te_delta = 200;
-    static constexpr uint8_t  min_count_bit = 10;
-
-    // Nibble definitions
-    static constexpr uint8_t CH_CODE_BIT_STOP = 0b0001; // 1
-    static constexpr uint8_t CH_CODE_BIT_1    = 0b0011; // 3
-    static constexpr uint8_t CH_CODE_BIT_0    = 0b0111; // 7
-
-    // Masks for different bit–counts
-    static constexpr uint64_t CH7_CODE_MASK       = 0xF000000FF0Full;
-    static constexpr uint64_t CH8_CODE_MASK       = 0xF00000F00Full;
-    static constexpr uint64_t CH9_CODE_MASK       = 0xF000000000Full;
-
-    static constexpr uint64_t CH7_CODE_MASK_CHECK = 0x10000001101ull;
-    static constexpr uint64_t CH8_CODE_MASK_CHECK = 0x1000001001ull;
-    static constexpr uint64_t CH9_CODE_MASK_CHECK = 0x10000000001ull;
-
-    // --- Decoder variables ---
-    uint64_t decodeData;
-    uint8_t decodeCountBit;
-    uint32_t te_last;
-    bool validCodeFound;
-    uint64_t finalCode;
-    uint8_t finalBitCount;
-    DecoderState decoderState;
-
-    // --- Encoder variables ---
-    uint32_t encodeData;
-    uint8_t encodeBitCount;
-    EncoderState encoderState;
-    std::vector<long long int> samplesToSend;
+    // Private helper: convert hexValue into binary bits (using bitCount bits)
+    void toBits(uint32_t hexValue, uint8_t bitCount);
 };
 
 #endif // CHAMBERLAIN_CODE_PROTOCOL_H

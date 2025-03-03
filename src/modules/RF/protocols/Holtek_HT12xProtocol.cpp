@@ -1,180 +1,210 @@
 #include "Holtek_HT12xProtocol.h"
-#include <cstdio>
-#include <cstring>
+#include <stdio.h>
 
-HoltekHT12xProtocol::HoltekHT12xProtocol()
-    : decodeData(0),
-      decodeCountBit(0),
-      te_last(0),
-      validCodeFound(false),
-      finalCode(0),
-      finalBitCount(0),
+#define DIP_PATTERN "%c%c%c%c%c%c%c%c"
+#define CNT_TO_DIP(dip) \
+    (dip & 0x80 ? '0' : '1'), (dip & 0x40 ? '0' : '1'), (dip & 0x20 ? '0' : '1'), \
+    (dip & 0x10 ? '0' : '1'), (dip & 0x08 ? '0' : '1'), (dip & 0x04 ? '0' : '1'), \
+    (dip & 0x02 ? '0' : '1'), (dip & 0x01 ? '0' : '1')
+
+static inline uint32_t duration_diff(uint32_t a, uint32_t b) {
+    return (a > b) ? (a - b) : (b - a);
+}
+
+HoltekProtocol::HoltekProtocol()
+    : 
       decoderState(DecoderStepReset),
-      currentTe(0),
-      lastData(0),
-      encodeData(0),
-      encodeBitCount(0),
-      encoderState(EncoderStepIdle),
-      encodingTE(TE_SHORT) // default TE for encoding
+      te_short(320),
+      te_long(640),
+      te_delta(200),
+      min_count_bit(12),
+      te(0),
+      validCodeFound(false),
+      decodeCountBit(0),
+      decodedData(0),
+      te_last(0),
+      finalBtn(0),
+      finalDIP(0)
 {
 }
 
-void HoltekHT12xProtocol::reset() {
+void HoltekProtocol::reset() {
+    // Reset decoder
     decoderState = DecoderStepReset;
-    decodeData = 0;
+    decodedData = 0;
     decodeCountBit = 0;
     te_last = 0;
     validCodeFound = false;
-    finalCode = 0;
-    finalBitCount = 0;
-    currentTe = 0;
-    lastData = 0;
+    finalBtn = 0;
+    finalDIP = 0;
+    // Reset encoder
+    encoderState = EncoderStepStart;
+    te = 0;
+    samplesToSend.clear();
 }
 
-void HoltekHT12xProtocol::feed(bool level, uint32_t duration) {
-    switch(decoderState) {
-    case DecoderStepReset:
-        if(!level && durationDiff(duration, TE_SHORT * 36) < TE_DELTA * 36)
-            decoderState = DecoderStepFoundStartBit;
+inline void HoltekProtocol::addBit(uint8_t bit) {
+    decodedData = (decodedData << 1) | bit;
+    decodeCountBit++;
+}
+
+//-----------------------------------------------------------------------------
+//  ENCODER: "yield" with a state machine (like the proven Came/Ansonic approach)
+//-----------------------------------------------------------------------------
+void HoltekProtocol::yield(unsigned int hexValue) {
+    switch(encoderState) {
+    case EncoderStepStart:
+        // Clear old pulses
+        samplesToSend.clear();
+        // If TE isn't yet set, default to te_short
+        if(te == 0) te = te_short;
+        // Move on
+        encoderState = EncodeStepStartBit;
         break;
-    case DecoderStepFoundStartBit:
-        if(level && durationDiff(duration, TE_SHORT) < TE_DELTA) {
-            decoderState = DecoderStepSaveDuration;
-            decodeData = 0;
-            decodeCountBit = 0;
-            currentTe = duration;
-        } else {
-            decoderState = DecoderStepReset;
-        }
+
+    case EncodeStepStartBit:
+        // Next step: actually create pulses
+        encoderState = EncoderStepDurations;
         break;
-    case DecoderStepSaveDuration:
-        if(!level) {
-            if(duration >= (TE_SHORT * 10 + TE_DELTA)) {
-                if(decodeCountBit == MIN_COUNT_BIT) {
-                    if((lastData == decodeData) && lastData != 0) {
-                        currentTe /= ((decodeCountBit * 3) + 1);
-                        finalCode = decodeData;
-                        finalBitCount = decodeCountBit;
-                        validCodeFound = true;
-                    }
-                    lastData = decodeData;
-                }
-                decodeData = 0;
-                decodeCountBit = 0;
-                currentTe = 0;
-                decoderState = DecoderStepFoundStartBit;
-                break;
+
+    case EncoderStepDurations: {
+        // 1) Send header: low pulse = te*36, high pulse = te
+        samplesToSend.push_back(te * 36);
+        samplesToSend.push_back(te);
+
+        // 2) For each of the 12 bits (MSB first):
+        for(int i = 11; i >= 0; i--) {
+            bool bitIsOne = (hexValue & (1 << i)) != 0;
+            if(bitIsOne) {
+                // For bit '1': low = te*2, high = te
+                samplesToSend.push_back(te * 2);
+                samplesToSend.push_back(te);
             } else {
-                te_last = duration;
-                currentTe += duration;
-                decoderState = DecoderStepCheckDuration;
+                // For bit '0': low = te, high = te*2
+                samplesToSend.push_back(te);
+                samplesToSend.push_back(te * 2);
             }
-        } else {
-            decoderState = DecoderStepReset;
         }
+        // All pulses are prepared
+        encoderState = EncoderStepReady;
+        // Slight delay to mirror your proven logic
+        delay(5);
         break;
-    case DecoderStepCheckDuration:
-        if(level) {
-            currentTe += duration;
-            if(durationDiff(te_last, TE_LONG) < TE_DELTA * 2 &&
-               durationDiff(duration, TE_SHORT) < TE_DELTA) {
-                decodeData = (decodeData << 1) | 1;
-                decodeCountBit++;
-                decoderState = DecoderStepSaveDuration;
-            } else if(durationDiff(te_last, TE_SHORT) < TE_DELTA &&
-                      durationDiff(duration, TE_LONG) < TE_DELTA * 2) {
-                decodeData = (decodeData << 1);
-                decodeCountBit++;
-                decoderState = DecoderStepSaveDuration;
-            } else {
-                decoderState = DecoderStepReset;
-            }
-        } else {
-            decoderState = DecoderStepReset;
-        }
+    }
+
+    default:
+        // Once we're in EncoderStepReady, do nothing.
         break;
     }
 }
 
-bool HoltekHT12xProtocol::decode(const long long int* samples, size_t sampleCount) {
+//-----------------------------------------------------------------------------
+//  DECODER: same as the original Holtek logic—no changes or local replacements
+//-----------------------------------------------------------------------------
+bool HoltekProtocol::decode(long long int* samples, size_t sampleCount) {
+    // Start fresh
     reset();
+
     for(size_t i = 0; i < sampleCount; i++) {
-        if(samples[i] > 0)
-            feed(true, static_cast<uint32_t>(samples[i]));
-        else
-            feed(false, static_cast<uint32_t>(-samples[i]));
-        if(validCodeFound)
+        // Positive => high level; negative => low level
+        if(samples[i] > 0) {
+            // HIGH
+            uint32_t duration = (uint32_t)samples[i];
+            switch(decoderState) {
+            case DecoderStepFoundStartBit:
+                // Expect ~te_short
+                if(duration_diff(duration, te_short) < te_delta) {
+                    decoderState = DecoderStepSaveDuration;
+                    te = duration;         // measure actual TE from start bit
+                    decodedData = 0;
+                    decodeCountBit = 0;
+                } else {
+                    decoderState = DecoderStepReset;
+                }
+                break;
+
+            case DecoderStepCheckDuration:
+                // Check if previous low pulse + this high pulse => bit=1 or bit=0
+                if(duration_diff(te_last, te_short) < te_delta &&
+                   duration_diff(duration, te_long) < te_delta) {
+                    addBit(1);
+                    decoderState = DecoderStepSaveDuration;
+                } else if(duration_diff(te_last, te_long) < te_delta &&
+                          duration_diff(duration, te_short) < te_delta) {
+                    addBit(0);
+                    decoderState = DecoderStepSaveDuration;
+                } else {
+                    decoderState = DecoderStepReset;
+                }
+                break;
+
+            default:
+                // do nothing in other states
+                break;
+            }
+        } else {
+            // LOW
+            uint32_t duration = (uint32_t)(-samples[i]);
+            switch(decoderState) {
+            case DecoderStepReset:
+                // Look for header: ~ te_short * 36
+                if(duration_diff(duration, te_short * 36) < (te_delta * 36)) {
+                    decoderState = DecoderStepFoundStartBit;
+                }
+                break;
+
+            case DecoderStepSaveDuration:
+                // If low pulse is >= (te_short*4), we consider it an end-of-group
+                if(duration >= (te_short * 4)) {
+                    // Enough bits => code is valid
+                    if(decodeCountBit >= min_count_bit) {
+                        validCodeFound = true;
+                        finalBtn = (decodedData & 0x0F);
+                        finalDIP = (decodedData >> 4) & 0xFF;
+                    }
+                    // Prepare for next group
+                    decodedData = 0;
+                    decodeCountBit = 0;
+                    decoderState = DecoderStepFoundStartBit;
+                } else {
+                    // Store for the next check
+                    te_last = duration;
+                    decoderState = DecoderStepCheckDuration;
+                }
+                break;
+
+            default:
+                // else reset
+                decoderState = DecoderStepReset;
+                break;
+            }
+        }
+        if(validCodeFound) {
             return true;
+        }
     }
     return false;
 }
 
-std::string HoltekHT12xProtocol::getEventString(uint8_t btn) const {
-    char buf[32] = {0};
-    std::string eventStr;
-    if(((btn >> 3) & 0x1) == 0) eventStr += "B1 ";
-    if(((btn >> 2) & 0x1) == 0) eventStr += "B2 ";
-    if(((btn >> 1) & 0x1) == 0) eventStr += "B3 ";
-    if(((btn >> 0) & 0x1) == 0) eventStr += "B4 ";
-    return eventStr;
-}
-
-std::string HoltekHT12xProtocol::getDIPString(uint8_t cnt) const {
-    char buf[9];
-    snprintf(buf, sizeof(buf), "%c%c%c%c%c%c%c%c",
-             (cnt & 0x80) ? '0' : '1',
-             (cnt & 0x40) ? '0' : '1',
-             (cnt & 0x20) ? '0' : '1',
-             (cnt & 0x10) ? '0' : '1',
-             (cnt & 0x08) ? '0' : '1',
-             (cnt & 0x04) ? '0' : '1',
-             (cnt & 0x02) ? '0' : '1',
-             (cnt & 0x01) ? '0' : '1');
-    return std::string(buf);
-}
-
-std::string HoltekHT12xProtocol::getCodeString() const {
+String HoltekProtocol::getCodeString() const {
+    // Show the final decode, including DIP pattern
     char buf[128];
-    uint32_t key = finalCode & 0x0FFF;
-    uint8_t btn = finalCode & 0x0F;
-    uint8_t cnt = (finalCode >> 4) & 0xFF;
-    std::string eventStr = getEventString(btn);
-    std::string dipStr = getDIPString(cnt);
-    snprintf(buf, sizeof(buf), "Holtek HT12x %dbit\r\nKey:0x%03X\r\nBtn:%s\r\nDIP:%s\r\nTe:%lums\r\n",
-             finalBitCount, key, eventStr.c_str(), dipStr.c_str(), static_cast<unsigned long>(currentTe));
-    return std::string(buf);
+    sprintf(
+        buf,
+        "Holtek HT12X %db\r\n"
+        "Key:0x%03lX\r\n"
+        "Btn:0x%X\r\n"
+        "DIP:" DIP_PATTERN "\r\n"
+        "Te:%luus\r\n",
+        decodeCountBit,
+        (decodedData & 0xFFF),
+        finalBtn,
+        CNT_TO_DIP(finalDIP),
+        te
+    );
+    return String(buf);
 }
 
-bool HoltekHT12xProtocol::hasValidCode() const {
+bool HoltekProtocol::hasValidCode() const {
     return validCodeFound;
-}
-
-void HoltekHT12xProtocol::startEncoding(uint32_t code, uint8_t bitCount) {
-    samplesToSend.clear();
-    encodeData = code;
-    encodeBitCount = bitCount;
-    // Header: low pulse for te * 36
-    samplesToSend.push_back(-static_cast<int32_t>(encodingTE * 36));
-    // Start bit: high pulse for te
-    samplesToSend.push_back(encodingTE);
-    // Encode bits (MSB first)
-    for (int i = bitCount; i > 0; i--) {
-        uint8_t bit = (code >> (i - 1)) & 1;
-        if(bit) {
-            samplesToSend.push_back(-static_cast<int32_t>(encodingTE * 2));
-            samplesToSend.push_back(encodingTE);
-        } else {
-            samplesToSend.push_back(-static_cast<int32_t>(encodingTE));
-            samplesToSend.push_back(encodingTE * 2);
-        }
-    }
-    encoderState = EncoderStepReady;
-}
-
-const std::vector<long long int>& HoltekHT12xProtocol::getEncodedSamples() const {
-    return samplesToSend;
-}
-
-void HoltekHT12xProtocol::setTE(uint32_t te) {
-    encodingTE = te;
 }

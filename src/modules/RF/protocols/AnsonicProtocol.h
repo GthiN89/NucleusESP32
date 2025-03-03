@@ -1,70 +1,65 @@
-// AnsonicProtocol.h
 #ifndef ANSONIC_PROTOCOL_H
 #define ANSONIC_PROTOCOL_H
 
-#include <cstdint>
-#include <vector>
-#include <string>
+#include <Arduino.h>
+#include <stdint.h>
 #include <bitset>
+#include <vector>
+#include "globals.h"
 
 class AnsonicProtocol {
 public:
-    enum DecoderState {
-        DecoderStepReset,
-        DecoderStepFoundStartBit,
-        DecoderStepSaveDuration,
-        DecoderStepCheckDuration,
-    };
-
-    enum EncoderState {
-        EncoderStepIdle,
-        EncoderStepStart,
-        EncoderStepDurations,
-        EncoderStepReady,
-    };
-
     AnsonicProtocol();
 
-    // Decoder interface
+    // resets internal state
     void reset();
-    void feed(bool level, uint32_t duration);
-    bool decode(const long long int* samples, size_t sampleCount);
-    std::string getCodeString();
-    bool hasValidCode() const;
-    uint32_t reverseKey(uint32_t code, uint8_t bitCount) const;
 
-    // Encoder interface
-    void startEncoding(uint32_t code, uint8_t bitCount);
-    const std::vector<long long int>& getEncodedSamples() const;
+    // feeds an array of samples; returns true if a valid code was detected.
+    bool decode(long long int* samples, size_t sampleCount);
+
+    // returns a string with the decoded key, button and DIP info.
+    String getCodeString() const;
+
+    // returns true if a valid code was detected.
+    bool hasValidCode() const;
+
+    // generates samples for transmission from a given hex key.
+    void yield(unsigned int hexValue);
+
 
 private:
-    inline uint32_t durationDiff(uint32_t a, uint32_t b) {
-        return (a > b) ? (a - b) : (b - a);
-    }
-    std::string getDIPString(uint32_t dip);
+enum DecoderStep {
+    DecoderStepReset,
+    DecoderStepFoundStartBit,
+    DecoderStepSaveDuration,
+    DecoderStepCheckDuration
+};
 
-    // Protocol parameters
-    const uint32_t te_short;
-    const uint32_t te_long;
-    const uint32_t te_delta;
-    const uint8_t min_count_bit;
+DecoderStep DecoderState;
+
+    const uint32_t te_short;   // 555 us
+    const uint32_t te_long;    // 1111 us
+    const uint32_t te_delta;   // 120 us tolerance
+    const uint8_t  min_count_bit; // 12 bits
 
     // Decoder variables
     uint32_t decodeData;
-    uint8_t decodeCountBit;
+    uint8_t  decodeCountBit;
     uint32_t te_last;
-    bool validCodeFound;
+    bool     validCodeFound;
     uint32_t finalCode;
-    uint8_t finalBitCount;
-    DecoderState decoderState;
-    uint32_t cnt;
-    uint8_t btn;
+    uint8_t  finalBitCount;
+    uint8_t  finalBtn;  // Derived from key: (finalCode >> 1) & 0x3
+    uint16_t finalDip;  // Derived from key: finalCode & 0x0FFF
 
     // Encoder variables
-    uint32_t encodeData;
-    uint8_t encodeBitCount;
-    EncoderState encoderState;
-    std::vector<long long int> samplesToSend;
+    std::bitset<12> binaryValue;
+
+    // Helpers
+    inline void addBit(uint8_t bit);
+    uint32_t reverseKey(uint32_t code, uint8_t bitCount) const;
+    void toBits(unsigned int hexValue);
+    void feed(bool level, uint32_t duration);
 };
 
 #endif // ANSONIC_PROTOCOL_H
