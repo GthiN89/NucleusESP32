@@ -8,27 +8,30 @@ I modified the device by desoldering the RGB diode to use it as a GPIO. Later, I
 
 This is my first project in C, which I began in early summer, with prior experience in PHP and some FPGA tinkering. I'm learning as I go, figuring things out by experimenting.
 
+I learned a lot. This project implements decoding of the filtered and reconstructed subGhz radio signal, acting as a codegrabber, and its being tested on various real HW im able to get cheap. But it must be dirt. Dirty cheap...
+*clones - low secure aftermarket car and gate modules.
+
 **Status**: Work in Progress (WIP)  
 Please go easy on it; it's still evolving!  
-Currently at **version Neon Green**.
+Some push work, some not, in some all functiuons work, and in other one is push much far, but some not work at all.... After finishing ancoders/decders, i will create "stable" relase, but so far jus development without protocol....
 
 ## Features Implemented
 
-With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol for replay using a simple bit-bang pooler method, and later, started to use interrupt as i should to more precise timing (previously, I sampled every 430 microseconds).
+With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol for replay using a simple bit-bang pooler method, and later, started to use interrupt as i should to more precise timing (previously, I sampled every 430 microseconds). Then i read read watch some videos, visit some death sites on internet archive, and become able to reallz work with the signal....
 
-**TV-B-GONE**: Fully operational. Can turn TVs on and off.
+**TV-B-GONE**: Fully operational. Can turn TVs on and off, on HW side use 2 IR diods, one normal, one 1W  160 degrees, both driver at the edge, bezond what is considered save
 
 **Last Stable Version**: Compiled into bin files. Occasionally, things may break in new versions, so for consistent testing, use this stable version.
 
 ### Latest Updates
-- **Improved Sub-GHz Signal Reception**: Enhanced performance.
-- **GUI Performance Boost**: Faster and more responsive.
-- **Dark Mode for GUI**: Aesthetic improvement as part of "Neon Green" version.
-- **CYD 2USB Compatibility**: Binary is included in the repo.
+- **Implemented Sub-GHz Signal filtering and reconstruction**: Can process filter out noise, detect wrong logic state and switch them, calculate proable "original" pulse lenght, and provide reconstructed signal with tolerance of 1-5 microseconds
+- **GUI Performance Boost and variables//buffers fusing**: Faster and more responsive, lowering memory comsuption over time.
+- **Dark Mode for GUI**: Aesthetic improvement as part of "Neon Green" version, bc neon green and black are it.
+- **CYD 2USB**: Despite originallz starting on classic CYD, now for 2USB, bc those are on market now.
 - **Focus on CC1101 Module for CYD Version**: Future versions will target more powerful ESP32 S3 hardware.
 - **Integration of Decoders and Encoders for Ansonic, Came, Nice, Hormann, and SMC5326**.
-- **Support for a Second Decoder Using an RC Switch (User-Selectable)**.
-- **Brute Force Attack Capabilities for Came and Nice Protocols** (New!).
+- **RC Switch as second Decoder(User-Selectable)**.
+- **Brute Force Attack using decoders** 
 
 ### Known Issues
 - **Large File Transmission**: Bigger files take longer to load, but they transmit just fine.
@@ -43,7 +46,7 @@ With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol f
 - **CC1101 RAW Replay**: Now operates similarly to the Flipper. Save files to SD card. Fully Flipper compatible.  
 - **`.sub` Files Player**: Supports RAW files, tested with AM270 and AM650, should send FM too, but timing files only. Sending is stable.  
 - **Tesla Charger Opener**: Operational.  
-- **TV-B-Gone**: Fully operational.
+- **TV-B-Gone**: Operational.
 
 ## Planned Features
 - Bluetooth Spam  
@@ -53,7 +56,9 @@ With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol f
 
 ## Timing and Transmission Quality
 
-The timing tolerance is around 1-5 microseconds. Transmission quality from `.sub` files is as follows:
+The timing tolerance is around 1-5 microseconds both ways.
+
+Transmission quality from `.sub` files is as follows:
 
 ### AM270
 ![AM270 Transmission](https://github.com/GthiN89/NucleusESP32/blob/main/images/AM270.PNG)
@@ -62,7 +67,7 @@ The timing tolerance is around 1-5 microseconds. Transmission quality from `.sub
 ![AM650 Transmission](https://github.com/GthiN89/NucleusESP32/blob/main/images/AM650.PNG)
 
 ### The device
-![Device](https://github.com/GthiN89/NucleusESP32/blob/main/images/IMG_20240924_193407_DRO.jpg)
+![Device](https://github.com/GthiN89/NucleusESP32/blob/main/images/device.png)
 
 ### Partial instruction on build
 
