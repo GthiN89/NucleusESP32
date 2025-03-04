@@ -389,7 +389,15 @@ void EVENTS::createEncoderSreen(lv_event_t * e){
 
  void EVENTS::sendEncodeddEvent(lv_event_t * e) {
     int64_t code;
-    RFProtocol protocols[] = { CAME, NICE };
+    RFProtocol protocols[] = { CAME,
+        CAME,
+        NICE,
+        ANSONIC,
+        HOLTEK,
+        LINEAR,
+        SMC5326
+        
+    };
     RFProtocol protocol = protocols[lv_dropdown_get_selected(screenMgr.dropdown_1)];
     float frequency = lv_spinbox_get_value(screenMgr.spinbox_frequency) / 1000.0f;
     if(lv_textarea_get_text(screenMgr.textarea_encoder) != NULL) {

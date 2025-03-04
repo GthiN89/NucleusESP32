@@ -12,6 +12,7 @@
 #include "protocols/NiceFloProtocol.h"
 #include "protocols/AnsonicProtocol.h"
 #include "protocols/Smc5326Protocol.h"
+#include "protocols/Holtek_HT12xProtocol.h"
 
 
 #define SAMPLE_SIZE 1024
@@ -100,7 +101,11 @@ struct SignalCollection {
 
 enum RFProtocol {
     CAME,
-    NICE
+    NICE,
+    ANSONIC,
+    HOLTEK,
+    LINEAR,
+    SMC5326
 };
 
 
@@ -206,6 +211,7 @@ private:
     HormannProtocol hormannProtocol;
     CameProtocol cameProtocol;
     AnsonicProtocol ansonicProtocol;
+    HoltekProtocol holtekProtocol;
     NiceFloProtocol niceFloProtocol;
     Smc5326Protocol  smc5326Protocol;
 

@@ -746,7 +746,11 @@ void ScreenManager::createEncoderSreen() {
     dropdown_1 = lv_dropdown_create(secondLabel_container_);
     lv_dropdown_set_options(dropdown_1, "Came\n"
                                 "Nice\n"
-                                );
+                                "Ansonic\n"
+                                "Holtec\n"
+                                "Linear\n"
+                                "SMC5326\n"    
+                            );
     lv_obj_set_width(dropdown_1, 120);  
     lv_obj_add_event_cb(dropdown_1, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, dropdown_2);   
 

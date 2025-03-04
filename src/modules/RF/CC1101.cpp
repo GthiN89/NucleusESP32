@@ -1395,9 +1395,22 @@ void CC1101_CLASS::sendEncoded(RFProtocol protocol, float frequency, int16_t bit
                 break;
             case NICE:
                 niceFloProtocol.yield(code);
+            case ANSONIC:
+                ansonicProtocol.yield(code);
+            case HOLTEK:
+                holtekProtocol.yield(code);
             break;
+            case LINEAR:
+                holtekProtocol.yield(code);
+            break;
+            case SMC5326:
+                holtekProtocol.yield(code);
+            break;
+            default:
+                break;
         };
-    }
+    }   
+
 
     for (size_t j = 0; j < samplesToSend.size(); j=j+2) {
                 gpio_set_level(CC1101_CCGDO0A, HIGH);
