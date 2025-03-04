@@ -41,7 +41,6 @@ private:
 
     DecoderStep decoderState;
 
-    // Timing constants from the Holtek spec
     const uint32_t te_short;   // 320 us
     const uint32_t te_long;    // 640 us
     const uint32_t te_delta;   // 200 us tolerance
@@ -50,6 +49,7 @@ private:
     // The TE actually measured (or set) for encoding.
     // If not set from decode, defaults to te_short in yield().
     uint32_t te;
+    uint32_t space;
 
     // Decoder variables
     bool validCodeFound;

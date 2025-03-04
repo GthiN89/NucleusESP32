@@ -30,6 +30,7 @@ private:
     static constexpr uint32_t te_short = 500;
     static constexpr uint32_t te_long  = 1500;
     static constexpr uint32_t te_delta = 150;
+    static constexpr uint32_t lastBit = 21000;
     static constexpr uint8_t  min_count_bit = 10;
 
     // Decoder state machine

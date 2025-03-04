@@ -1130,8 +1130,8 @@ bool CC1101_CLASS::decode() {
         Serial.print(CC1101.receivedData.filtered[i]);
         Serial.print(", ");
     }
-    if ((DURATION_DIFF(pulses[0], 500) < 200) &&
-        (DURATION_DIFF(pulses[1], 1000) < 200)) {
+    if ((DURATION_DIFF(pulses[0], 500) < 40) &&
+        (DURATION_DIFF(pulses[1], 1000) < 40)) {
             Serial.println("is Hormann");
         if (hormannProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             hormannProtocol.getCodeString();
@@ -1139,8 +1139,8 @@ bool CC1101_CLASS::decode() {
         }
     }
 
-    if ((DURATION_DIFF(pulses[0], 320) < 150) &&
-        (DURATION_DIFF(pulses[1], 640) < 150)) {
+    if ((DURATION_DIFF(pulses[0], 320) < 40) &&
+        (DURATION_DIFF(pulses[1], 640) < 40)) {
             Serial.println("is Came");
         if (cameProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             cameProtocol.getCodeString();
@@ -1148,8 +1148,8 @@ bool CC1101_CLASS::decode() {
         }
     }
 
-    if ((DURATION_DIFF(pulses[0], 555) < 120) &&
-        (DURATION_DIFF(pulses[1], 1111) < 120)) {
+    if ((DURATION_DIFF(pulses[0], 555) < 40) &&
+        (DURATION_DIFF(pulses[1], 1111) < 40)) {
             Serial.println("is Ansonic");
         if (ansonicProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             ansonicProtocol.getCodeString();
@@ -1157,8 +1157,8 @@ bool CC1101_CLASS::decode() {
         }
     }
 
-    if ((DURATION_DIFF(pulses[0], 700) < 200) &&
-        (DURATION_DIFF(pulses[1], 1400) < 200)) {
+    if ((DURATION_DIFF(pulses[0], 700) < 40) &&
+        (DURATION_DIFF(pulses[1], 1400) < 40)) {
             Serial.println("is NiceFlow");
         if (niceFloProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             niceFloProtocol.getCodeString();
@@ -1166,8 +1166,8 @@ bool CC1101_CLASS::decode() {
         }
     }
 
-    if ((DURATION_DIFF(pulses[0], 300) < 200) &&
-        (DURATION_DIFF(pulses[1], 900) < 200)) {
+    if ((DURATION_DIFF(pulses[0], 300) < 40) &&
+        (DURATION_DIFF(pulses[1], 900) < 40)) {
             Serial.println("is SMC5326");
         if (smc5326Protocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             smc5326Protocol.getCodeString();
@@ -1382,34 +1382,46 @@ void CC1101_CLASS::sendEncoded(RFProtocol protocol, float frequency, int16_t bit
     initRaw();
     encoderState = EncoderStepStart;    
  //   Serial.println(F("Came12BitBrute"));
-    int i = 0;
+   // int i = 0;
 
-    while(i < repeats ) {
-    i++;
+   // while(i < repeats ) {
+   // i++;
  //   Serial.println(i);
     encoderState = EncoderStepStart;
-    while(encoderState != EncoderStepReady){
         switch (protocol) {
             case CAME:
+            while(encoderState != EncoderStepReady){
                 cameProtocol.yield(code);
+                }
                 break;
             case NICE:
+            while(encoderState != EncoderStepReady){
                 niceFloProtocol.yield(code);
+                }
             case ANSONIC:
+            while(encoderState != EncoderStepReady){
                 ansonicProtocol.yield(code);
+                }            
             case HOLTEK:
+            while(encoderState != EncoderStepReady){
                 holtekProtocol.yield(code);
+                }
             break;
             case LINEAR:
-                holtekProtocol.yield(code);
+            while(encoderState != EncoderStepReady){
+               //
+                }
             break;
             case SMC5326:
-                holtekProtocol.yield(code);
+            while(encoderState != EncoderStepReady){
+                smc5326Protocol.yield(code);
+                }
             break;
             default:
                 break;
         };
-    }   
+   delay(5);
+
 
 
     for (size_t j = 0; j < samplesToSend.size(); j=j+2) {
@@ -1420,10 +1432,9 @@ void CC1101_CLASS::sendEncoded(RFProtocol protocol, float frequency, int16_t bit
         }
         gpio_set_level(CC1101_CCGDO0A, LOW);
 
-    }
-   
-
 }
+
+
 
 
 bool CC1101_CLASS::checkReversed(int64_t big) {

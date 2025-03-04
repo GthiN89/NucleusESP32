@@ -145,13 +145,11 @@ void LinearProtocol::startEncoding(uint32_t code, uint8_t bitCount) {
     for (int i = bitCount; i > 1; i--) {
         uint8_t bit = (code >> (i - 1)) & 1;
         if (bit) {
-            // For bit 1: high pulse = te_short * 3, low pulse = te_short
-            samplesToSend.push_back(static_cast<long long int>(te_short * 3));
+            samplesToSend.push_back(static_cast<long long int>(te_long));
             samplesToSend.push_back(-static_cast<long long int>(te_short));
         } else {
-            // For bit 0: high pulse = te_short, low pulse = te_short * 3
             samplesToSend.push_back(static_cast<long long int>(te_short));
-            samplesToSend.push_back(-static_cast<long long int>(te_short * 3));
+            samplesToSend.push_back(-static_cast<long long int>(te_long));
         }
     }
     // End bit (least significant bit) with guard:

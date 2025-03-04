@@ -47,7 +47,6 @@ void NiceFloProtocol::toBits(unsigned int hexValue) {
 }
 
 void NiceFloProtocol::yield(unsigned int hexValue) {
-   // ////Serial.println("CameProtocol::yield");
     switch (encoderState)
     {
     case EncoderStepStart:

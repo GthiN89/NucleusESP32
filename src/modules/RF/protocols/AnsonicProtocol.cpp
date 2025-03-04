@@ -115,7 +115,7 @@ void AnsonicProtocol::yield(unsigned int hexValue) {
 void AnsonicProtocol::feed(bool level, uint32_t duration) {
     switch(DecoderState) {
     case DecoderStepReset:
-        if(!level && duration_diff(duration, te_short * 35) < te_delta * 35) {
+        if(!level && duration_diff(duration, 19425) < 4200) {
             DecoderState = DecoderStepFoundStartBit;
         }
         break;

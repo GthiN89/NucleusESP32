@@ -214,6 +214,7 @@ private:
     HoltekProtocol holtekProtocol;
     NiceFloProtocol niceFloProtocol;
     Smc5326Protocol  smc5326Protocol;
+    
 
 
 

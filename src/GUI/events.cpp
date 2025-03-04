@@ -387,28 +387,32 @@ void EVENTS::createEncoderSreen(lv_event_t * e){
 
  }
 
- void EVENTS::sendEncodeddEvent(lv_event_t * e) {
-    int64_t code;
-    RFProtocol protocols[] = { CAME,
+void EVENTS::sendEncodeddEvent(lv_event_t * e) {
+    RFProtocol protocols[] = {
         CAME,
         NICE,
         ANSONIC,
         HOLTEK,
         LINEAR,
         SMC5326
-        
     };
-    RFProtocol protocol = protocols[lv_dropdown_get_selected(screenMgr.dropdown_1)];
+
+    int index = lv_dropdown_get_selected(screenMgr.dropdown_1);
+
     float frequency = lv_spinbox_get_value(screenMgr.spinbox_frequency) / 1000.0f;
-    if(lv_textarea_get_text(screenMgr.textarea_encoder) != NULL) {
-         code = std::stoi(lv_textarea_get_text(screenMgr.textarea_encoder));} else 
-    {
-         code = 1;
+
+    int64_t code;
+    if (lv_textarea_get_text(screenMgr.textarea_encoder) != NULL) {
+        code = std::stoll(lv_textarea_get_text(screenMgr.textarea_encoder));
+    } else {
+        code = 1;
     }
+
     int16_t bitLenght = lv_spinbox_get_value(screenMgr.spinbox_bitLenght);
-    int8_t repeats = lv_spinbox_get_value(screenMgr.spinbox_repeats);
-    CC1101EV.sendEncoded(protocol, frequency, bitLenght, repeats,code);
- }
+    int8_t repeats    = lv_spinbox_get_value(screenMgr.spinbox_repeats);
+
+    CC1101EV.sendEncoded(protocols[index], frequency, bitLenght, repeats, code);
+}
 
  void EVENTS::btn_event_SourApple(lv_event_t * e){
     // screenMgr.createSourAppleScreen();
