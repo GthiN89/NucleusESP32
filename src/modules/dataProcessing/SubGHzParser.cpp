@@ -125,8 +125,8 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
     codesSend++;
     Serial.print(SD_SUB.tempFreq);
     CC1101.setFrequency(SD_SUB.tempFreq);
-  //  CC1101.setCC1101Preset(C1101preset);
-   // CC1101.loadPreset();
+    CC1101.setCC1101Preset(C1101preset);
+    CC1101.loadPreset();
     Serial.println(presetToString(C1101preset));   
 
    
