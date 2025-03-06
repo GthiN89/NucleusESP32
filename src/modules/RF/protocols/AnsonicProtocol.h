@@ -6,60 +6,72 @@
 #include <bitset>
 #include <vector>
 #include "globals.h"
+#include "math.h"
+#include "GUI/ScreenManager.h"
+
+#define DIP_PATTERN "%c%c%c%c%c%c%c%c%c%c"
+#define CNT_TO_DIP(dip) \
+    (dip & 0x0800 ? '1' : '0'), (dip & 0x0400 ? '1' : '0'), (dip & 0x0200 ? '1' : '0'), \
+    (dip & 0x0100 ? '1' : '0'), (dip & 0x0080 ? '1' : '0'), (dip & 0x0040 ? '1' : '0'), \
+    (dip & 0x0020 ? '1' : '0'), (dip & 0x0010 ? '1' : '0'), (dip & 0x0001 ? '1' : '0'), \
+    (dip & 0x0008 ? '1' : '0')
+
 
 class AnsonicProtocol {
 public:
     AnsonicProtocol();
-
-    // resets internal state
     void reset();
-
-    // feeds an array of samples; returns true if a valid code was detected.
+    void feed(bool level, uint32_t duration);
     bool decode(long long int* samples, size_t sampleCount);
-
-    // returns a string with the decoded key, button and DIP info.
     String getCodeString() const;
-
-    // returns true if a valid code was detected.
     bool hasValidCode() const;
-
-    // generates samples for transmission from a given hex key.
     void yield(unsigned int hexValue);
-
+    void checkRemoteController();
+    CC1101_PRESET preset;
 
 private:
-enum DecoderStep {
-    DecoderStepReset,
-    DecoderStepFoundStartBit,
-    DecoderStepSaveDuration,
-    DecoderStepCheckDuration
-};
+    enum DecoderStep {
+        DecoderStepReset,
+        DecoderStepFoundStartBit,
+        DecoderStepSaveDuration,
+        DecoderStepCheckDuration,
+        DecoderStepFound
+    };
 
-DecoderStep DecoderState;
-
-    const uint32_t te_short;   // 555 us
-    const uint32_t te_long;    // 1111 us
-    const uint32_t te_delta;   // 120 us tolerance
-    const uint8_t  min_count_bit; // 12 bits
-
-    // Decoder variables
+    // Decoder fields
+    DecoderStep DecoderState;
     uint32_t decodeData;
     uint8_t  decodeCountBit;
     uint32_t te_last;
     bool     validCodeFound;
     uint32_t finalCode;
     uint8_t  finalBitCount;
-    uint8_t  finalBtn;  // Derived from key: (finalCode >> 1) & 0x3
-    uint16_t finalDip;  // Derived from key: finalCode & 0x0FFF
+    uint8_t  finalBtn;
+    uint16_t finalDip;
+    uint8_t btn;
+    uint32_t cnt;
+    uint32_t serial;
 
-    // Encoder variables
+    // Protocol constants
+    const uint32_t te_short;      // 555 us
+    const uint32_t te_long;       // 1111 us
+    const uint32_t te_delta;      // 120 us tolerance
+    const uint32_t space;       // 1111 us
+    const uint8_t  min_count_bit; // 12 bits
+
+    // Encoder fields
+    enum {
+        EncoderStepStart,
+        EncodeStepStartBit,
+        EncoderStepDurations,
+        EncoderStepReady
+    } encoderState = EncoderStepStart;
     std::bitset<12> binaryValue;
 
-    // Helpers
+
     inline void addBit(uint8_t bit);
-    uint32_t reverseKey(uint32_t code, uint8_t bitCount) const;
     void toBits(unsigned int hexValue);
-    void feed(bool level, uint32_t duration);
+    uint32_t reverseKey(uint32_t code, uint8_t bitCount) const;
 };
 
 #endif // ANSONIC_PROTOCOL_H

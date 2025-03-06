@@ -6,10 +6,6 @@
 #include "math.h"
 #include <bitset>
 
-struct Sample {
-    bool level;
-    uint32_t duration; // in microseconds
-};
 
 
 class CameProtocol {
@@ -22,7 +18,6 @@ public:
 
     // feeds an array of samples; returns true if a valid code was detected.
     bool decode(long long int* samples, size_t sampleCount);
-
 
 
     // returns a string with the decoded key and its reverse.

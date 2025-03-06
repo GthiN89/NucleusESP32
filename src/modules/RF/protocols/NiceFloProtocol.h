@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "math.h"
 #include <bitset>
+#include "../FlipperSubFile.h"
 
 class NiceFloProtocol {
 public:
@@ -15,7 +16,7 @@ public:
     String getCodeString() const;
     bool hasValidCode() const;
     void yield(unsigned int hexValue);
-
+    CC1101_PRESET preset;
 
 private:
     enum DecoderStep {

@@ -42,24 +42,23 @@ inline void CameProtocol::addBit(uint8_t bit) {
 }
 
 
+
 void CameProtocol::toBits(unsigned int hexValue) {
     binaryValue = std::bitset<12>(hexValue);
 }
 
 
 void CameProtocol::yield(unsigned int hexValue) {
-   // Serial.println("CameProtocol::yield");
-    switch (encoderState)
-    {
-    case EncoderStepStart:
+
         samplesToSend.clear();
         toBits(hexValue);
-        encoderState = EncodeStepStartBit;
-        break;
-    case EncodeStepStartBit:   
-        encoderState = EncoderStepDurations;
-        break;
-    case EncoderStepDurations:
+
+
+    samplesToSend.push_back(320);
+    samplesToSend.push_back(320);
+    samplesToSend.push_back(640);
+    samplesToSend.push_back(640);
+    samplesToSend.push_back(11520);
         samplesToSend.push_back(320);
         for (size_t i = 0; i < 12; i++) 
         {
@@ -71,46 +70,11 @@ void CameProtocol::yield(unsigned int hexValue) {
                 samplesToSend.push_back(640); 
             }
         }
-        samplesToSend.push_back(11520);
-        samplesToSend.push_back(320);
-                for (size_t i = 0; i < 12; i++) 
-        {
-            if (binaryValue[i]) {
-                samplesToSend.push_back(640);
-                samplesToSend.push_back(320);
-            } else {
-                samplesToSend.push_back(320);
-                samplesToSend.push_back(640); 
-            }
-        }
-         samplesToSend.push_back(11520);
-        samplesToSend.push_back(320);
-                for (size_t i = 0; i < 12; i++) 
-        {
-            if (binaryValue[i]) {
-                samplesToSend.push_back(640);
-                samplesToSend.push_back(320);
-            } else {
-                samplesToSend.push_back(320);
-                samplesToSend.push_back(640); 
-            }
-        }
-        samplesToSend.push_back(11520);
+       
+        
 
-        // for (size_t i = 0; i < samplesToSend.size(); i++)
-        // {
-        //     Serial.println(samplesToSend[i]);
-        // }
-        
-        
-            encoderState = EncoderStepReady;
             delay(5);
 
-        break;
-    default:
-            //
-        break;
-    }
 }
 
 void CameProtocol::feed(bool level, uint32_t duration) {    

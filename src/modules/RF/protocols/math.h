@@ -9,6 +9,12 @@ using namespace std;
 
 #define DURATION_DIFF(x, y) (((x) < (y)) ? ((y) - (x)) : ((x) - (y)))
 
+
+struct Sample {
+    bool level;
+    uint32_t duration; // in microseconds
+};
+
 typedef struct {
     const uint16_t te_long;
     const uint16_t te_short;

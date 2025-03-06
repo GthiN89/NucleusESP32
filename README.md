@@ -23,6 +23,10 @@ With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol f
 
 **Last Stable Version**: Compiled into bin files. Occasionally, things may break in new versions, so for consistent testing, use this stable version.
 
+**Encoders and Decoders**: Implemented CAME, NICE, Ansonic and Holtec 12bit encoders and decoders + Horman 44bit decoder
+
+**BruteForce Subghz attack**: Implemented CAME, NICE, Ansonic and Holtec 12bit.
+
 ### Latest Updates
 - **Implemented Sub-GHz Signal filtering and reconstruction**: Can process filter out noise, detect wrong logic state and switch them, calculate proable "original" pulse lenght, and provide reconstructed signal with tolerance of 1-5 microseconds
 - **GUI Performance Boost and variables//buffers fusing**: Faster and more responsive, lowering memory comsuption over time.

@@ -1,71 +1,86 @@
-#ifndef HOLTEK_PROTOCOL_H
-#define HOLTEK_PROTOCOL_H
+#ifndef HOLTEK_HT12X_PROTOCOL_H
+#define HOLTEK_HT12X_PROTOCOL_H
 
 #include <Arduino.h>
 #include <stdint.h>
 #include <vector>
+#include "GUI/ScreenManager.h"
 #include "globals.h"
+
+
+
+// Optional DIP macros for printing DIP states
+#define DIP_PATTERN "%c%c%c%c%c%c%c%c"
+#define CNT_TO_DIP(dip)                                                                     \
+    (dip & 0x0080 ? '0' : '1'), (dip & 0x0040 ? '0' : '1'), (dip & 0x0020 ? '0' : '1'),     \
+    (dip & 0x0010 ? '0' : '1'), (dip & 0x0008 ? '0' : '1'), (dip & 0x0004 ? '0' : '1'),     \
+    (dip & 0x0002 ? '0' : '1'), (dip & 0x0001 ? '0' : '1')
 
 class HoltekProtocol {
 public:
+
     HoltekProtocol();
 
-    // Resets decoder state (and we can also reset encoder state if needed).
     void reset();
 
-    // Feeds an array of samples (positive=HIGH, negative=LOW) for decoding.
-    bool decode(long long int* samples, size_t sampleCount);
+    std::bitset<12> binaryValue;
 
-    // Returns a string with the decoded key, button, DIP, etc.
+    bool decode(long long int* samples, size_t sampleCount);
+    void toBits(unsigned int hexValue);
+    
+    CC1101_PRESET preset;
+
     String getCodeString() const;
 
-    // Tells if decoding found a valid code.
+
     bool hasValidCode() const;
 
-    // Generates pulses for a given 12-bit key (hexValue) with a yield state machine.
+   
     void yield(unsigned int hexValue);
 
-    // Returns the latest generated pulses for external usage.
-    const std::vector<uint32_t>& getSamplesToSend() const { return samplesToSend; }
-
-    // Expose encoder state so the brute function can watch for EncoderStepReady.
 
 private:
-    // Decoder states
-    enum DecoderStep {
-        DecoderStepReset = 0,
+    enum HoltekDecoderStep {
+        DecoderStepReset,
         DecoderStepFoundStartBit,
         DecoderStepSaveDuration,
-        DecoderStepCheckDuration
+        DecoderStepCheckDuration,
+        DecoderStepFound
     };
+    HoltekDecoderStep decoderState;
 
-    DecoderStep decoderState;
+    enum HoltekEncoderStep {
+        EncoderStepStart,
+        EncoderStepDurations,
+        EncoderStepReady
+    };
+    HoltekEncoderStep encoderState;
 
-    const uint32_t te_short;   // 320 us
-    const uint32_t te_long;    // 640 us
-    const uint32_t te_delta;   // 200 us tolerance
-    const uint8_t  min_count_bit; // 12 bits
+    inline void addBit(uint8_t bit);
 
-    // The TE actually measured (or set) for encoding.
-    // If not set from decode, defaults to te_short in yield().
-    uint32_t te;
-    uint32_t space;
+
+    void feed(bool level, uint32_t duration);
+
+    // Decoder timing/config
+    const uint32_t te_short;   //
+    const uint32_t te_long;    
+    const uint32_t te_delta;   
+    const uint32_t space;     
+    const uint8_t  min_count_bit; 
 
     // Decoder variables
-    bool validCodeFound;
-    uint8_t decodeCountBit;
+    bool     validCodeFound;
+    uint8_t  decodeCountBit;
     uint32_t decodedData;
     uint32_t te_last;
+    uint32_t lastData;
+    uint32_t finalCode;
+    uint32_t finalBitCount;
+    uint32_t finalBtn;
+    uint32_t finalDIP;
 
-    // Final fields for display
-    uint32_t finalBtn; // lower 4 bits
-    uint32_t finalDIP; // next 8 bits
 
-    // Internal buffer for encoding pulses
-    std::vector<uint32_t> samplesToSend;
-
-    // Helper to accumulate bits in decoding
-    inline void addBit(uint8_t bit);
+    uint32_t te; 
 };
 
-#endif // HOLTEK_PROTOCOL_H
+#endif // HOLTEK_HT12X_PROTOCOL_H

@@ -102,6 +102,7 @@ void EVENTS::btn_event_Brute(lv_event_t* e) {
 
             int selected = lv_dropdown_get_selected(screenMgr.dropdown_1); 
             Serial.println(selected);
+            int8_t repeats    = lv_spinbox_get_value(screenMgr.spinbox_repeats);
             if (selected == 0) { 
                 runningModule = MODULE_CC1101;
                 C1101CurrentState = STATE_BRUTE;
@@ -409,7 +410,7 @@ void EVENTS::sendEncodeddEvent(lv_event_t * e) {
     }
 
     int16_t bitLenght = lv_spinbox_get_value(screenMgr.spinbox_bitLenght);
-    int8_t repeats    = lv_spinbox_get_value(screenMgr.spinbox_repeats);
+    repeats    = lv_spinbox_get_value(screenMgr.spinbox_repeats);
 
     CC1101EV.sendEncoded(protocols[index], frequency, bitLenght, repeats, code);
 }

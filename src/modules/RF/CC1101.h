@@ -161,6 +161,7 @@ public:
         std::vector<int64_t> samples;
         std::vector<Signal> signals;
         std::vector<int64_t> filtered;
+        std::vector<int64_t> filtered4;
         volatile unsigned long lastReceiveTime = 0;
         volatile unsigned long sampleCount = 0;
         volatile unsigned long normalizedCount = 0;
@@ -213,7 +214,7 @@ private:
     AnsonicProtocol ansonicProtocol;
     HoltekProtocol holtekProtocol;
     NiceFloProtocol niceFloProtocol;
-    Smc5326Protocol  smc5326Protocol;
+    SMC5326Protocol  smc5326Protocol;
     
 
 

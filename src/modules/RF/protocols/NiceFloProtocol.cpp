@@ -47,18 +47,16 @@ void NiceFloProtocol::toBits(unsigned int hexValue) {
 }
 
 void NiceFloProtocol::yield(unsigned int hexValue) {
-    switch (encoderState)
-    {
-    case EncoderStepStart:
-        samplesToSend.clear();
-        toBits(hexValue);
-        encoderState = EncodeStepStartBit;
-        break;
-    case EncodeStepStartBit:  
+
+    samplesToSend.clear();
+    toBits(hexValue);
+
+    samplesToSend.push_back(700);
+    samplesToSend.push_back(700);
+    samplesToSend.push_back(1400);
+    samplesToSend.push_back(1400); 
+    samplesToSend.push_back(25200);
         samplesToSend.push_back(700);
-        encoderState = EncoderStepDurations;
-        break;
-    case EncoderStepDurations:
         for (size_t i = 0; i < 12; i++) 
         {
             if (binaryValue[i]) {
@@ -69,44 +67,7 @@ void NiceFloProtocol::yield(unsigned int hexValue) {
                 samplesToSend.push_back(700); 
             }
         }
-        samplesToSend.push_back(25200);
-        samplesToSend.push_back(700);
-                for (size_t i = 0; i < 12; i++) 
-        {
-            if (binaryValue[i]) {
-                samplesToSend.push_back(1400);
-                samplesToSend.push_back(700);
-            } else {
-                samplesToSend.push_back(700);
-                samplesToSend.push_back(1400); 
-            }
-        }
-        samplesToSend.push_back(25200);
-        samplesToSend.push_back(700);
-                for (size_t i = 0; i < 12; i++) 
-        {
-            if (binaryValue[i]) {
-                samplesToSend.push_back(1400);
-                samplesToSend.push_back(700);
-            } else {
-                samplesToSend.push_back(700);
-                samplesToSend.push_back(1400); 
-            }
-        }
-        samplesToSend.push_back(25200);
-
-        // for (size_t i = 0; i < samplesToSend.size(); i++)
-        // {
-        //     ////Serial.println(samplesToSend[i]);
-        // }
-            delay(5);
-            encoderState = EncoderStepReady;
-
-        break;
-    default:
-            //
-        break;
-    }
+        delay(5);
 }
 
 

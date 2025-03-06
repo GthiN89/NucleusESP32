@@ -11,7 +11,7 @@ uint8_t C1101CurrentState = STATE_IDLE;
 uint8_t BruteCurrentState = BRUTE_IDLE;
 EncoderStep encoderState = EncoderStepIddle;
 std::vector<int64_t> samplesToSend;
-
+int8_t repeats = 1;
 
 float CC1101_MHZ;
 

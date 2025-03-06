@@ -876,25 +876,7 @@ void CC1101_CLASS::signalAnalyse(){
     Signal data;
 
 
-    
-//    auto &samples = CC1101_CLASS::receivedData.samples;
-//         for (size_t i = 1; i < samples.size(); ++i) {
-//             if ((samples[i - 1] < 0) && (samples[i] < 0)) {
-//                 samples[i - 1] += samples[i];
-//                 samples.erase(samples.begin() + i);
-//                 --i;
-//             }
-//             if ((samples[i - 1] > 0) && (samples[i] > 0)) {
-//                 samples[i - 1] += samples[i];
-//                 samples.erase(samples.begin() + i);
-//                 --i;
-//             }
-//             if ((samples[i - 1] < 0) && (samples[i] > 10000)) {
-//                 samples[i - 1] += -samples[i];
-//                 samples.erase(samples.begin() + i);
-//                 --i;
-//             }
-//         }
+
 
         Serial.println(F("Raw samples: "));
         CC1101_CLASS::receivedData.sampleCount = 0;
@@ -916,7 +898,6 @@ void CC1101_CLASS::signalAnalyse(){
 
 
 
-//Serial.println("Signal AnalyseIN");
      lv_obj_t * textareaRC;
     if(C1101preset == CUSTOM){
         textareaRC = screenMgr1.text_area_SubGHzCustom;        
@@ -925,158 +906,10 @@ void CC1101_CLASS::signalAnalyse(){
     }
 
     lv_textarea_set_text(textareaRC, "\nRAW signal");//, \nCount: ");
- //   lv_textarea_add_text(textareaRC, "\nShort: ");
-//    lv_textarea_add_text(textareaRC, String(shortPulseAvg).c_str());
-//lv_textarea_add_text(textareaRC, "\nLong: ");
-  //  lv_textarea_add_text(textareaRC, String(longPulseAvg).c_str());
 
     std::ostringstream  rawString;
 
-//Serial.println("");
-        // for (int i = 0; i < CC1101_CLASS::receivedData.samples.size(); i++) {
-        //     if(CC1101_CLASS::receivedData.samples[i] > 25000){
-        //         CC1101_CLASS::receivedData.samples[i] = 25000;
-        //     }
-        // }
-// Signal samplesData = CC1101_CLASS::allData.getSignal(CC1101_CLASS::allData.signals.size() - 1);
-// uint16_t pausetreshold = pauseAVG - (pauseAVG / 4);
 
-
-
-// pulseTrain pulseTrain;
-// pulseTrains pulseTrains;
-
-//   for (int i = 0; i < samplesData.size(); i++) {
-//             if(-samplesData.getSample(i) > pausetreshold){
-//                 pulseTrains.addPulseTrain(pulseTrain);
-//                 pulseTrain.clear();
-//                 continue;
-//             }
-//             samplesData.getSample(i) > 0 ? pulseTrain.addPulse(samplesData.getSample(i)) : pulseTrain.addPulse(-samplesData.getSample(i));
-//     }
-
-        
-//     rawString << "RAW_Data " <<  ": ";
-
-//     for (int i = 0; i < samplesData.size(); i++) {
-//             rawString << samplesData.getSample(i);
-//             Serial.print(CC1101_CLASS::receivedData.samples[i]);
-//             Serial.print(", ");
-//         }
-
-
-//Serial.println("");
-
-// lv_textarea_add_text(textareaRC, "\nCapture Complete.");
-// delay(20);
-
-// Serial.println("number of trains: ");
-// Serial.print(pulseTrains.getSize());
-// Serial.println("\n");
-
-
-
-// if (C1101preset != CUSTOM) {
-// //Serial.println("draw");
-// lv_obj_set_scroll_dir(container, LV_DIR_HOR);
-// lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
-
-// lv_obj_t *chart = lv_chart_create(container);
-// lv_obj_set_size(chart, 1000, 100);  
-// lv_chart_set_type(chart, LV_CHART_TYPE_SCATTER);  
-
-
-// lv_chart_series_t *ser1 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
-
-// lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, -10, 40);  
-
-// size_t num_elements = sizeof(pulseTrainVec.data()) / sizeof(pulseTrainVec.data()[0]);
-// std::vector<unsigned long> filtered_values;
-
-// bool found_first = false;
-// size_t i_sec = 0;
-// size_t num_elements_f = 0;
-
-// for (size_t i = 0; i < num_elements; ++i) {
-//     if (pulseTrainVec.data()[i] > 1000) {
-//         if (found_first) break;         
-//         found_first = true;
-//         i_sec = i;                       
-//         continue;                      
-//     }
-    
-//     if (found_first) {    
-//         if (pulseTrainVec.data()[i] > 1000) break;          
-//         if (i - i_sec > 20) break;                 
-
-//         filtered_values.push_back(pulseTrainVec.data()[i] / 100);
-//         Serial.println(pulseTrainVec.data()[i] / 100);
-//         num_elements_f++;
-//         continue;
-//     }
-    
-    
-// }
-
-
-// int x_pos = 5;           
-// int high_value = 25;     
-// int low_value = 5;       
-// int pulse_width;    
-
-// lv_chart_set_point_count(chart, 100);  
-// Serial.println("yes");
-
-// for (int i = 0; i < num_elements_f; i++) {  
-// pulse_width = filtered_values[i];
-
-
-
-//     lv_chart_set_next_value2(chart, ser1, x_pos, high_value);
-//     lv_chart_set_next_value2(chart, ser1, x_pos + pulse_width, high_value);
-    
-
-//     x_pos += pulse_width;
-
-
-//     lv_chart_set_next_value2(chart, ser1, x_pos, low_value);
-//     lv_chart_set_next_value2(chart, ser1, x_pos + pulse_width, low_value);
-
-
-//     x_pos += pulse_width;
-
-// }
-
-// lv_obj_set_style_line_width(chart, 2, LV_PART_ITEMS); 
-
-
-// lv_obj_scroll_to_x(container, 0, LV_ANIM_OFF);
-
-// lv_chart_refresh(chart);
-
-    
-
-// // }
-    //  FlipperSubFile subFile;
-    //      bool level = true;
-// for (size_t i = 0; i < CC1101_CLASS::allData.size(); ++i) {
-//     rawString << "RAW_Data " << i + 1 << ": ";
-//     const auto& signal = CC1101_CLASS::allData.getSignal(i); 
-
-//     for (unsigned long sample : signal.samples) { 
-//         rawString << sample;
-
-//         if (level) {
-//             rawString << " -"; 
-//         } else {
-//             rawString << " "; 
-//         }
-
-//         level = !level; 
-//     }
-
-//     rawString << "\n"; 
-// }
 CC1101_CLASS::disableReceiver();
 SD_RF.restartSD();
 
@@ -1111,6 +944,20 @@ SD_RF.closeFile(outputFilePtr);
 }
 
 bool CC1101_CLASS::decode() {
+
+    for (int i=0; i >CC1101_CLASS::receivedData.samples.size(); i++) {
+        Serial.print(CC1101_CLASS::receivedData.samples[i]);
+        Serial.print(", ");
+    }
+    if (!CC1101_CLASS::receivedData.signals.empty()) {
+        const auto& lastSignal = CC1101_CLASS::receivedData.signals.back();
+        for (int i = 0; i < lastSignal.samples.size(); i++) {
+            Serial.print(lastSignal.samples[i]);
+            Serial.print(", ");
+        }
+    }
+    
+
     if (CC1101_CLASS::receivedData.samples.empty()) {
         Serial.println("No pulses to decode.");
         return false;
@@ -1198,19 +1045,14 @@ void CC1101_CLASS::sendRaw() {
                 for (size_t i = 0; i < 26; i++)
                 {
                     samplesData.addSample(samplesToSend[i]);
-                    // Serial.println(" ");
-                    // Serial.print(samplesToSend[i]);
-                    // Serial.println(", ");
+
                 }
             }
 
-        //    Serial.print(F("\r\nReplaying RAW data from the buffer...\r\n"));
+
 
            
             CC1101_CLASS::levelFlag = samplesData.samples[0] > 0; 
-         //   Serial.println(F("Transmitting"));
-       //     Serial.println(samplesData.samples[0]);
-        //    levelFlag ? Serial.println(F("true")) : Serial.println(F("False"));
 
             samplesToSend.clear();
             for (size_t j = 0; j < samplesData.samples.size(); ++j) {
@@ -1220,18 +1062,9 @@ void CC1101_CLASS::sendRaw() {
                     samplesToSend.push_back(-samplesData.samples[j]);
                 }
 
-                // if (samplesData.samples[j] > 50000 || samplesData.samples[j] < -50000) {
-                // samplesToSend.clear();
-                // }
             }
 
-            // for (size_t i = 0; i < samplesToSend.size(); i++)
-            // {
-            //         Serial.println(" ");
-            //         Serial.print(samplesToSend[i]);
-            //         Serial.println(", ");
-            // }
-            
+     
 
             for (size_t i = 0; i < samplesToSend.size(); i++) {
                 
@@ -1240,7 +1073,6 @@ void CC1101_CLASS::sendRaw() {
                 delayMicroseconds(samplesToSend[i]); 
                 
             }
-        //    Serial.println(F("Transmission complete"));
             CC1101_CLASS::disableTransmit();
 
 }
@@ -1380,59 +1212,98 @@ void CC1101_CLASS::sendEncoded(RFProtocol protocol, float frequency, int16_t bit
     loadPreset();
     ELECHOUSE_cc1101.setPA(12);
     initRaw();
-    encoderState = EncoderStepStart;    
- //   Serial.println(F("Came12BitBrute"));
-   // int i = 0;
 
-   // while(i < repeats ) {
-   // i++;
- //   Serial.println(i);
-    encoderState = EncoderStepStart;
-        switch (protocol) {
-            case CAME:
-            while(encoderState != EncoderStepReady){
+    switch (protocol) {
+        case CAME:
                 cameProtocol.yield(code);
-                }
-                break;
-            case NICE:
-            while(encoderState != EncoderStepReady){
-                niceFloProtocol.yield(code);
-                }
-            case ANSONIC:
-            while(encoderState != EncoderStepReady){
-                ansonicProtocol.yield(code);
-                }            
-            case HOLTEK:
-            while(encoderState != EncoderStepReady){
-                holtekProtocol.yield(code);
-                }
-            break;
-            case LINEAR:
-            while(encoderState != EncoderStepReady){
-               //
-                }
-            break;
-            case SMC5326:
-            while(encoderState != EncoderStepReady){
-                smc5326Protocol.yield(code);
-                }
-            break;
-            default:
-                break;
-        };
-   delay(5);
+                delay(5);
 
 
-
-    for (size_t j = 0; j < samplesToSend.size(); j=j+2) {
-                gpio_set_level(CC1101_CCGDO0A, HIGH);
-                delayMicroseconds(samplesToSend[j]); 
+                for(int k = 0; k < repeats; k++) {
+                    bool levelFlag = false;
+                    for (size_t j = 0; j < samplesToSend.size(); j++) {
+                        gpio_set_level(CC1101_CCGDO0A, levelFlag);
+                        levelFlag = !levelFlag; 
+                        delayMicroseconds(samplesToSend[j]);                
+                }
                 gpio_set_level(CC1101_CCGDO0A, LOW);
-                delayMicroseconds(samplesToSend[j+1]);                 
-        }
-        gpio_set_level(CC1101_CCGDO0A, LOW);
+                delayMicroseconds(11520);
+                }
+            break;
+    
+        case NICE:
+                niceFloProtocol.yield(code);
+                delay(5);
+
+
+                for(int k = 0; k < repeats; k++) {
+                    bool levelFlag = false;
+                    for (size_t j = 0; j < samplesToSend.size(); j++) {
+                        gpio_set_level(CC1101_CCGDO0A, levelFlag);
+                        levelFlag = !levelFlag; 
+                        delayMicroseconds(samplesToSend[j]);                
+                }
+                gpio_set_level(CC1101_CCGDO0A, LOW);
+                delayMicroseconds(25200);
+                }
+            break; 
+    
+        case ANSONIC:
+                ansonicProtocol.yield(code);
+                delay(5);
+
+
+                for(int k = 0; k < repeats; k++) {
+                    bool levelFlag = false;
+                    for (size_t j = 0; j < samplesToSend.size(); j++) {
+                        gpio_set_level(CC1101_CCGDO0A, levelFlag);
+                        levelFlag = !levelFlag; 
+                        delayMicroseconds(samplesToSend[j]);                
+                }
+                gpio_set_level(CC1101_CCGDO0A, LOW);
+                delayMicroseconds(19425);
+                }
+            break;
+    
+        case HOLTEK:
+                holtekProtocol.yield(code);
+                delay(5);
+
+
+                for(int k = 0; k < repeats; k++) {
+                    bool levelFlag = false;
+                    for (size_t j = 0; j < samplesToSend.size(); j++) {
+                        gpio_set_level(CC1101_CCGDO0A, levelFlag);
+                        levelFlag = !levelFlag; 
+                        delayMicroseconds(samplesToSend[j]);                
+                }
+                gpio_set_level(CC1101_CCGDO0A, LOW);
+                delayMicroseconds(14400);
+                }
+            break;
+    
+        case LINEAR:
+            while(encoderState != EncoderStepReady) {
+                // ...
+            }
+            break;
+    
+        case SMC5326:
+            while(encoderState != EncoderStepReady) {
+                smc5326Protocol.yield(code);
+            }
+            break;
+    
+        default:
+            break;
+    }
+    
+
+    
 
 }
+
+
 
 
 

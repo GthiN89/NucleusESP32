@@ -748,8 +748,8 @@ void ScreenManager::createEncoderSreen() {
                                 "Nice\n"
                                 "Ansonic\n"
                                 "Holtec\n"
-                                "Linear\n"
-                                "SMC5326\n"    
+                                // "Linear\n"
+                                // "SMC5326\n"    
                             );
     lv_obj_set_width(dropdown_1, 120);  
     lv_obj_add_event_cb(dropdown_1, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, dropdown_2);   
@@ -767,7 +767,7 @@ void ScreenManager::createEncoderSreen() {
     lv_obj_t* repeats_label = lv_label_create(repeats_container_);
     lv_label_set_text(repeats_label, "Repeats:");
     
-     spinbox_repeats =  SpinBox::createSpinbox(repeats_container_, repeats,3 , 1, 64, NULL, "repeats", 60);
+     spinbox_repeats =  SpinBox::createSpinbox(repeats_container_, repeats, 1 , 64, 1, NULL, "repeats", 60);
 
   
     lv_obj_t * code_container_;
@@ -859,7 +859,7 @@ void ScreenManager::createBruteScreen() {
     lv_obj_t* repeats_label = lv_label_create(repeats_container_);
     lv_label_set_text(repeats_label, "Repeats:");
     
-     spinbox_repeats =  SpinBox::createSpinbox(repeats_container_, repeats,3 , 1, 64, NULL, "repeats", 60);
+     spinbox_repeats =  SpinBox::createSpinbox(repeats_container_, repeats,1 , 64, 1, NULL, "repeats", 60);
 
      keyboard_encoder = KeyboardHelper::createKeyboard(appScreen_, LV_KEYBOARD_MODE_NUMBER);
      lv_obj_add_flag(keyboard_encoder, LV_OBJ_FLAG_HIDDEN);

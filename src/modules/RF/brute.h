@@ -36,7 +36,7 @@ private:
     ChamberlainCodeProtocol chamberlainProtocol;
     LinearProtocol linearProtocol;
     HormannProtocol hormannProtocol;
-    Smc5326Protocol smc5326Protocol;
+    SMC5326Protocol smc5326Protocol;
 
 
 };

@@ -1,74 +1,72 @@
-#ifndef SMC5326_DECODER_H
-#define SMC5326_DECODER_H
+#ifndef SMC5326_PROTOCOL_H
+#define SMC5326_PROTOCOL_H
 
 #include <Arduino.h>
 #include <stdint.h>
-#include <string.h>
-#include "math.h"
+#include "GUI/ScreenManager.h"
 #include "globals.h"
-#include <bitset>
+#include "../FlipperSubFile.h"
 
-class Smc5326Protocol {
+#define DIP_PATTERN "%c%c%c%c%c%c%c%c"
+#define DIP_P 0b11 
+#define DIP_O 0b10  
+#define DIP_N 0b00 
+#define SHOW_DIP_P(dip, check_dip)                         \
+    ((((dip >> 0xE) & 0x3) == check_dip) ? '*' : '_'),     \
+    ((((dip >> 0xC) & 0x3) == check_dip) ? '*' : '_'),     \
+    ((((dip >> 0xA) & 0x3) == check_dip) ? '*' : '_'),     \
+    ((((dip >> 0x8) & 0x3) == check_dip) ? '*' : '_'),     \
+    ((((dip >> 0x6) & 0x3) == check_dip) ? '*' : '_'),     \
+    ((((dip >> 0x4) & 0x3) == check_dip) ? '*' : '_'),     \
+    ((((dip >> 0x2) & 0x3) == check_dip) ? '*' : '_'),     \
+    ((((dip >> 0x0) & 0x3) == check_dip) ? '*' : '_')
+
+class SMC5326Protocol {
 public:
-    Smc5326Protocol();
+    SMC5326Protocol();
 
-    std::bitset<25> binaryValue; 
-
-
-    // Resets internal state.
     void reset();
 
-    // Feed a single sample (level and duration in microseconds).
-    void feed(bool level, uint32_t duration);
 
-    // Process an array of samples; returns true if a valid code is detected.
     bool decode(long long int* samples, size_t sampleCount);
 
-    // Returns a formatted string with the decoded key, TE value, DIP visualization, and event info.
-    // Also updates the GUI textarea.
-    String getCodeString();
+    CC1101_PRESET preset;
+    String getCodeString() const;
 
-    // Returns true if a valid code has been detected.
     bool hasValidCode() const;
+    bool decodeReversed(long long int* samples, size_t sampleCount);
 
-    void yield(uint32_t hexValue);
+    void yield(unsigned int code);
+
 
 private:
-    enum DecoderStep {
-        StepReset,
-        StepSaveDuration,
-        StepCheckDuration,
+    enum SMC5326DecoderStep {
+        DecoderStepReset,
+        DecoderStepSaveDuration,
+        DecoderStepCheckDuration
     };
+    SMC5326DecoderStep decoderState;
 
-    // Constants from the protocol.
-    const uint32_t te_short;      // 300 µs
-    const uint32_t te_long;       // 900 µs
-    const uint32_t te_delta;      // 200 µs tolerance
-    const uint8_t  min_count_bit; // 25 bits
 
-    // Internal state.
-    DecoderStep state;
-    uint32_t decodeData;
+    const uint32_t te_short;    
+    const uint32_t te_long;     
+    const uint32_t te_delta;    
+    const uint8_t  min_count_bit; 
+
+    bool     validCodeFound;
     uint8_t  decodeCountBit;
-    uint32_t te_last;  // Last measured duration at the transition
-    uint32_t te;       // Accumulated timing value for averaging
-    uint32_t lastData; // For validating repeated keys
+    uint32_t decodedData;
+    uint32_t te_last;
+    uint32_t lastData;
 
-    // Final decoded (generic) values.
-    uint32_t finalData;         // The decoded key data
-    uint8_t  finalDataCountBit; // Number of bits in the key
-    uint32_t finalTE;           // Final TE (averaged timing)
+    uint32_t finalCode;
+    uint32_t finalBitCount;
+    uint32_t finalBtn;
+    uint32_t finalDIP;
+    uint32_t te; 
 
-    bool validCodeFound;
-
-
-    // Helper: add a bit to the decode data.
-    void addBit(uint8_t bit);
-
-
-
-    // Helper: generate an event string from event bits.
-    String getEventString(uint8_t event) const;
+    void feed(bool level, uint32_t duration);
+    inline void addBit(uint8_t bit);
 };
 
-#endif // SMC5326_DECODER_H
+#endif // SMC5326_PROTOCOL_H
