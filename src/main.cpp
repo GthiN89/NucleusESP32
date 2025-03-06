@@ -149,7 +149,13 @@ void bruteForceTask(void *pvParameters) {
             }
         }
 
+        if (BruteCurrentState == DeBrujin) {
+            if (RFbruteForcer.debrujin()) {
+                C1101CurrentState = STATE_IDLE;
+            }
+        }
 
+        
       //  vTaskDelay(10 / portTICK_PERIOD_MS); // Prevent watchdog resets
     
 }

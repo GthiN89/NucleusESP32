@@ -846,10 +846,8 @@ void ScreenManager::createBruteScreen() {
                                 "Nice 12bit\n"
                                 "Ansonic 12bit\n"
                                 "Holtek 12bit\n"
-                                "Chamberlain 7bit\n"
-                                "Chamberlain 8bit\n"
-                                "Chamberlain 9bit\n"
-                                "Linear 10bit\n"
+                                "de Bruijn\n"
+
                                 );
     lv_obj_set_width(dropdown_1, 120);  
     lv_obj_add_event_cb(dropdown_1, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, dropdown_2);   

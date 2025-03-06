@@ -18,6 +18,10 @@ public:
     int16_t counter;
     bool sendingFlag;
     int8_t repeat = 3;
+    std::string debrujinNumber;
+
+    std::vector<uint16_t> buffer;
+    
     bool Came12BitBrute(); 
     bool Nice12BitBrute();
     bool Ansonic12BitBrute();
@@ -26,7 +30,13 @@ public:
     bool Chamberlain7BitBrute();
     bool Chamberlain8BitBrute();
     bool Chamberlain9BitBrute();
+    bool debrujin();
     bool Linear10BitBrute();
+    void sendBuffer(const std::vector<uint16_t>& buffer);
+    void firstModulation(const std::bitset<2048>& debrujinNumber);
+    void secondModulation(const std::bitset<2048>& debrujinNumber);
+    void thirdModulation(const std::bitset<2048>& debrujinNumber);
+    void fourthModulation(const std::bitset<2048>& debrujinNumber);
 
 private:
     CameProtocol    cameProtocol;

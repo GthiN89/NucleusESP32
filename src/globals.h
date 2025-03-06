@@ -151,6 +151,7 @@ enum BruteProtocol {
   NICE_12bit,
   ANSONIC_12bit,
   Holtek_12bit,
+  DeBrujin,
   Chamberlain_9bit,
   Chamberlain_8bit,
   Chamberlain_7bit,
