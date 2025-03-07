@@ -2,6 +2,10 @@
 
 Nucleus ESP is a budget-friendly yellow device for various hacking applications. It can transmit in the Sub-GHz RF range and holds additional potential, which I plan to explore further.
 
+### The device
+![Device](https://github.com/GthiN89/NucleusESP32/blob/main/images/brute.jpg)
+![Device](https://github.com/GthiN89/NucleusESP32/blob/main/images/encoder.jpg)
+
 ## Project Overview
 
 I modified the device by desoldering the RGB diode to use it as a GPIO. Later, I disconnected the audio amplifier and photoresistor to free up additional GPIOs.
