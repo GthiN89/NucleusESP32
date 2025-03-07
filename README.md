@@ -4,6 +4,7 @@ Nucleus ESP is a budget-friendly yellow device for various hacking applications.
 
 ### The device
 ![Device](https://github.com/GthiN89/NucleusESP32/blob/main/images/brute.jpg)
+![Device](https://github.com/GthiN89/NucleusESP32/blob/main/images/decoder.jpg)
 ![Device](https://github.com/GthiN89/NucleusESP32/blob/main/images/encoder.jpg)
 
 ## Project Overview
@@ -66,16 +67,6 @@ With the help of my Software-Defined Radio (SDR), I implemented a RAW protocol f
 
 The timing tolerance is around 1-5 microseconds both ways.
 
-Transmission quality from `.sub` files is as follows:
-
-### AM270
-![AM270 Transmission](https://github.com/GthiN89/NucleusESP32/blob/main/images/AM270.PNG)
-
-### AM650
-![AM650 Transmission](https://github.com/GthiN89/NucleusESP32/blob/main/images/AM650.PNG)
-
-### The device
-![Device](https://github.com/GthiN89/NucleusESP32/blob/main/images/device.png)
 
 ### Partial instruction on build
 
