@@ -164,13 +164,13 @@ char * IR_CLASS::dec2binWzerofill(unsigned long Dec, unsigned int bitLength) {
   lv_textarea_add_text(textareaRC, "\nProtocol: ");
   lv_textarea_add_text(textareaRC, String(IR_CLASS::protDecode[protocol - 1]).c_str());
   
-  Serial.print("Raw data: ");
+  //Serial.print("Raw data: ");
   for (unsigned int i=0; i<= length*2; i++) {
-    Serial.print(raw[i]);
-    Serial.print(",");
+    //Serial.print(raw[i]);
+    //Serial.print(",");
   }
-  Serial.println();
-  Serial.println();
+  //Serial.println();
+  //Serial.println();
 }
 
 const char* IR_CLASS::bin2tristate(const char* bin) {

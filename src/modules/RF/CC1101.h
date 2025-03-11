@@ -219,15 +219,12 @@ private:
 
 
 
-    uint16_t spaceAvg = 0;
-    size_t smoothcount;
-    uint16_t sampleSmooth[SAMPLE_SIZE];
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
 
     bool levelFlag;                         // Current GPIO level
     timer_idx_t timerIndex = TIMER_0;               // Timer index
-    std::vector<uint16_t> pulses;
+    std::vector<uint64_t> pulses;
    
 };
 

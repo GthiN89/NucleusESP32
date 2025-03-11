@@ -65,9 +65,7 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
    //---------------------------------------------------------------------------//
   //-----------------------------SETINGS---------------------------------------//
  //---------------------------------------------------------------------------//
-#define CYD_MOSI 21   // Master Out Slave In
-#define CYD_MISO 35  // Master In Slave Out
-#define CYD_SCLK 22  // Serial Clock
+
 #define RFID_CS -1
 #define RF24_CS 16
 
@@ -83,9 +81,21 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 #define RF24_CE  CCGDO0A
 
 
+//CYD Variant E32R28T
+#define CC1101_CS 35
+#define CCGDO0A GPIO_NUM_27      
+#define CYD_MOSI 23   // Master Out Slave In
+#define CYD_MISO 19  // Master In Slave Out
+#define CYD_SCLK 18  // Serial Clock
+
+//---------------------
+
+// #define CYD_MOSI 21   // Master Out Slave In
+// #define CYD_MISO 35  // Master In Slave Out
+// #define CYD_SCLK 22  // Serial Clock
 
 // Pin configuration for CC1101 nfc CC-27 NRF24 CC-16
-#define CC1101_CS 27    // Chip Select
+//#define CC1101_CS 27    // Chip Select
 #define CC1101_MOSI CYD_MOSI   // Master Out Slave In
 #define CC1101_MISO CYD_MISO  // Master In Slave Out
 #define CC1101_SCLK CYD_SCLK  // Serial Clock

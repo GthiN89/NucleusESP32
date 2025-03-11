@@ -43,16 +43,16 @@ void my_touchpad_read(lv_indev_t * indev_driver, lv_indev_data_t * data);
 void init_touch(TouchCallback singleTouchCallback);
 
  void init_touch(TouchCallback singleTouchCallback) {
-     Serial.println(F("Initializing touch."));
+     //Serial.println(F("Initializing touch."));
      touchscreen.begin(); 
      _singleTouchCallback = singleTouchCallback; 
-     Serial.println(F("Touch initialized."));
+     //Serial.println(F("Touch initialized."));
  }
 
 void setup() {
 
   Serial.begin(115200);
-  init_touch([]() { Serial.println(F("Single touch detected!")); });
+  init_touch([]() { });
   smartdisplay_init();
   auto disp = lv_disp_get_default();
 
@@ -62,6 +62,9 @@ void setup() {
   #ifdef CYDV3
     touchscreen.setCalibration(180, 197, 1807, 1848);
   #endif
+
+  touchscreen.calibrate();
+
     screenMgrM.draw_image();
     lv_task_handler();
     delay(3000);
@@ -70,15 +73,15 @@ void setup() {
     SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI);
 
     if (!SD_CARD.initializeSD()) {
-        Serial.println(F("Failed to initialize SD card!"));
+        //Serial.println(F("Failed to initialize SD card!"));
     }
     lv_fs_if_init();
 
     if (CC1101.init()) {
-        Serial.println(F("CC1101 initialized."));
+        //Serial.println(F("CC1101 initialized."));
         CC1101.emptyReceive();
     } else {
-        Serial.println(F("Failed to initialize CC1101."));
+        //Serial.println(F("Failed to initialize CC1101."));
     }
 
     pinMode(IR_RX, INPUT_PULLUP);
@@ -92,41 +95,41 @@ void bruteForceTask(void *pvParameters) {
 
 
         if (BruteCurrentState == CAME_12bit) {
-            Serial.println("came");
+            //Serial.println("came");
             if (RFbruteForcer.Came12BitBrute()) {
                 C1101CurrentState = STATE_IDLE;
             }
-            Serial.println(RFbruteForcer.counter);
-            Serial.println(F("CAME codes sent"));
+            //Serial.println(RFbruteForcer.counter);
+            //Serial.println(F("CAME codes sent"));
         }
 
         if (BruteCurrentState == NICE_12bit) {
-            Serial.println("nice");
+            //Serial.println("nice");
             if (RFbruteForcer.Nice12BitBrute()) {
                 C1101CurrentState = STATE_IDLE;
             }
-            Serial.println(RFbruteForcer.counter);
-            Serial.println(F("NICE codes sent"));
+            //Serial.println(RFbruteForcer.counter);
+            //Serial.println(F("NICE codes sent"));
         }
 
         if (BruteCurrentState == ANSONIC_12bit) {
             if (RFbruteForcer.Ansonic12BitBrute()) {
                 C1101CurrentState = STATE_IDLE;
             }
-            Serial.println(RFbruteForcer.counter);
+            //Serial.println(RFbruteForcer.counter);
         }
 
         if (BruteCurrentState == Holtek_12bit) {
             if (RFbruteForcer.Holtek12BitBrute()) {
                 C1101CurrentState = STATE_IDLE;
             }
-            Serial.println(RFbruteForcer.counter);
+            //Serial.println(RFbruteForcer.counter);
         }
         if (BruteCurrentState == Chamberlain_9bit) {
             if (RFbruteForcer.Chamberlain9BitBrute()) {
                 C1101CurrentState = STATE_IDLE;
             }
-            Serial.println(RFbruteForcer.counter);
+            //Serial.println(RFbruteForcer.counter);
         }
         if (BruteCurrentState == Chamberlain_9bit) {
             if (RFbruteForcer.Chamberlain9BitBrute()) {
@@ -163,16 +166,16 @@ void bruteForceTask(void *pvParameters) {
  void CC1101Loop() {
     if(C1101CurrentState == STATE_ANALYZER) {
                // delay(50);
-                Serial.println(gpio_get_level(CC1101_CCGDO2A));
+                //Serial.println(gpio_get_level(CC1101_CCGDO2A));
         if (CC1101.CheckReceived()) {
-             delay(50);
-            Serial.println("Received");
+             delay(5);
+            //Serial.println("Received");
             CC1101.disableReceiver();
-            Serial.println("Receiver disabled.");
-            delay(50);
-            Serial.println("Analyzing signal...");
+            //Serial.println("Receiver disabled.");
+            delay(5);
+            //Serial.println("Analyzing signal...");
             CC1101.signalAnalyse();
-            Serial.println("Signal analyzed.");
+            //Serial.println("Signal analyzed.");
             CC1101.decode();
 
             C1101CurrentState = STATE_IDLE;
@@ -181,9 +184,9 @@ void bruteForceTask(void *pvParameters) {
     }
     if(C1101CurrentState == STATE_RCSWITCH) {
                // delay(50);
-               // Serial.println(gpio_get_level(CC1101_CCGDO2A));
+               // //Serial.println(gpio_get_level(CC1101_CCGDO2A));
         if (mySwitch1.available()) {
-             delay(50);
+             delay(5);
             ir.output(mySwitch1.getReceivedValue(), mySwitch1.getReceivedBitlength(), mySwitch1.getReceivedDelay(), mySwitch1.getReceivedRawdata(),mySwitch1.getReceivedProtocol(), screenMgrM.getTextArea());
             mySwitch1.resetAvailable();
  
@@ -251,7 +254,7 @@ void bruteForceTask(void *pvParameters) {
         if (Irrecv.decode(&results)) {
             IRCurrentState = IR_STATE_IDLE;
             runningModule = MODULE_NONE;
-            Serial.print(resultToHumanReadableBasic(&results));
+            //Serial.print(resultToHumanReadableBasic(&results));
             lv_textarea_set_text(screenMgrM.text_area_IR, "Received\n");
             lv_textarea_add_text(screenMgrM.text_area_IR, String(resultToHumanReadableBasic(&results)).c_str());
             Irrecv.resume();
@@ -332,10 +335,10 @@ Point touch = touchscreen.getTouch();
         data->point.y = y;
         data->state = LV_INDEV_STATE_PRESSED;
 
-        Serial.print(F("Adjusted Touch at X: "));
-        Serial.print(x);
-        Serial.print(F(", Y: "));
-        Serial.println(y);
+        //Serial.print(F("Adjusted Touch at X: "));
+        //Serial.print(x);
+        //Serial.print(F(", Y: "));
+        //Serial.println(y);
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
     }
@@ -343,11 +346,11 @@ Point touch = touchscreen.getTouch();
  
  
  void register_touch(lv_disp_t *disp) {
-     Serial.println(F("Registering touch in lvgl."));
+     //Serial.println(F("Registering touch in lvgl."));
      indev = lv_indev_create();      
      lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);  
      lv_indev_set_read_cb(indev, my_touchpad_read);    
-     Serial.println(F("Touch registered."));
+     //Serial.println(F("Touch registered."));
  }
 
 

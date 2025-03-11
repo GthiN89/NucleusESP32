@@ -39,7 +39,7 @@ void setup() {
 
 
 void loop() {
-  Serial.println("Sending...");
+  //Serial.println("Sending...");
 
   // Set up what we want to send. See ir_Daikin.cpp for all the options.
   ac.on();
@@ -56,7 +56,7 @@ void loop() {
   ac.enableOffTimer(14 * 60 + 30);
 
   // Display what we are going to send.
-  Serial.println(ac.toString());
+  //Serial.println(ac.toString());
 
   // Now send the IR signal.
 #if SEND_DAIKIN

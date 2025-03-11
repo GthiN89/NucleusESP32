@@ -40,15 +40,15 @@ const uint8_t kAc_Flow_Wall[4] = {0, 2, 4, 5};
 uint32_t ac_code_to_sent;
 
 void Ac_Send_Code(uint32_t code) {
-  Serial.print("code to send : ");
-  Serial.print(code, BIN);
-  Serial.print(" : ");
-  Serial.println(code, HEX);
+  //Serial.print("code to send : ");
+  //Serial.print(code, BIN);
+  //Serial.print(" : ");
+  //Serial.println(code, HEX);
 
 #if SEND_LG
   irsend.sendLG(code, 28);
 #else  // SEND_LG
-  Serial.println("Can't send because SEND_LG has been disabled.");
+  //Serial.println("Can't send because SEND_LG has been disabled.");
 #endif  // SEND_LG
 }
 
@@ -133,20 +133,20 @@ void setup() {
 
 void loop() {
   char b = ' ';
-  Serial.println("# a : mode or temp    b : air_flow, temp, swing, clean,"
+  //Serial.println("# a : mode or temp    b : air_flow, temp, swing, clean,"
                  " cooling/heating");
-  Serial.println("# 0 : off             0");
-  Serial.println("# 1 : on              0");
-  Serial.println("# 2 : air_swing       0 or 1");
-  Serial.println("# 3 : air_clean       0 or 1");
-  Serial.println("# 4 : air_flow        0 ~ 2 : flow");
-  Serial.println("# + : temp + 1");
-  Serial.println("# - : temp - 1");
-  Serial.println("# c : cooling");
-  Serial.println("# h : heating");
-  Serial.println("# m : change cooling to air clean, air clean to cooling");
+  //Serial.println("# 0 : off             0");
+  //Serial.println("# 1 : on              0");
+  //Serial.println("# 2 : air_swing       0 or 1");
+  //Serial.println("# 3 : air_clean       0 or 1");
+  //Serial.println("# 4 : air_flow        0 ~ 2 : flow");
+  //Serial.println("# + : temp + 1");
+  //Serial.println("# - : temp - 1");
+  //Serial.println("# c : cooling");
+  //Serial.println("# h : heating");
+  //Serial.println("# m : change cooling to air clean, air clean to cooling");
 
-  Serial.println("a=");  // Prompt User for input
+  //Serial.println("a=");  // Prompt User for input
   while (Serial.available() == 0) {  // Wait for user input
   }
   char a = Serial.read();  // Read user input into a
@@ -160,7 +160,7 @@ void loop() {
     case 'm':
       break;
     default:
-      Serial.println("b=");  // Prompt User for input
+      //Serial.println("b=");  // Prompt User for input
       while (Serial.available() == 0) {}
       b = Serial.read();
   }
@@ -179,10 +179,10 @@ void loop() {
      # h : heating
      # m : change cooling to air clean, air clean to cooling
   */
-  Serial.print("a : ");
-  Serial.print(a);
-  Serial.print("  b : ");
-  Serial.println(b);
+  //Serial.print("a : ");
+  //Serial.print(a);
+  //Serial.print("  b : ");
+  //Serial.println(b);
 
   switch (a) {
     case '0':  // off
@@ -252,12 +252,12 @@ void loop() {
   }
 
   delay(100);
-  Serial.println("ac_temperature");
-  Serial.println(ac_temperature);
-  Serial.println("ac_flow");
-  Serial.println(ac_flow);
-  Serial.println("ac_heat");
-  Serial.println(ac_heat);
-  Serial.println("ac_power_on");
-  Serial.println(ac_power_on);
+  //Serial.println("ac_temperature");
+  //Serial.println(ac_temperature);
+  //Serial.println("ac_flow");
+  //Serial.println(ac_flow);
+  //Serial.println("ac_heat");
+  //Serial.println(ac_heat);
+  //Serial.println("ac_power_on");
+  //Serial.println(ac_power_on);
 }

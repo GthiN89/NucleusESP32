@@ -158,11 +158,11 @@ bool HoltekProtocol::decode(long long int* samples, size_t sampleCount) {
             feed(false, (uint32_t)(-samples[i]));
         }
         if(validCodeFound) {
-            Serial.println(F("Holtek: valid code found"));
+            //Serial.println(F("Holtek: valid code found"));
             return true;
         }
     }
-    Serial.println(F("Holtek: no valid code detected"));
+    //Serial.println(F("Holtek: no valid code detected"));
     return false;
 }
 
@@ -220,17 +220,17 @@ String HoltekProtocol::getCodeString() const {
     lv_textarea_set_text(textarea, buf);
 
 
-    Serial.println(F("HoltekProtocol::getCodeString() called"));
-    Serial.print(F(" finalBitCount: "));
-    Serial.println(finalBitCount);
-    Serial.print(F(" finalCode: 0x"));
-    Serial.println(finalCode, HEX);
-    Serial.print(F(" finalBtn: 0x"));
-    Serial.println(finalBtn, HEX);
-    Serial.print(F(" finalDIP: 0x"));
-    Serial.println(finalDIP, HEX);
-    Serial.print(F(" te: "));
-    Serial.println(te);
+    //Serial.println(F("HoltekProtocol::getCodeString() called"));
+    //Serial.print(F(" finalBitCount: "));
+    //Serial.println(finalBitCount);
+    //Serial.print(F(" finalCode: 0x"));
+    //Serial.println(finalCode, HEX);
+    //Serial.print(F(" finalBtn: 0x"));
+    //Serial.println(finalBtn, HEX);
+    //Serial.print(F(" finalDIP: 0x"));
+    //Serial.println(finalDIP, HEX);
+    //Serial.print(F(" te: "));
+    //Serial.println(te);
 
     return String(buf);
 }

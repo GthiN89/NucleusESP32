@@ -184,7 +184,7 @@ void ELECHOUSE_CC1101::SpiWriteReg(uint8_t addr, uint8_t value)
   (*ccSPI).transfer(addr);
   (*ccSPI).transfer(value); 
   digitalWrite(SS_PIN, HIGH);
-  //Serial.println("Write reg addr: 0x" + String(addr,HEX) + "=0x" + String(value,HEX));
+  ////Serial.println("Write reg addr: 0x" + String(addr,HEX) + "=0x" + String(value,HEX));
   SpiEnd();
 }
 /****************************************************************
@@ -202,13 +202,13 @@ void ELECHOUSE_CC1101::SpiWriteBurstReg(uint8_t addr, uint8_t *buffer, uint8_t n
   digitalWrite(SS_PIN, LOW);
   while(digitalRead(MISO_PIN));
   (*ccSPI).transfer(temp);
-  //Serial.print("\nWrite burst addr: 0x" + String(temp,HEX) + "=");
+  ////Serial.print("\nWrite burst addr: 0x" + String(temp,HEX) + "=");
   for (i = 0; i < num; i++)
   {
   (*ccSPI).transfer(buffer[i]);
-  //Serial.print(" 0x" + String(buffer[i],HEX));
+  ////Serial.print(" 0x" + String(buffer[i],HEX));
   }
-  //Serial.println();
+  ////Serial.println();
   digitalWrite(SS_PIN, HIGH);
   SpiEnd();
 }
@@ -226,7 +226,7 @@ void ELECHOUSE_CC1101::SpiStrobe(uint8_t strobe)
   while(digitalRead(MISO_PIN));
   (*ccSPI).transfer(strobe);
   digitalWrite(SS_PIN, HIGH);
-  //Serial.println("Write Strobe: 0x" + String(strobe,HEX));
+  ////Serial.println("Write Strobe: 0x" + String(strobe,HEX));
   SpiEnd();
 }
 /****************************************************************
@@ -247,7 +247,7 @@ uint8_t ELECHOUSE_CC1101::SpiReadReg(uint8_t addr)
   value=(*ccSPI).transfer(0);
   digitalWrite(SS_PIN, HIGH);
   SpiEnd();
-  //Serial.println("Reading addr: 0x" + String(addr,HEX) + " = 0x" + String(value,HEX));
+  ////Serial.println("Reading addr: 0x" + String(addr,HEX) + " = 0x" + String(value,HEX));
   return value;
 }
 
@@ -264,15 +264,15 @@ void ELECHOUSE_CC1101::SpiReadBurstReg(uint8_t addr, uint8_t *buffer, uint8_t nu
   SpiStart();
   temp = addr | READ_BURST;
   digitalWrite(SS_PIN, LOW);
-  //Serial.print("\nReading addr: 0x" + String(temp,HEX) + " = ");
+  ////Serial.print("\nReading addr: 0x" + String(temp,HEX) + " = ");
   while(digitalRead(MISO_PIN));
   (*ccSPI).transfer(temp);
   for(i=0;i<num;i++)
   {
   buffer[i]=(*ccSPI).transfer(0);
-  //Serial.print(" " + String(buffer[i],HEX));
+  ////Serial.print(" " + String(buffer[i],HEX));
   }
-  //Serial.println();
+  ////Serial.println();
   digitalWrite(SS_PIN, HIGH);
   SpiEnd();
 }
@@ -295,7 +295,7 @@ uint8_t ELECHOUSE_CC1101::SpiReadStatus(uint8_t addr)
   value=(*ccSPI).transfer(0);
   digitalWrite(SS_PIN, HIGH);
   SpiEnd();
-  //Serial.println("Reading Reg addr: 0x" + String(addr,HEX) + " = 0x" + String(value,HEX));
+  ////Serial.println("Reading Reg addr: 0x" + String(addr,HEX) + " = 0x" + String(value,HEX));
   return value;
 }
 /****************************************************************
@@ -305,7 +305,7 @@ uint8_t ELECHOUSE_CC1101::SpiReadStatus(uint8_t addr)
 *OUTPUT       :none
 ****************************************************************/
 void ELECHOUSE_CC1101::setSpi(void){
-  //Serial.println("Pins set?: " + __spi ? "true":"false");
+  ////Serial.println("Pins set?: " + __spi ? "true":"false");
 if (__spi == 0){
   #if defined __AVR_ATmega168__ || defined __AVR_ATmega328P__
   SCK_PIN = 13; MISO_PIN = 12; MOSI_PIN = 11; SS_PIN = 10;

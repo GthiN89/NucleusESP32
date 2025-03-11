@@ -35,7 +35,7 @@ void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode) {
     } else if (mode == (LV_FS_MODE_WR | LV_FS_MODE_RD)) {
         openMode = O_RDWR | O_CREAT;
     } else {
-        Serial.println(F("Invalid file mode."));
+        //Serial.println(F("Invalid file mode."));
         return NULL;
     }
 
@@ -59,7 +59,7 @@ lv_fs_res_t fs_read(lv_fs_drv_t * drv, void * file_p, void * buf, uint32_t btr, 
         *br = SD_FE.readFile(file, buf, btr);
         return LV_FS_RES_OK;
     }
-    Serial.println(F("Failed to read from file."));
+    //Serial.println(F("Failed to read from file."));
     return LV_FS_RES_FS_ERR;
 }
 
@@ -70,7 +70,7 @@ lv_fs_res_t fs_write(lv_fs_drv_t * drv, void * file_p, const void * buf, uint32_
         *bw = file->write(static_cast<const uint8_t*>(buf), btw);
         return (*bw == btw) ? LV_FS_RES_OK : LV_FS_RES_FS_ERR;
     }
-    Serial.println(F("Failed to write to file."));
+    //Serial.println(F("Failed to write to file."));
     return LV_FS_RES_FS_ERR;
 }
 
@@ -90,12 +90,12 @@ lv_fs_res_t fs_seek(lv_fs_drv_t * drv, void * file_p, uint32_t pos, lv_fs_whence
                 result = file->seekEnd(-static_cast<int32_t>(pos));
                 break;
             default:
-                Serial.println(F("Invalid seek parameter."));
+                //Serial.println(F("Invalid seek parameter."));
                 return LV_FS_RES_INV_PARAM;
         }
         return result ? LV_FS_RES_OK : LV_FS_RES_FS_ERR;
     }
-    Serial.println(F("Failed to seek in file."));
+    //Serial.println(F("Failed to seek in file."));
     return LV_FS_RES_FS_ERR;
 }
 
@@ -106,12 +106,12 @@ lv_fs_res_t fs_tell(lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p) {
         *pos_p = file->curPosition();
         return LV_FS_RES_OK;
     }
-    Serial.println(F("Failed to get file position."));
+    //Serial.println(F("Failed to get file position."));
     return LV_FS_RES_FS_ERR;
 }
 
 void * fs_dir_open(lv_fs_drv_t * drv, const char * path) {
-    Serial.print(path);
+    //Serial.print(path);
     File32* dir = SD_FE.getByPath(path);
     if (!dir || !dir->isDirectory()) {
         return NULL;  
@@ -120,7 +120,7 @@ void * fs_dir_open(lv_fs_drv_t * drv, const char * path) {
 }
 
 lv_fs_res_t fs_remove(lv_fs_drv_t * drv, const char * path) {
-    Serial.print(path);
+    //Serial.print(path);
      if(SD_FE.deleteFile(path)){
     return LV_FS_RES_OK;
      }
@@ -184,7 +184,7 @@ void lv_fs_if_init() {
     fs_drv.dir_close_cb = fs_dir_close;
 
     lv_fs_drv_register(&fs_drv);
-    Serial.print(F("Filesystem interface initialized with drive letter '"));
-    Serial.print(fs_drv.letter);
-    Serial.println(F("'"));
+    //Serial.print(F("Filesystem interface initialized with drive letter '"));
+    //Serial.print(fs_drv.letter);
+    //Serial.println(F("'"));
 }

@@ -33,14 +33,14 @@ IRToshibaAC ac(kIrLed);  // Set the GPIO to be used for sending messages.
 
 void printState() {
   // Display the settings.
-  Serial.println("Toshiba A/C remote is in the following state:");
-  Serial.printf("  %s\n", ac.toString().c_str());
+  //Serial.println("Toshiba A/C remote is in the following state:");
+  //Serial.printf("  %s\n", ac.toString().c_str());
   // Display the encoded IR sequence.
   unsigned char* ir_code = ac.getRaw();
-  Serial.print("IR Code: 0x");
+  //Serial.print("IR Code: 0x");
   for (uint8_t i = 0; i < ac.getStateLength(); i++)
-    Serial.printf("%02X", ir_code[i]);
-  Serial.println();
+    //Serial.printf("%02X", ir_code[i]);
+  //Serial.println();
 }
 
 void setup() {
@@ -49,9 +49,9 @@ void setup() {
   delay(200);
 
   // Set up what we want to send. See ir_Toshiba.cpp for all the options.
-  Serial.println("Default state of the remote.");
+  //Serial.println("Default state of the remote.");
   printState();
-  Serial.println("Setting desired state for A/C.");
+  //Serial.println("Setting desired state for A/C.");
   ac.on();
   ac.setFan(1);
   ac.setMode(kToshibaAcCool);
@@ -61,7 +61,7 @@ void setup() {
 void loop() {
   // Now send the IR signal.
 #if SEND_TOSHIBA_AC
-  Serial.println("Sending IR command to A/C ...");
+  //Serial.println("Sending IR command to A/C ...");
   ac.send();
 #endif  // SEND_TOSHIBA_AC
   printState();

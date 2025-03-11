@@ -559,7 +559,7 @@ void debug(const char *str) {
 #if DEBUG
   if (isSerialGpioUsedByIr()) return;  // Abort.
   uint32_t now = millis();
-  Serial.printf("%07u.%03u: %s\n", now / 1000, now % 1000, str);
+  //Serial.printf("%07u.%03u: %s\n", now / 1000, now % 1000, str);
 #endif  // DEBUG
 }
 #pragma GCC diagnostic pop
@@ -2262,7 +2262,7 @@ void setup(void) {
 #endif  // ESP8266
     while (!Serial)  // Wait for the serial connection to be establised.
       delay(50);
-    Serial.println();
+    //Serial.println();
     debug("IRMQTTServer " _MY_VERSION_ " has booted.");
   }
 #endif  // DEBUG

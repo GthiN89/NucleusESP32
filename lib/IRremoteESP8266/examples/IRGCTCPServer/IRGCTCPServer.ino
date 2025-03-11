@@ -76,9 +76,9 @@ void sendGCString(String str) {
   code_array = reinterpret_cast<uint16_t*>(malloc(count * sizeof(uint16_t)));
   // Check we malloc'ed successfully.
   if (code_array == NULL) {  // malloc failed, so give up.
-    Serial.printf("\nCan't allocate %d bytes. (%d bytes free)\n",
+    //Serial.printf("\nCan't allocate %d bytes. (%d bytes free)\n",
                   count * sizeof(uint16_t), ESP.getFreeHeap());
-    Serial.println("Giving up & forcing a reboot.");
+    //Serial.println("Giving up & forcing a reboot.");
     ESP.restart();  // Reboot.
     delay(500);  // Wait for the restart to happen.
     return;  // Should never get here, but just in case.
@@ -104,17 +104,17 @@ void setup() {
   // initialize serial:
   Serial.begin(115200);
   delay(100);
-  Serial.println(" ");
-  Serial.println("IR TCP Server");
+  //Serial.println(" ");
+  //Serial.println("IR TCP Server");
   WiFi.begin(kSsid, kPassword);
   while (WiFi.status() != WL_CONNECTED) {
     delay(900);
-    Serial.print(".");
+    //Serial.print(".");
   }
 
   server.begin();
   IPAddress myAddress = WiFi.localIP();
-  Serial.println(myAddress.toString());
+  //Serial.println(myAddress.toString());
   irsend.begin();
 }
 

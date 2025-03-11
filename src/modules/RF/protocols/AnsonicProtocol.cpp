@@ -156,11 +156,11 @@ bool AnsonicProtocol::decode(long long int* samples, size_t sampleCount) {
             feed(false, (uint32_t)(-samples[i]));
         }
         if(validCodeFound) {
-            Serial.println(F("Valid code found"));
+            //Serial.println(F("Valid code found"));
             return true;
         }
     }
-    Serial.println(F("No valid code detected"));
+    //Serial.println(F("No valid code detected"));
     return false;
 }
 
@@ -219,15 +219,15 @@ String AnsonicProtocol::getCodeString() const {
     lv_textarea_set_text(textarea, buf);
 
     // Debug prints
-    Serial.println(F("AnsonicProtocol::getCodeString() called"));
-    Serial.print(F(" finalBitCount: "));
-    Serial.println(finalBitCount);
-    Serial.print(F(" finalCode: 0x"));
-    Serial.println(finalCode, HEX);
-    Serial.print(F(" finalDip (local): 0x"));
-    Serial.println(localDip, HEX);
-    Serial.print(F(" finalBtn (local): 0x"));
-    Serial.println(localBtn, HEX);
+    //Serial.println(F("AnsonicProtocol::getCodeString() called"));
+    //Serial.print(F(" finalBitCount: "));
+    //Serial.println(finalBitCount);
+    //Serial.print(F(" finalCode: 0x"));
+    //Serial.println(finalCode, HEX);
+    //Serial.print(F(" finalDip (local): 0x"));
+    //Serial.println(localDip, HEX);
+    //Serial.print(F(" finalBtn (local): 0x"));
+    //Serial.println(localBtn, HEX);
 
     return String(buf);
 }

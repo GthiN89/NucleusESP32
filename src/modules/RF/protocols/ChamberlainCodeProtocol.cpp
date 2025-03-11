@@ -34,10 +34,10 @@ void ChamberlainCodeProtocol::yield(uint32_t hexValue, uint8_t bitCount) {
         samplesToSend.clear();
         toBits(hexValue, bitCount);
         // Debug output:
-        Serial.print("Chamberlain yield: code 0x");
-        Serial.print(hexValue, HEX);
-        Serial.print(" as bits: ");
-        Serial.println(binaryValue.to_string().c_str());
+        //Serial.print("Chamberlain yield: code 0x");
+        //Serial.print(hexValue, HEX);
+        //Serial.print(" as bits: ");
+        //Serial.println(binaryValue.to_string().c_str());
         encoderState = EncoderStepDurations;
     }
     if (encoderState == EncoderStepDurations) {
@@ -68,7 +68,7 @@ void ChamberlainCodeProtocol::yield(uint32_t hexValue, uint8_t bitCount) {
         }
         delay(5);
         encoderState = EncoderStepReady;
-        Serial.println("Chamberlain yield: EncoderStepReady");
+        //Serial.println("Chamberlain yield: EncoderStepReady");
     }
 }
 

@@ -38,37 +38,37 @@ SDcard& SDcard::getInstance() {
 
 bool SDcard::initializeSD() {
     if (!SD.begin(SD_CONFIG)) {
-        Serial.println(F("SD Card MOUNT FAIL"));
+        //Serial.println(F("SD Card MOUNT FAIL"));
         return false;
     }
-    Serial.println(F("SD Card MOUNT SUCCESS"));
+    //Serial.println(F("SD Card MOUNT SUCCESS"));
     uint64_t cardSize = (uint64_t)SD.card()->sectorCount() * 512 / (1024 * 1024);
-    Serial.print(F("Reported SD Card Size: "));
-    Serial.print(cardSize);
-    Serial.println(F(" MB"));
+    //Serial.print(F("Reported SD Card Size: "));
+    //Serial.print(cardSize);
+    //Serial.println(F(" MB"));
     return true;
 }
 
 bool SDcard::directoryExists(const char* dirPath) {
     if (SD.exists(dirPath)) {
-        Serial.print(F("Directory exists: "));
-        Serial.println(dirPath);
+        //Serial.print(F("Directory exists: "));
+        //Serial.println(dirPath);
         return true;
     } else {
-        Serial.print(F("Directory does not exist: "));
-        Serial.println(dirPath);
+        //Serial.print(F("Directory does not exist: "));
+        //Serial.println(dirPath);
         return false;
     }
 }
 
 bool SDcard::createDirectory(const char* dirPath) {
     if (SD.mkdir(dirPath)) {
-        Serial.print(F("Directory created successfully: "));
-        Serial.println(dirPath);
+        //Serial.print(F("Directory created successfully: "));
+        //Serial.println(dirPath);
         return true;
     } else {
-        Serial.print(F("Failed to create directory: "));
-        Serial.println(dirPath);
+        //Serial.print(F("Failed to create directory: "));
+        //Serial.println(dirPath);
         return false;
     }
 }
@@ -86,13 +86,13 @@ File32* SDcard::createOrOpenFile(const char* filePath, oflag_t mode) {
     File32* file = new File32();
     *file = SD.open(filePath, mode);
     if (!*file) {
-        Serial.print(F("Failed to open/create file: "));
-        Serial.println(filePath);
+        //Serial.print(F("Failed to open/create file: "));
+        //Serial.println(filePath);
         delete file;
         return nullptr;
     } 
-    Serial.print(F("File opened/created successfully: "));
-    Serial.println(filePath);
+    //Serial.print(F("File opened/created successfully: "));
+    //Serial.println(filePath);
     return file;
 }
 
@@ -102,30 +102,30 @@ bool SDcard::closeFile(File32* file) {
         delete file;
         return true;
     }
-    Serial.println(F("Attempted to close a null file handle."));
+    //Serial.println(F("Attempted to close a null file handle."));
     return false;
 }
 
 bool SDcard::deleteFile(const char* filePath) {
     if (SD.exists(filePath)) {
         if (SD.remove(filePath)) {
-            Serial.println(F("File deleted successfully."));
+            //Serial.println(F("File deleted successfully."));
             return true;
         } else {
-            Serial.println(F("File deletion failed."));
+            //Serial.println(F("File deletion failed."));
             return false;
         }
     }
-    Serial.println(F("File doesn't exist."));
+    //Serial.println(F("File doesn't exist."));
     return false;
 }
 
 bool SDcard::fileExists(const char* filePath) {
     if (SD.exists(filePath)) {
-        Serial.println(F("File exists."));
+        //Serial.println(F("File exists."));
         return true;
     }
-    Serial.println(F("File does not exist."));
+    //Serial.println(F("File does not exist."));
     return false;
 }
 
@@ -133,17 +133,17 @@ bool SDcard::fileExists(const char* filePath) {
 //     oflag_t mode = append ? (O_RDWR | O_APPEND) : (O_RDWR | O_CREAT | O_TRUNC);
 //     File32* file = createOrOpenFile(filePath, mode);
 //     if (!file) {
-//         Serial.println(F("Failed to open file for writing."));
+//         //Serial.println(F("Failed to open file for writing."));
 //         return;
 //     }
 //     file->print(data);
-//     Serial.println(F("Data written successfully."));
+//     //Serial.println(F("Data written successfully."));
 //     closeFile(file);
 // }
 
 size_t SDcard::readFile(File32* file, void* buf, size_t bytesToRead) {
     if (!file || !file->isOpen()) { 
-        Serial.println(F("File is not open."));
+        //Serial.println(F("File is not open."));
         return 0;
     }
 
@@ -152,11 +152,11 @@ size_t SDcard::readFile(File32* file, void* buf, size_t bytesToRead) {
 
 bool SDcard::read_sd_card_flipper_file(String filename) {
     if (!initializeSD()) {
-        Serial.println(F("SD mounting failed!"));
+        //Serial.println(F("SD mounting failed!"));
         return false;
     }
-    Serial.print(F("sd/Read Flipper File: "));
-    Serial.println(filename);
+    //Serial.print(F("sd/Read Flipper File: "));
+    //Serial.println(filename);
 
     File32* file = createOrOpenFile(filename.c_str(), FILE_READ);
     if (!file) {
@@ -273,9 +273,9 @@ bool SDcard::restartSD() {
 
     // Attempt to remount the SD card
     if (!initializeSD()) {
-        Serial.println(F("SD Card reinitialization failed."));
+        //Serial.println(F("SD Card reinitialization failed."));
         return false;
     }
-    Serial.println(F("SD Card reinitialized successfully."));
+    //Serial.println(F("SD Card reinitialized successfully."));
     return true;
 }

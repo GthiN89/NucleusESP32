@@ -147,7 +147,7 @@ void setup() {
   // packing as we expect and Endianness is as we expect.
   assert(irutils::lowLevelSanityCheck() == 0);
 
-  Serial.printf("\n" D_STR_IRRECVDUMP_STARTUP "\n", kRecvPin);
+  //Serial.printf("\n" D_STR_IRRECVDUMP_STARTUP "\n", kRecvPin);
   OTAinit();  // setup OTA handlers and show IP
 #if DECODE_HASH
   // Ignore messages with less than minimum on or off pulses.
@@ -163,29 +163,29 @@ void loop() {
   if (irrecv.decode(&results)) {
     // Display a crude timestamp.
     uint32_t now = millis();
-    Serial.printf(D_STR_TIMESTAMP " : %06u.%03u\n", now / 1000, now % 1000);
+    //Serial.printf(D_STR_TIMESTAMP " : %06u.%03u\n", now / 1000, now % 1000);
     // Check if we got an IR message that was to big for our capture buffer.
     if (results.overflow)
-      Serial.printf(D_WARN_BUFFERFULL "\n", kCaptureBufferSize);
+      //Serial.printf(D_WARN_BUFFERFULL "\n", kCaptureBufferSize);
     // Display the library version the message was captured with.
-    Serial.println(D_STR_LIBRARY "   : v" _IRREMOTEESP8266_VERSION_STR "\n");
+    //Serial.println(D_STR_LIBRARY "   : v" _IRREMOTEESP8266_VERSION_STR "\n");
     // Display the tolerance percentage if it has been change from the default.
     if (kTolerancePercentage != kTolerance)
-      Serial.printf(D_STR_TOLERANCE " : %d%%\n", kTolerancePercentage);
+      //Serial.printf(D_STR_TOLERANCE " : %d%%\n", kTolerancePercentage);
     // Display the basic output of what we found.
-    Serial.print(resultToHumanReadableBasic(&results));
+    //Serial.print(resultToHumanReadableBasic(&results));
     // Display any extra A/C info if we have it.
     String description = IRAcUtils::resultAcToString(&results);
-    if (description.length()) Serial.println(D_STR_MESGDESC ": " + description);
+    if (description.length()) //Serial.println(D_STR_MESGDESC ": " + description);
     yield();  // Feed the WDT as the text output can take a while to print.
 #if LEGACY_TIMING_INFO
     // Output legacy RAW timing info of the result.
-    Serial.println(resultToTimingInfo(&results));
+    //Serial.println(resultToTimingInfo(&results));
     yield();  // Feed the WDT (again)
 #endif  // LEGACY_TIMING_INFO
     // Output the results as source code
-    Serial.println(resultToSourceCode(&results));
-    Serial.println();    // Blank line between entries
+    //Serial.println(resultToSourceCode(&results));
+    //Serial.println();    // Blank line between entries
     yield();             // Feed the WDT (again)
   }
   OTAloopHandler();

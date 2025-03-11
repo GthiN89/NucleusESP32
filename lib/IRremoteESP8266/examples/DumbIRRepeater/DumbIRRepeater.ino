@@ -100,13 +100,13 @@ void setup() {
   Serial.begin(kBaudRate, SERIAL_8N1);
   while (!Serial)  // Wait for the serial connection to be establised.
     delay(50);
-  Serial.println();
+  //Serial.println();
 
-  Serial.print("DumbIRRepeater is now running and waiting for IR input "
+  //Serial.print("DumbIRRepeater is now running and waiting for IR input "
                "on Pin ");
-  Serial.println(kRecvPin);
-  Serial.print("and will retransmit it on Pin ");
-  Serial.println(kIrLedPin);
+  //Serial.println(kRecvPin);
+  //Serial.print("and will retransmit it on Pin ");
+  //Serial.println(kIrLedPin);
 }
 
 // The repeating section of the code
@@ -130,7 +130,7 @@ void loop() {
 
     // Display a crude timestamp & notification.
     uint32_t now = millis();
-    Serial.printf(
+    //Serial.printf(
         "%06u.%03u: A message that was %d entries long was retransmitted.\n",
         now / 1000, now % 1000, length);
   }

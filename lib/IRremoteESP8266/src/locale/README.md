@@ -44,7 +44,7 @@ of `IRtext.o` is created.
 
 Only [ASCII](https://en.wikipedia.org/wiki/ASCII#8-bit_codes)/[UTF-8](https://en.wikipedia.org/wiki/UTF-8) 8-bit characters are supported.
 [Unicode](https://en.wikipedia.org/wiki/Unicode) is **not** supported. Unicode may work. It may not. It's just not supported.
-i.e. If Arduino's `Serial.print()` can handle it, it will probably work.
+i.e. If Arduino's `//Serial.print()` can handle it, it will probably work.
 
 ### Copy/create a new locale file in this directory.
 Copy [en-AU.h](en-AU.h) or which every is a closer fit for your language to `xx-YY.h` where `xx` is the [ISO code](https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes) for the language.

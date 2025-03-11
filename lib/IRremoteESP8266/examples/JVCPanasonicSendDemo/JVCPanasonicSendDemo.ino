@@ -49,13 +49,13 @@ void loop() {
 #if SEND_PANASONIC
   irsend.sendPanasonic(kPanasonicAddress, kPanasonicPower);
 #else  // SEND_PANASONIC
-  Serial.println("Can't send because SEND_PANASONIC has been disabled.");
+  //Serial.println("Can't send because SEND_PANASONIC has been disabled.");
 #endif  // SEND_PANASONIC
 
 #if SEND_JVC
   irsend.sendJVC(kJVCPower, 16, 1);  // hex value, 16 bits, single repeat
 #else  // SEND_JVC
-  Serial.println("Can't send because SEND_JVC has been disabled.");
+  //Serial.println("Can't send because SEND_JVC has been disabled.");
 #endif  // SEND_JVC
   delay(10000);  // Wait 10 seconds before we repeat everything.
 }

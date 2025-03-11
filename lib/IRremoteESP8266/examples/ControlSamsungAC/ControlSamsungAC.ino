@@ -33,8 +33,8 @@ IRSamsungAc ac(kIrLed);     // Set the GPIO used for sending messages.
 
 void printState() {
   // Display the settings.
-  Serial.println("Samsung A/C remote is in the following state:");
-  Serial.printf("  %s\n", ac.toString().c_str());
+  //Serial.println("Samsung A/C remote is in the following state:");
+  //Serial.printf("  %s\n", ac.toString().c_str());
 }
 
 void setup() {
@@ -43,9 +43,9 @@ void setup() {
   delay(200);
 
   // Set up what we want to send. See ir_Samsung.cpp for all the options.
-  Serial.println("Default state of the remote.");
+  //Serial.println("Default state of the remote.");
   printState();
-  Serial.println("Setting initial state for A/C.");
+  //Serial.println("Setting initial state for A/C.");
   ac.off();
   ac.setFan(kSamsungAcFanLow);
   ac.setMode(kSamsungAcCool);
@@ -56,20 +56,20 @@ void setup() {
 
 void loop() {
   // Turn the A/C unit on
-  Serial.println("Turn on the A/C ...");
+  //Serial.println("Turn on the A/C ...");
   ac.on();
   ac.send();
   printState();
   delay(15000);  // wait 15 seconds
   // and set to cooling mode.
-  Serial.println("Set the A/C mode to cooling ...");
+  //Serial.println("Set the A/C mode to cooling ...");
   ac.setMode(kSamsungAcCool);
   ac.send();
   printState();
   delay(15000);  // wait 15 seconds
 
   // Increase the fan speed.
-  Serial.println("Set the fan to high and the swing on ...");
+  //Serial.println("Set the fan to high and the swing on ...");
   ac.setFan(kSamsungAcFanHigh);
   ac.setSwing(true);
   ac.send();
@@ -77,7 +77,7 @@ void loop() {
   delay(15000);
 
   // Change to Fan mode, lower the speed, and stop the swing.
-  Serial.println("Set the A/C to fan only with a low speed, & no swing ...");
+  //Serial.println("Set the A/C to fan only with a low speed, & no swing ...");
   ac.setSwing(false);
   ac.setMode(kSamsungAcFan);
   ac.setFan(kSamsungAcFanLow);
@@ -86,7 +86,7 @@ void loop() {
   delay(15000);
 
   // Turn the A/C unit off.
-  Serial.println("Turn off the A/C ...");
+  //Serial.println("Turn off the A/C ...");
   ac.off();
   ac.send();
   printState();

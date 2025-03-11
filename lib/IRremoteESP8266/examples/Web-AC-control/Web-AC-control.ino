@@ -72,7 +72,7 @@ WebServer server(80);
 
 bool handleFileRead(String path) {
   //  send the right file to the client (if it exists)
-  // Serial.println("handleFileRead: " + path);
+  // //Serial.println("handleFileRead: " + path);
   if (path.endsWith("/")) path += "index.html";
   // If a folder is requested, send the index file
   String contentType = getContentType(path);
@@ -89,10 +89,10 @@ bool handleFileRead(String path) {
     //  Send it to the client
     file.close();
     // Close the file again
-    // Serial.println(String("\tSent file: ") + path);
+    // //Serial.println(String("\tSent file: ") + path);
     return true;
   }
-  // Serial.println(String("\tFile Not Found: ") + path);
+  // //Serial.println(String("\tFile Not Found: ") + path);
   // If the file doesn't exist, return false
   return false;
 }
@@ -112,7 +112,7 @@ void handleFileUpload() {  // upload a new file to the FILESYSTEM
   if (upload.status == UPLOAD_FILE_START) {
     String filename = upload.filename;
     if (!filename.startsWith("/")) filename = "/" + filename;
-    // Serial.print("handleFileUpload Name: "); //Serial.println(filename);
+    // //Serial.print("handleFileUpload Name: "); ////Serial.println(filename);
     fsUploadFile = FILESYSTEM.open(filename, "w");
     // Open the file for writing in FILESYSTEM (create if it doesn't exist)
     filename = String();
@@ -125,8 +125,8 @@ void handleFileUpload() {  // upload a new file to the FILESYSTEM
       // If the file was successfully created
       fsUploadFile.close();
       // Close the file again
-      // Serial.print("handleFileUpload Size: ");
-      // Serial.println(upload.totalSize);
+      // //Serial.print("handleFileUpload Size: ");
+      // //Serial.println(upload.totalSize);
       server.sendHeader("Location", "/success.html");
       // Redirect the client to the success page
       server.send(303);
@@ -154,16 +154,16 @@ void handleNotFound() {
 
 void setup() {
   // Serial.begin(115200);
-  // Serial.println();
+  // //Serial.println();
   ac.begin();
 
 
   delay(1000);
 
-  Serial.println("mounting " FILESYSTEMSTR "...");
+  //Serial.println("mounting " FILESYSTEMSTR "...");
 
   if (!FILESYSTEM.begin()) {
-    // Serial.println("Failed to mount file system");
+    // //Serial.println("Failed to mount file system");
     return;
   }
 

@@ -58,7 +58,7 @@ uint64_t reverseBits(uint64_t input, uint16_t nbits) {
 }
 
 /// Convert a uint64_t (unsigned long long) to a string.
-/// Arduino String/toInt/Serial.print() can't handle printing 64 bit values.
+/// Arduino String/toInt///Serial.print() can't handle printing 64 bit values.
 /// @param[in] input The value to print
 /// @param[in] base The output base.
 /// @returns A String representation of the integer.
@@ -90,7 +90,7 @@ String uint64ToString(uint64_t input, uint8_t base) {
 }
 
 /// Convert a int64_t (signed long long) to a string.
-/// Arduino String/toInt/Serial.print() can't handle printing 64 bit values.
+/// Arduino String/toInt///Serial.print() can't handle printing 64 bit values.
 /// @param[in] input The value to print
 /// @param[in] base The output base.
 /// @returns A String representation of the integer.
@@ -106,11 +106,11 @@ String int64ToString(int64_t input, uint8_t base) {
 
 #ifdef ARDUINO
 /// Print a uint64_t/unsigned long long to the Serial port
-/// Serial.print() can't handle printing long longs. (uint64_t)
+/// //Serial.print() can't handle printing long longs. (uint64_t)
 /// @param[in] input The value to print
 /// @param[in] base The output base.
 void serialPrintUint64(uint64_t input, uint8_t base) {
-  Serial.print(uint64ToString(input, base));
+  //Serial.print(uint64ToString(input, base));
 }
 #endif
 

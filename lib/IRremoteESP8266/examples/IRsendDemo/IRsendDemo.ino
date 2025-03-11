@@ -59,16 +59,16 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("NEC");
+  //Serial.println("NEC");
   irsend.sendNEC(0x00FFE01FUL);
   delay(2000);
-  Serial.println("Sony");
+  //Serial.println("Sony");
   irsend.sendSony(0xa90, 12, 2);  // 12 bits & 2 repeats
   delay(2000);
-  Serial.println("a rawData capture from IRrecvDumpV2");
+  //Serial.println("a rawData capture from IRrecvDumpV2");
   irsend.sendRaw(rawData, 67, 38);  // Send a raw data capture at 38kHz.
   delay(2000);
-  Serial.println("a Samsung A/C state from IRrecvDumpV2");
+  //Serial.println("a Samsung A/C state from IRrecvDumpV2");
   irsend.sendSamsungAC(samsungState);
   delay(2000);
 }

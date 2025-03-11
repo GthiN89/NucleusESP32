@@ -33,14 +33,14 @@ IRMitsubishiHeavy152Ac ac(kIrLed);  // Set the GPIO used for sending messages.
 
 void printState() {
   // Display the settings.
-  Serial.println("Mitsubishi Heavy A/C remote is in the following state:");
-  Serial.printf("  %s\n", ac.toString().c_str());
+  //Serial.println("Mitsubishi Heavy A/C remote is in the following state:");
+  //Serial.printf("  %s\n", ac.toString().c_str());
   // Display the encoded IR sequence.
   unsigned char* ir_code = ac.getRaw();
-  Serial.print("IR Code: 0x");
+  //Serial.print("IR Code: 0x");
   for (uint8_t i = 0; i < kMitsubishiHeavy152StateLength; i++)
-    Serial.printf("%02X", ir_code[i]);
-  Serial.println();
+    //Serial.printf("%02X", ir_code[i]);
+  //Serial.println();
 }
 
 void setup() {
@@ -50,9 +50,9 @@ void setup() {
 
   // Set up what we want to send. See ir_MitsubishiHeavy.(cpp|h) for all the
   // options.
-  Serial.println("Default state of the remote.");
+  //Serial.println("Default state of the remote.");
   printState();
-  Serial.println("Setting desired state for A/C.");
+  //Serial.println("Setting desired state for A/C.");
   ac.setPower(true);  // Turn it on.
   ac.setFan(kMitsubishiHeavy152FanMed);  // Medium Fan
   ac.setMode(kMitsubishiHeavyCool);  // Cool mode
@@ -63,7 +63,7 @@ void setup() {
 
 void loop() {
   // Now send the IR signal.
-  Serial.println("Sending IR command to A/C ...");
+  //Serial.println("Sending IR command to A/C ...");
   ac.send();
   printState();
   delay(5000);

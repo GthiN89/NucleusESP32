@@ -4,27 +4,27 @@ static char * dec2binWzerofill(unsigned long Dec, unsigned int bitLength);
  output(unsigned long decimal, unsigned int length, unsigned int delay, unsigned int* raw, unsigned int protocol) {
 
   const char* b = dvoidec2binWzerofill(decimal, length);
-  Serial.print("Decimal: ");
-  Serial.print(decimal);
-  Serial.print(" (");
-  Serial.print( length );
-  Serial.print("Bit) Binary: ");
-  Serial.print( b );
-  Serial.print(" Tri-State: ");
-  Serial.print( bin2tristate( b) );
-  Serial.print(" PulseLength: ");
-  Serial.print(delay);
-  Serial.print(" microseconds");
-  Serial.print(" Protocol: ");
-  Serial.println(protocol);
+  //Serial.print("Decimal: ");
+  //Serial.print(decimal);
+  //Serial.print(" (");
+  //Serial.print( length );
+  //Serial.print("Bit) Binary: ");
+  //Serial.print( b );
+  //Serial.print(" Tri-State: ");
+  //Serial.print( bin2tristate( b) );
+  //Serial.print(" PulseLength: ");
+  //Serial.print(delay);
+  //Serial.print(" microseconds");
+  //Serial.print(" Protocol: ");
+  //Serial.println(protocol);
   
-  Serial.print("Raw data: ");
+  //Serial.print("Raw data: ");
   for (unsigned int i=0; i<= length*2; i++) {
-    Serial.print(raw[i]);
-    Serial.print(",");
+    //Serial.print(raw[i]);
+    //Serial.print(",");
   }
-  Serial.println();
-  Serial.println();
+  //Serial.println();
+  //Serial.println();
 }
 
 static const char* bin2tristate(const char* bin) {

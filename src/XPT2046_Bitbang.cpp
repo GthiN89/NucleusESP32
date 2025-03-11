@@ -54,6 +54,7 @@ void XPT2046_Bitbang::calibrate() {
     cal.xMin = readSPI(CMD_READ_X);
     cal.yMin = readSPI(CMD_READ_Y);
     digitalWrite(_csPin, HIGH);
+    Serial.println(cal.xMin + " " + cal.yMin);
 
     Serial.println("Touch the bottom-right corner, hold it down until the next message...");
     delay(3000);
@@ -63,6 +64,8 @@ void XPT2046_Bitbang::calibrate() {
     digitalWrite(_csPin, HIGH);
 
     Serial.println("Calibration done!");
+    Serial.println(cal.xMax + " " + cal.yMax);
+
 }
 
 

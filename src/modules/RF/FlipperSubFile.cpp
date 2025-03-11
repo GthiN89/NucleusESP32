@@ -18,7 +18,7 @@ void FlipperSubFile::generateRaw(
     float frequency
 ) {
     if (!file) {
-        Serial.println("Error: File is not open.");
+        //Serial.println("Error: File is not open.");
         return;
     }
     writeHeader(file, frequency);

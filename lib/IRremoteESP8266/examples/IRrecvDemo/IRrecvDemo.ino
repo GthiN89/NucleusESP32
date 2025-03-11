@@ -40,16 +40,16 @@ void setup() {
   irrecv.enableIRIn();  // Start the receiver
   while (!Serial)  // Wait for the serial connection to be establised.
     delay(50);
-  Serial.println();
-  Serial.print("IRrecvDemo is now running and waiting for IR message on Pin ");
-  Serial.println(kRecvPin);
+  //Serial.println();
+  //Serial.print("IRrecvDemo is now running and waiting for IR message on Pin ");
+  //Serial.println(kRecvPin);
 }
 
 void loop() {
   if (irrecv.decode(&results)) {
     // print() & println() can't handle printing long longs. (uint64_t)
     serialPrintUint64(results.value, HEX);
-    Serial.println("");
+    //Serial.println("");
     irrecv.resume();  // Receive the next value
   }
   delay(100);

@@ -46,7 +46,7 @@ void setup() {
   ac.next.clock = -1;  // Don't set any current time if we can avoid it.
   ac.next.power = false;  // Initially start with the unit off.
 
-  Serial.println("Try to turn on & off every supported A/C type ...");
+  //Serial.println("Try to turn on & off every supported A/C type ...");
 }
 
 void loop() {
@@ -55,18 +55,18 @@ void loop() {
     decode_type_t protocol = (decode_type_t)i;
     // If the protocol is supported by the IRac class ...
     if (ac.isProtocolSupported(protocol)) {
-      Serial.println("Protocol " + String(protocol) + " / " +
+      //Serial.println("Protocol " + String(protocol) + " / " +
                      typeToString(protocol) + " is supported.");
       ac.next.protocol = protocol;  // Change the protocol used.
       ac.next.power = true;  // We want to turn on the A/C unit.
-      Serial.println("Sending a message to turn ON the A/C unit.");
+      //Serial.println("Sending a message to turn ON the A/C unit.");
       ac.sendAc();  // Have the IRac class create and send a message.
       delay(5000);  // Wait 5 seconds.
       ac.next.power = false;  // Now we want to turn the A/C off.
-      Serial.println("Send a message to turn OFF the A/C unit.");
+      //Serial.println("Send a message to turn OFF the A/C unit.");
       ac.sendAc();  // Send the message.
       delay(1000);  // Wait 1 second.
     }
   }
-  Serial.println("Starting from the begining again ...");
+  //Serial.println("Starting from the begining again ...");
 }

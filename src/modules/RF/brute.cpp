@@ -49,7 +49,7 @@ void CC1101_BRUTE::firstModulation(const std::bitset<2048>& debrujinNumber) {
         sendBuffer(buffer);
         buffer.clear();
     }
-    Serial.println(F("First modulation complete"));
+    //Serial.println(F("First modulation complete"));
 }
 
 // Second modulation: header = {320,320,640,640,11520,320}
@@ -84,7 +84,7 @@ void CC1101_BRUTE::secondModulation(const std::bitset<2048>& debrujinNumber) {
         sendBuffer(buffer);
         buffer.clear();
     }
-    Serial.println(F("Second modulation complete"));
+    //Serial.println(F("Second modulation complete"));
 }
 
 // Third modulation: header = {400,400,800,800,14400,400}
@@ -119,7 +119,7 @@ void CC1101_BRUTE::thirdModulation(const std::bitset<2048>& debrujinNumber) {
         sendBuffer(buffer);
         buffer.clear();
     }
-    Serial.println(F("Third modulation complete"));
+    //Serial.println(F("Third modulation complete"));
 }
 
 // Fourth modulation: header = {700,700,1400,1400,25200,700}
@@ -154,13 +154,13 @@ void CC1101_BRUTE::fourthModulation(const std::bitset<2048>& debrujinNumber) {
         sendBuffer(buffer);
         buffer.clear();
     }
-    Serial.println(F("Fourth modulation complete"));
+    //Serial.println(F("Fourth modulation complete"));
 }
 
 // Now the main debrujin() function calls each modulation method in turn:
 bool CC1101_BRUTE::debrujin()
 {
-    Serial.println("debrujin() start");
+    //Serial.println("debrujin() start");
     sendingFlag = true;
     pinMode(CC1101_CCGDO0A, OUTPUT);
     digitalWrite(CC1101_CCGDO0A, LOW);
@@ -183,7 +183,7 @@ bool CC1101_BRUTE::debrujin()
 
     counter++;
     sendingFlag = false;
-    Serial.println("debrujin() complete");
+    //Serial.println("debrujin() complete");
     buffer.clear();
     return true;
 }
@@ -351,16 +351,16 @@ bool CC1101_BRUTE::ChamberlainCodeBrute(uint8_t bitCount) {
             chamberlainProtocol.yield(code, bitCount);
         }
         // Now the samples are ready in samplesToSend.
-        Serial.print("Sending Chamberlain ");
-        Serial.print(bitCount);
-        Serial.print("-bit code: 0x");
-        Serial.print(code, HEX);
-        Serial.print(" Samples: ");
+        //Serial.print("Sending Chamberlain ");
+        //Serial.print(bitCount);
+        //Serial.print("-bit code: 0x");
+        //Serial.print(code, HEX);
+        //Serial.print(" Samples: ");
         for (size_t j = 0; j < samplesToSend.size(); j++) {
-            Serial.print(samplesToSend[j]);
-            Serial.print(",");
+            //Serial.print(samplesToSend[j]);
+            //Serial.print(",");
         }
-        Serial.println();
+        //Serial.println();
 
         // Transmit pulses: each pair of durations represents a HIGH then LOW pulse.
         for (size_t j = 0; j < samplesToSend.size(); j += 2) {
@@ -379,64 +379,64 @@ bool CC1101_BRUTE::ChamberlainCodeBrute(uint8_t bitCount) {
     
     bool CC1101_BRUTE::Chamberlain7BitBrute() {
     #if DEBUG_ENABLED
-        Serial.println("Chamberlain7BitBrute: Invoking ChamberlainCodeBrute with 7 bits");
+        //Serial.println("Chamberlain7BitBrute: Invoking ChamberlainCodeBrute with 7 bits");
     #endif
         return ChamberlainCodeBrute(7);
     }
     
     bool CC1101_BRUTE::Chamberlain8BitBrute() {
     #if DEBUG_ENABLED
-        Serial.println("Chamberlain8BitBrute: Invoking ChamberlainCodeBrute with 8 bits");
+        //Serial.println("Chamberlain8BitBrute: Invoking ChamberlainCodeBrute with 8 bits");
     #endif
         return ChamberlainCodeBrute(8);
     }
     
     bool CC1101_BRUTE::Chamberlain9BitBrute() {
     #if DEBUG_ENABLED
-        Serial.println("Chamberlain9BitBrute: Invoking ChamberlainCodeBrute with 9 bits");
+        //Serial.println("Chamberlain9BitBrute: Invoking ChamberlainCodeBrute with 9 bits");
     #endif
         return ChamberlainCodeBrute(9);
     }
     
     bool CC1101_BRUTE::Linear10BitBrute() {
     #if DEBUG_ENABLED
-        Serial.println("Linear10BitBrute: Starting brute force for 10-bit Linear protocol");
+        //Serial.println("Linear10BitBrute: Starting brute force for 10-bit Linear protocol");
     #endif
         sendingFlag = true;
         pinMode(CC1101_CCGDO0A, OUTPUT);
         digitalWrite(CC1101_CCGDO0A, LOW);
     #if DEBUG_ENABLED
-        Serial.println("Linear10BitBrute: Pin configured and set LOW");
+        //Serial.println("Linear10BitBrute: Pin configured and set LOW");
     #endif
         cc1101.setFrequency(433.92);
         cc1101.setCC1101Preset(AM650);
         cc1101.loadPreset();
         cc1101.initRaw();
     #if DEBUG_ENABLED
-        Serial.println("Linear10BitBrute: CC1101 configuration complete");
+        //Serial.println("Linear10BitBrute: CC1101 configuration complete");
     #endif
     
         // For 10-bit linear protocol, brute-force codes from 0 to 1023.
         uint32_t maxCode = 1U << 10;
         for (uint32_t code = 0; code < maxCode; code++) {
     #if DEBUG_ENABLED
-            Serial.print("Linear10BitBrute: Sending code ");
-            Serial.println(code, DEC);
+            //Serial.print("Linear10BitBrute: Sending code ");
+            //Serial.println(code, DEC);
     #endif
             linearProtocol.startEncoding(code, 10);
     #if DEBUG_ENABLED
-            Serial.print("Linear10BitBrute: Encoded sample count: ");
-            Serial.println(linearProtocol.getEncodedSamples().size(), DEC);
+            //Serial.print("Linear10BitBrute: Encoded sample count: ");
+            //Serial.println(linearProtocol.getEncodedSamples().size(), DEC);
     #endif
             const std::vector<long long int>& samples = linearProtocol.getEncodedSamples();
             for (size_t j = 0; j < samples.size(); j += 2) {
     #if DEBUG_ENABLED
-                Serial.print("Linear10BitBrute: Pulse pair [");
-                Serial.print(j);
-                Serial.print("]: high=");
-                Serial.print(samples[j]);
-                Serial.print(", low=");
-                Serial.println(samples[j + 1]);
+                //Serial.print("Linear10BitBrute: Pulse pair [");
+                //Serial.print(j);
+                //Serial.print("]: high=");
+                //Serial.print(samples[j]);
+                //Serial.print(", low=");
+                //Serial.println(samples[j + 1]);
     #endif
                 gpio_set_level(CC1101_CCGDO0A, HIGH);
                 delayMicroseconds(samples[j]);
@@ -446,14 +446,14 @@ bool CC1101_BRUTE::ChamberlainCodeBrute(uint8_t bitCount) {
             gpio_set_level(CC1101_CCGDO0A, LOW);
             delayMicroseconds(1000);
     #if DEBUG_ENABLED
-            Serial.println("Linear10BitBrute: Code sent");
+            //Serial.println("Linear10BitBrute: Code sent");
     #endif
             counter++;
         }
         sendingFlag = false;
     #if DEBUG_ENABLED
-        Serial.print("Linear10BitBrute: Completed brute force, total codes sent: ");
-        Serial.println(counter);
+        //Serial.print("Linear10BitBrute: Completed brute force, total codes sent: ");
+        //Serial.println(counter);
     #endif
         return true;
     }

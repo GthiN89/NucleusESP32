@@ -37,7 +37,7 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("Sending...");
+  //Serial.println("Sending...");
 
   // Set up what we want to send. See ir_Trotec.cpp for all the options.
   ac.setPower(true);
@@ -49,7 +49,7 @@ void loop() {
 #if SEND_TROTEC
   ac.send();
 #else  // SEND_TROTEC
-  Serial.println("Can't send because SEND_TROTEC has been disabled.");
+  //Serial.println("Can't send because SEND_TROTEC has been disabled.");
 #endif  // SEND_TROTEC
 
   delay(5000);

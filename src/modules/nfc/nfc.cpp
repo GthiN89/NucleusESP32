@@ -24,9 +24,9 @@
 //      digitalWrite(RFID_CS, LOW);
 
 //      mfrc522.PCD_Init();   // Init MFRC522 board.
-//      Serial.println("RFID enable");
+//      //Serial.println("RFID enable");
 //    MFRC522Debug::PCD_DumpVersionToSerial(mfrc522, Serial);	// Show details of PCD - MFRC522 Card Reader details.
-// 	 Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
+// 	 //Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
 //    mfrc522.PCD_SoftPowerDown();
 // }
 
@@ -39,19 +39,19 @@
 
 //     if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
 
-//       Serial.print(F("Reader "));
+//       //Serial.print(F("Reader "));
 //       static uint8_t i = 0;
 //       i++;
-//       Serial.print(i);
+//       //Serial.print(i);
       
 //       // Show some details of the PICC (that is: the tag/card).
-//       Serial.print(F(": Card UID:"));
+//       //Serial.print(F(": Card UID:"));
 //       MFRC522Debug::PrintUID(Serial, mfrc522.uid);
-//       Serial.println();
+//       //Serial.println();
       
-//       Serial.print(F("PICC type: "));
+//       //Serial.print(F("PICC type: "));
 //       MFRC522::PICC_Type piccType = mfrc522.PICC_GetType(mfrc522.uid.sak);
-//       Serial.println(MFRC522Debug::PICC_GetTypeName(piccType));
+//       //Serial.println(MFRC522Debug::PICC_GetTypeName(piccType));
       
 //       // Halt PICC.
 //       mfrc522.PICC_HaltA();

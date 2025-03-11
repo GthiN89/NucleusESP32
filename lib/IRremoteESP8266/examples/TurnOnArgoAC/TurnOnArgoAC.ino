@@ -37,7 +37,7 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("Sending...");
+  //Serial.println("Sending...");
 
   // Set up what we want to send. See ir_Argo.cpp for all the options.
   ac.setPower(true);
@@ -49,7 +49,7 @@ void loop() {
   // Now send the IR signal.
   ac.send();
 #else  // SEND_ARGO
-  Serial.println("Can't send because SEND_ARGO has been disabled.");
+  //Serial.println("Can't send because SEND_ARGO has been disabled.");
 #endif  // SEND_ARGO
 
   delay(5000);

@@ -59,9 +59,9 @@ bool SMC5326Protocol::decodeReversed(long long int* samples, size_t sampleCount)
 void SMC5326Protocol::feed(bool level, uint32_t duration) {
     switch(decoderState) {
         case DecoderStepReset:
-            Serial.println(F("State: DecoderStepReset"));
+            //Serial.println(F("State: DecoderStepReset"));
             if (!level && (duration_diff(duration, te_short * 24) < (te_delta * 12))) {
-                Serial.println(F("Preamble detected, switching to SaveDuration"));
+                //Serial.println(F("Preamble detected, switching to SaveDuration"));
                 decoderState = DecoderStepSaveDuration;
                 decodedData = 0;
                 decodeCountBit = 0;
@@ -70,25 +70,25 @@ void SMC5326Protocol::feed(bool level, uint32_t duration) {
             break;
 
         case DecoderStepSaveDuration:
-            Serial.println(F("State: DecoderStepSaveDuration"));
+            //Serial.println(F("State: DecoderStepSaveDuration"));
             if (level) {
                 te_last = duration;
                 te += duration;
                 decoderState = DecoderStepCheckDuration;
-                Serial.print(F("Captured HIGH duration: "));
-                Serial.println(duration);
+                //Serial.print(F("Captured HIGH duration: "));
+                //Serial.println(duration);
             } else {
-                Serial.println(F("Expected HIGH but got LOW. Resetting state."));
+                //Serial.println(F("Expected HIGH but got LOW. Resetting state."));
                 decoderState = DecoderStepReset;
             }
             break;
 
         case DecoderStepCheckDuration:
-            Serial.println(F("State: DecoderStepCheckDuration"));
+            //Serial.println(F("State: DecoderStepCheckDuration"));
             if (!level) {
                 if (duration >= (te_long * 2)) {
-                    Serial.print(F("Long LOW detected: "));
-                    Serial.println(duration);
+                    //Serial.print(F("Long LOW detected: "));
+                    //Serial.println(duration);
                     decoderState = DecoderStepSaveDuration;
                     if (decodeCountBit == min_count_bit) {
                         if ((lastData == decodedData) && (lastData != 0)) {
@@ -96,14 +96,14 @@ void SMC5326Protocol::feed(bool level, uint32_t duration) {
                             finalCode = decodedData;
                             finalBitCount = decodeCountBit;
                             validCodeFound = true;
-                            Serial.println(F("Valid code found!"));
+                            //Serial.println(F("Valid code found!"));
                         }
                         lastData = decodedData;
                     }
                     decodedData = 0;
                     decodeCountBit = 0;
                     te = 0;
-                    Serial.println(F("End of frame detected, resetting decode state."));
+                    //Serial.println(F("End of frame detected, resetting decode state."));
                     break;
                 }
 
@@ -112,18 +112,18 @@ void SMC5326Protocol::feed(bool level, uint32_t duration) {
                     (duration_diff(duration, te_long) < (te_delta * 3))) {
                     addBit(0);
                     decoderState = DecoderStepSaveDuration;
-                    Serial.println(F("Decoded bit: 0"));
+                    //Serial.println(F("Decoded bit: 0"));
                 } else if ((duration_diff(te_last, te_long) < (te_delta * 3)) &&
                            (duration_diff(duration, te_short) < te_delta)) {
                     addBit(1);
                     decoderState = DecoderStepSaveDuration;
-                    Serial.println(F("Decoded bit: 1"));
+                    //Serial.println(F("Decoded bit: 1"));
                 } else {
-                    Serial.println(F("Timing mismatch, resetting decode state."));
+                    //Serial.println(F("Timing mismatch, resetting decode state."));
                     decoderState = DecoderStepReset;
                 }
             } else {
-                Serial.println(F("Expected LOW but got HIGH, resetting decode state."));
+                //Serial.println(F("Expected LOW but got HIGH, resetting decode state."));
                 decoderState = DecoderStepReset;
             }
             break;
@@ -140,11 +140,11 @@ bool SMC5326Protocol::decode(long long int* samples, size_t sampleCount) {
             feed(false, (uint32_t)(-samples[i]));
         }
         if (validCodeFound) {
-            Serial.println(F("SMC5326: valid code found"));
+            //Serial.println(F("SMC5326: valid code found"));
             return true;
         }
     }
-    Serial.println(F("SMC5326: no valid code detected"));
+    //Serial.println(F("SMC5326: no valid code detected"));
     return false;
 }
 
@@ -152,15 +152,15 @@ void SMC5326Protocol::yield(unsigned int code) {
     samplesToSend.clear();
     
 
-    Serial.print(F("Expected size: "));
-    Serial.println((min_count_bit * 2) + 2);
+    //Serial.print(F("Expected size: "));
+    //Serial.println((min_count_bit * 2) + 2);
     
     for (uint8_t i = min_count_bit; i > 0; i--) {
         bool bitIsOne = (code & (1 << (i - 1))) != 0;
-        Serial.print(F("Bit "));
-        Serial.print(i - 1);
-        Serial.print(F(": "));
-        Serial.println(bitIsOne ? F("1") : F("0"));
+        //Serial.print(F("Bit "));
+        //Serial.print(i - 1);
+        //Serial.print(F(": "));
+        //Serial.println(bitIsOne ? F("1") : F("0"));
         if (bitIsOne) {
             // For bit '1': send HIGH pulse for te*3, then LOW pulse for te.
             samplesToSend.push_back(te_short * 3);
@@ -173,17 +173,17 @@ void SMC5326Protocol::yield(unsigned int code) {
     }
     
     // Send Stop bit: HIGH pulse for te, then PT_GUARD: LOW pulse for te*25.
-    Serial.println(F("Sending stop bit and PT_GUARD"));
+    //Serial.println(F("Sending stop bit and PT_GUARD"));
     samplesToSend.push_back(te_short);
     samplesToSend.push_back(te_short * 25);
     samplesToSend.push_back(1000);
     
-    Serial.print(F("Yield complete, pulse sequence: "));
+    //Serial.print(F("Yield complete, pulse sequence: "));
     for (size_t i = 0; i < samplesToSend.size(); i++) {
-        Serial.print(samplesToSend[i]);
-        Serial.print(F(" "));
+        //Serial.print(samplesToSend[i]);
+        //Serial.print(F(" "));
     }
-    Serial.println();
+    //Serial.println();
     delay(5);
 }
 
@@ -230,13 +230,13 @@ String SMC5326Protocol::getCodeString() const {
 
     lv_textarea_set_text(textarea, buf);
 
-    Serial.println(F("SMC5326Protocol::getCodeString() called"));
-    Serial.print(F(" finalCode=0x"));
-    Serial.println(finalCode, HEX);
-    Serial.print(F(" finalBitCount="));
-    Serial.println(finalBitCount);
-    Serial.print(F(" te="));
-    Serial.println(te);
+    //Serial.println(F("SMC5326Protocol::getCodeString() called"));
+    //Serial.print(F(" finalCode=0x"));
+    //Serial.println(finalCode, HEX);
+    //Serial.print(F(" finalBitCount="));
+    //Serial.println(finalBitCount);
+    //Serial.print(F(" te="));
+    //Serial.println(te);
 
     return String(buf);
 }

@@ -113,25 +113,25 @@ void setup(void) {
 
   Serial.begin(115200);
   WiFi.begin(kSsid, kPassword);
-  Serial.println("");
+  //Serial.println("");
 
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    //Serial.print(".");
   }
-  Serial.println("");
-  Serial.print("Connected to ");
-  Serial.println(kSsid);
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP().toString());
+  //Serial.println("");
+  //Serial.print("Connected to ");
+  //Serial.println(kSsid);
+  //Serial.print("IP address: ");
+  //Serial.println(WiFi.localIP().toString());
 
 #if defined(ESP8266)
   if (mdns.begin(HOSTNAME, WiFi.localIP())) {
 #else  // ESP8266
   if (mdns.begin(HOSTNAME)) {
 #endif  // ESP8266
-    Serial.println("MDNS responder started");
+    //Serial.println("MDNS responder started");
     // Announce http tcp service on port 80
     mdns.addService("http", "tcp", 80);
   }
@@ -146,7 +146,7 @@ void setup(void) {
   server.onNotFound(handleNotFound);
 
   server.begin();
-  Serial.println("HTTP server started");
+  //Serial.println("HTTP server started");
 }
 
 void loop(void) {
