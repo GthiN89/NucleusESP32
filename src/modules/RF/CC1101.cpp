@@ -116,6 +116,9 @@ void IRAM_ATTR InterruptHandler(void *arg) {
 
 
 bool CC1101_CLASS::init() {
+    digitalWrite(PN532_SS, HIGH);
+    SPI.end();
+    delay(10);
     digitalWrite(CC1101_CS, LOW);
     ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
     ELECHOUSE_cc1101.Init();
@@ -625,6 +628,8 @@ void CC1101_CLASS::enableScanner(float start, float stop) {
     CC1101_CLASS::startSignalAnalyseTask();
 }
 void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength) {
+    CC1101_CLASS::init();
+    delay(5);
     uint8_t dataByte;
     uint8_t i; 
     for (i = 0; i <= messageLength; i++) 
@@ -791,29 +796,29 @@ bool CC1101_CLASS::decode() {
     //     Serial.print(CC1101_CLASS::receivedData.samples[i]);
     //     Serial.print(", ");
     // }
-    // if (!CC1101_CLASS::receivedData.signals.empty()) {
-    //     const auto& lastSignal = CC1101_CLASS::receivedData.signals.back();
-    //     for (int i = 0; i < lastSignal.samples.size(); i++) {
-    //         Serial.print(lastSignal.samples[i]);
-    //         Serial.print(", ");
-    //     }
-    // }
+    if (!CC1101_CLASS::receivedData.signals.empty()) {
+        const auto& lastSignal = CC1101_CLASS::receivedData.signals.back();
+        // for (int i = 0; i < lastSignal.samples.size(); i++) {
+        //     Serial.print(lastSignal.samples[i]);
+        //     Serial.print(", ");
+        // }
+    }
     
 
-    if (CC1101_CLASS::receivedData.samples.empty()) {
-      //  Serial.println("No pulses to decode.");
-        return false;
-    }
-        //    Serial.println("decode.");
+    // if (CC1101_CLASS::receivedData.samples.empty()) {
+    //     Serial.println("No pulses to decode.");
+    //     return false;
+    // }
+    //         Serial.println("decode.");
 
 
     filterSignal();
-    // Serial.println("count:");
-    // Serial.println(CC1101_CLASS::receivedData.samples.size());
-    // Serial.println("Pulses:");
-    // Serial.println(pulses[0]);
-    // Serial.println(pulses[1]);
-    // delay(5);
+    Serial.println("count:");
+    Serial.println(CC1101_CLASS::receivedData.samples.size());
+    Serial.println("Pulses:");
+    Serial.println(pulses[0]);
+    Serial.println(pulses[1]);
+    delay(5);
     // Serial.println("filtered values\n");
     // for(int i = 0; i < CC1101.receivedData.filtered.size(); i++) {
     //     Serial.print(CC1101.receivedData.filtered[i]);
@@ -830,7 +835,7 @@ bool CC1101_CLASS::decode() {
 
     if ((DURATION_DIFF(pulses[0], 320) < 50) &&
         (DURATION_DIFF(pulses[1], 640) < 90)) {
-        //    Serial.println("is Came");
+            Serial.println("is Came");
         if (cameProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             cameProtocol.getCodeString();
             return true;
@@ -839,7 +844,7 @@ bool CC1101_CLASS::decode() {
 
     if ((DURATION_DIFF(pulses[0], 555) < 40) &&
         (DURATION_DIFF(pulses[1], 1111) < 90)) {
-   //         Serial.println("is Ansonic");
+            Serial.println("is Ansonic");
         if (ansonicProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             ansonicProtocol.getCodeString();
             return true;
@@ -848,7 +853,7 @@ bool CC1101_CLASS::decode() {
 
     if ((DURATION_DIFF(pulses[0], 700) < 50) &&
         (DURATION_DIFF(pulses[1], 1400) < 90)) {
- //           Serial.println("is NiceFlow");
+            Serial.println("is NiceFlow");
         if (niceFloProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             niceFloProtocol.getCodeString();
             return true;
@@ -857,7 +862,7 @@ bool CC1101_CLASS::decode() {
 
     if ((DURATION_DIFF(pulses[0], 300) < 50) &&
         (DURATION_DIFF(pulses[1], 900) < 90)) {
-    //        Serial.println("is SMC5326");
+            Serial.println("is SMC5326");
         if (smc5326Protocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
             smc5326Protocol.getCodeString();
             return true;
@@ -874,6 +879,8 @@ bool CC1101_CLASS::decode() {
 
 
 void CC1101_CLASS::sendRaw() {
+    CC1101_CLASS::init();
+    delay(5);
             Signal samplesData;
 
             if(CC1101_CLASS::allData.signals.empty()) return;
@@ -942,12 +949,10 @@ void CC1101_CLASS::enableRCSwitch(){
 void CC1101_CLASS::initRaw() {
   Serial.print("Init CC1101 raw");
 
-    if(!CC1101_is_initialized) {
+
         CC1101_CLASS::init();
-        CC1101_is_initialized = true;
-    } else {
-        ELECHOUSE_cc1101.setSidle();
-    }
+
+
 
     ELECHOUSE_cc1101.Init();                // must be set to initialize the cc1101!
     ELECHOUSE_cc1101.setGDO0(CC1101_CCGDO0A);         // set lib internal gdo pin (gdo0). Gdo2 not use for this example.
@@ -1014,6 +1019,8 @@ void CC1101_CLASS::enableTransmit()
 {
     digitalWrite(CC1101_CS, LOW);
     pinMode(CC1101_CCGDO0A, OUTPUT); 
+    CC1101_CLASS::init();
+    delay(5);
     ELECHOUSE_cc1101.Init();
     ELECHOUSE_cc1101.setMHZ(CC1101_MHZ);               // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
     ELECHOUSE_cc1101.setModulation(CC1101_MODULATION); // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
@@ -1049,6 +1056,8 @@ void CC1101_CLASS::saveSignal() {
 }
 
 void CC1101_CLASS::sendEncoded(RFProtocol protocol, float frequency, int16_t bitLenght, int8_t repeats, int64_t code){
+    CC1101_CLASS::init();
+    delay(5);
     pinMode(CC1101_CCGDO0A, OUTPUT);
     digitalWrite(CC1101_CCGDO0A, LOW);
     Serial.println(frequency);

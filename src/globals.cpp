@@ -20,7 +20,8 @@ bool teslaSucessFlag;
 uint8_t runningModule = MODULE_NONE;
 
 
-NFC::NFC_CLASS nfc;
+Adafruit_PN532 nfc(PN532_SS, &SPI);
+NFC::NFC_CLASS NFCPN;
 
 
 ////////////////////////////////////////

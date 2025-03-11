@@ -63,6 +63,7 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 #include <string.h>
 #include "SPI.h"
 #include "Arduino.h"
+#include "Adafruit_PN532.h"
 #include "modules/nfc/nfc.h"
 
 namespace NFC {
@@ -132,8 +133,8 @@ namespace NFC {
 
 //ir tx = pin 26 rx 34
 
-extern NFC::NFC_CLASS nfc;
-
+extern Adafruit_PN532 nfc;
+extern NFC::NFC_CLASS NFCPN;
 
 
 

@@ -16,6 +16,8 @@ This is my first project in C, which I began in early summer, with prior experie
 I learned a lot. This project implements decoding of the filtered and reconstructed subGhz radio signal, acting as a codegrabber, and its being tested on various real HW im able to get cheap. But it must be dirt. Dirty cheap...
 *clones - low secure aftermarket car and gate modules.
 
+After lets say finalizing SubGhz part, i started working on NFC/RFID part witn PN532 connected on shared SPI with CC1101
+
 **Status**: Work in Progress (WIP)  
 Please go easy on it; it's still evolving!  
 Some push work, some not, in some all functiuons work, and in other one is push much far, but some not work at all.... After finishing ancoders/decders, i will create "stable" relase, but so far jus development without protocol....

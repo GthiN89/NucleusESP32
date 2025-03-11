@@ -164,9 +164,9 @@ void EVENTS::btn_event_NFC_menu_run(lv_event_t* e) {
         delay(5);
         digitalWrite(PN532_SS, LOW);
         delay(5);
-        nfc.init();
+        NFCPN.init();
         delay(5);
-        nfc.NFCloop();
+        NFCPN.NFCloop();
         delay(5);
     }
 }

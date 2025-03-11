@@ -99,7 +99,7 @@ void setup() {
     SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
     delay(10);                      
 
-    if (nfc.init()) {
+    if (NFCPN.init()) {
         Serial.println("PN532 initialized.");
     } else {
         Serial.println("PN532 initialization failed!");
