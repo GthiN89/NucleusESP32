@@ -19,6 +19,10 @@ bool teslaSucessFlag;
 
 uint8_t runningModule = MODULE_NONE;
 
+
+NFC::NFC_CLASS nfc;
+
+
 ////////////////////////////////////////
 //FLAGS
 //////////////////

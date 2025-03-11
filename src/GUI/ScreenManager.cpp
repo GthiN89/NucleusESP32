@@ -572,7 +572,7 @@ void ScreenManager::createmainMenu()
     ScreenManager::apply_neon_theme_button(btn_NFC_menu); 
 
     lv_obj_t *label_NFC_menu = lv_label_create(btn_NFC_menu);
-    lv_label_set_text(label_NFC_menu, "TEST IR TX");
+    lv_label_set_text(label_NFC_menu, "NFC TEST");
     lv_obj_center(label_NFC_menu);
 
     lv_obj_t *btn_RF24_menu = lv_btn_create(mainMenu);

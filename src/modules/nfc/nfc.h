@@ -1,17 +1,23 @@
+#ifndef NFC_H
+#define NFC_H
 
-#include "Arduino.h"
 #include "globals.h"
+#include "Arduino.h"
+#include "Adafruit_PN532.h"
+#include "SPI.h"
 
+namespace NFC {
 
-enum NFC_STATE {
-    NFC_IDLE,
-    NFC_READ,
+class NFC_CLASS {
+public:
+    NFC_CLASS();
+    bool init();
+    Adafruit_PN532 nfc;
+    void NFCloop(void);
+private:
+
 };
 
-//extern NFC_STATE NFCCurrentState;
-//extern volatile bool cardDetected;
+}
 
-
-//void enableRFID();
-//void readLoop();
-//void disableRFID();
+#endif

@@ -1,68 +1,154 @@
-// #include <SPI.h>
-// #include <MFRC522v2.h>
-// #include <MFRC522DriverSPI.h>
-// #include <MFRC522DriverPinSimple.h>
-// #include <MFRC522Debug.h>
-// #include "nfc.h"
-// #include "globals.h"
-//  MFRC522DriverPinSimple ss_pin(RFID_CS); // Create pin driver. See typical pin layout above.
-
-//  //SPIClass &spiClass = SPI; // Alternative SPI e.g. SPI2 or from library e.g. softwarespi.
-
-
-// MFRC522DriverSPI driver{ss_pin}; // Create SPI driver.
-
-// MFRC522 mfrc522{driver}; // Create MFRC522 instance.
+#include "nfc.h"
 
 
 
-// NFC_STATE NFCCurrentState = NFC_IDLE;
+namespace NFC {
 
-// void enableRFID() {
-//      digitalWrite(RF24_CS, HIGH);
-//      digitalWrite(CC1101_CS, HIGH);
-//      digitalWrite(RFID_CS, LOW);
 
-//      mfrc522.PCD_Init();   // Init MFRC522 board.
-//      //Serial.println("RFID enable");
-//    MFRC522Debug::PCD_DumpVersionToSerial(mfrc522, Serial);	// Show details of PCD - MFRC522 Card Reader details.
-// 	 //Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
-//    mfrc522.PCD_SoftPowerDown();
-// }
 
-// void readLoop(){
-//   mfrc522.PCD_Reset();
-//   mfrc522.PCD_SoftPowerUp();
+ 
+Adafruit_PN532 nfc(PN532_SS, &SPI);   
 
-// 	//Dump debug info about the card; PICC_HaltA() is automatically called.
-//   MFRC522Debug::PICC_DumpToSerial(mfrc522, Serial, &(mfrc522.uid));
+NFC_CLASS::NFC_CLASS() : nfc(PN532_SS, &SPI) {}
 
-//     if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+bool NFC_CLASS::init(){
 
-//       //Serial.print(F("Reader "));
-//       static uint8_t i = 0;
-//       i++;
-//       //Serial.print(i);
-      
-//       // Show some details of the PICC (that is: the tag/card).
-//       //Serial.print(F(": Card UID:"));
-//       MFRC522Debug::PrintUID(Serial, mfrc522.uid);
-//       //Serial.println();
-      
-//       //Serial.print(F("PICC type: "));
-//       MFRC522::PICC_Type piccType = mfrc522.PICC_GetType(mfrc522.uid.sak);
-//       //Serial.println(MFRC522Debug::PICC_GetTypeName(piccType));
-      
-//       // Halt PICC.
-//       mfrc522.PICC_HaltA();
-//       // Stop encryption on PCD.
-//       mfrc522.PCD_StopCrypto1();
-    
-//   }
-// }
+    digitalWrite(PN532_SS, LOW);   
+    SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
+    delay(10);
 
-// void disableRFID() {
-//     mfrc522.PCD_SoftPowerDown();
-//     digitalWrite(RFID_CS, HIGH);
+    nfc.begin();
 
-// }
+  uint32_t versiondata = nfc.getFirmwareVersion();
+  if (! versiondata) {
+    Serial.print("Didn't find PN53x board");
+    while (1); // halt
+  }
+  // Got ok data, print it out!
+  Serial.print("Found chip PN5"); Serial.println((versiondata>>24) & 0xFF, HEX);
+  Serial.print("Firmware ver. "); Serial.print((versiondata>>16) & 0xFF, DEC);
+  Serial.print('.'); Serial.println((versiondata>>8) & 0xFF, DEC);
+    return true;
+}
+
+void NFC_CLASS::NFCloop(void)
+{
+    Serial.println("NFC TEST");
+    uint32_t versiondata = nfc.getFirmwareVersion();
+    if (! versiondata) {
+      Serial.print("Didn't find PN53x board");
+      while (1); // halt
+    }
+    // Got ok data, print it out!
+    Serial.print("Found chip PN5"); Serial.println((versiondata>>24) & 0xFF, HEX);
+    Serial.print("Firmware ver. "); Serial.print((versiondata>>16) & 0xFF, DEC);
+    Serial.print('.'); Serial.println((versiondata>>8) & 0xFF, DEC);
+
+    uint8_t success;                          // Flag to check if there was an error with the PN532
+    uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
+    uint8_t uidLength;                        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
+    uint8_t currentblock;                     // Counter to keep track of which block we're on
+    bool authenticated = false;               // Flag to indicate if the sector is authenticated
+    uint8_t data[16];                         // Array to store block data during reads
+  
+    // Keyb on NDEF and Mifare Classic should be the same
+    uint8_t keyuniversal[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+  
+    // Wait for an ISO14443A type cards (Mifare, etc.).  When one is found
+    // 'uid' will be populated with the UID, and uidLength will indicate
+    // if the uid is 4 bytes (Mifare Classic) or 7 bytes (Mifare Ultralight)
+    success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength);
+  
+    if (success) {
+      // Display some basic information about the card
+      Serial.println("Found an ISO14443A card");
+      Serial.print("  UID Length: ");Serial.print(uidLength, DEC);Serial.println(" bytes");
+      Serial.print("  UID Value: ");
+      nfc.PrintHex(uid, uidLength);
+      Serial.println("");
+  
+      if (uidLength == 4)
+      {
+        // We probably have a Mifare Classic card ...
+        Serial.println("Seems to be a Mifare Classic card (4 byte UID)");
+  
+        // Now we try to go through all 16 sectors (each having 4 blocks)
+        // authenticating each sector, and then dumping the blocks
+        for (currentblock = 0; currentblock < 64; currentblock++)
+        {
+          // Check if this is a new block so that we can reauthenticate
+          if (nfc.mifareclassic_IsFirstBlock(currentblock)) authenticated = false;
+  
+          // If the sector hasn't been authenticated, do so first
+          if (!authenticated)
+          {
+            // Starting of a new sector ... try to to authenticate
+            Serial.print("------------------------Sector ");Serial.print(currentblock/4, DEC);Serial.println("-------------------------");
+            if (currentblock == 0)
+            {
+                // This will be 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF for Mifare Classic (non-NDEF!)
+                // or 0xA0 0xA1 0xA2 0xA3 0xA4 0xA5 for NDEF formatted cards using key a,
+                // but keyb should be the same for both (0xFF 0xFF 0xFF 0xFF 0xFF 0xFF)
+                success = nfc.mifareclassic_AuthenticateBlock (uid, uidLength, currentblock, 1, keyuniversal);
+            }
+            else
+            {
+                // This will be 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF for Mifare Classic (non-NDEF!)
+                // or 0xD3 0xF7 0xD3 0xF7 0xD3 0xF7 for NDEF formatted cards using key a,
+                // but keyb should be the same for both (0xFF 0xFF 0xFF 0xFF 0xFF 0xFF)
+                success = nfc.mifareclassic_AuthenticateBlock (uid, uidLength, currentblock, 1, keyuniversal);
+            }
+            if (success)
+            {
+              authenticated = true;
+            }
+            else
+            {
+              Serial.println("Authentication error");
+            }
+          }
+          // If we're still not authenticated just skip the block
+          if (!authenticated)
+          {
+            Serial.print("Block ");Serial.print(currentblock, DEC);Serial.println(" unable to authenticate");
+          }
+          else
+          {
+            // Authenticated ... we should be able to read the block now
+            // Dump the data into the 'data' array
+            success = nfc.mifareclassic_ReadDataBlock(currentblock, data);
+            if (success)
+            {
+              // Read successful
+              Serial.print("Block ");Serial.print(currentblock, DEC);
+              if (currentblock < 10)
+              {
+                Serial.print("  ");
+              }
+              else
+              {
+                Serial.print(" ");
+              }
+              // Dump the raw data
+              nfc.PrintHexChar(data, 16);
+            }
+            else
+            {
+              // Oops ... something happened
+              Serial.print("Block ");Serial.print(currentblock, DEC);
+              Serial.println(" unable to read this block");
+            }
+          }
+        }
+      }
+      else
+      {
+        Serial.println("Ooops ... this doesn't seem to be a Mifare Classic card!");
+      }
+    }
+    // Wait a bit before trying again
+
+}
+
+
+}

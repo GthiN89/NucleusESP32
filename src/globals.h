@@ -10,6 +10,7 @@
 #include <vector>
 #include <bitset>
 
+
     enum State {
         IDLE,
         BLUETOOTH_JAM,
@@ -62,6 +63,12 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 #include <string.h>
 #include "SPI.h"
 #include "Arduino.h"
+#include "modules/nfc/nfc.h"
+
+namespace NFC {
+    class NFC_CLASS;
+}
+
    //---------------------------------------------------------------------------//
   //-----------------------------SETINGS---------------------------------------//
  //---------------------------------------------------------------------------//
@@ -81,26 +88,26 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 #define RF24_CE  CCGDO0A
 
 
-//CYD Variant E32R28T
-#define CC1101_CS 35
-#define CCGDO0A GPIO_NUM_27      
-#define CYD_MOSI 23   // Master Out Slave In
-#define CYD_MISO 19  // Master In Slave Out
-#define CYD_SCLK 18  // Serial Clock
+// //CYD Variant E32R28T
+// #define CC1101_CS 35
+// #define CCGDO0A GPIO_NUM_27      
+// #define CYD_MOSI 23   // Master Out Slave In
+// #define CYD_MISO 19  // Master In Slave Out
+// #define CYD_SCLK 18  // Serial Clock
 
 //---------------------
 
-// #define CYD_MOSI 21   // Master Out Slave In
-// #define CYD_MISO 35  // Master In Slave Out
-// #define CYD_SCLK 22  // Serial Clock
+ #define CYD_MOSI 21   // Master Out Slave In
+ #define CYD_MISO 35  // Master In Slave Out
+ #define CYD_SCLK 22  // Serial Clock
 
 // Pin configuration for CC1101 nfc CC-27 NRF24 CC-16
-//#define CC1101_CS 27    // Chip Select
+#define CC1101_CS 27    // Chip Select
 #define CC1101_MOSI CYD_MOSI   // Master Out Slave In
 #define CC1101_MISO CYD_MISO  // Master In Slave Out
 #define CC1101_SCLK CYD_SCLK  // Serial Clock
 
-//#define CCGDO0A GPIO_NUM_17      // GDO0-NFC IRQ, NF IRQ - input only
+#define CCGDO0A GPIO_NUM_17      // GDO0-NFC IRQ, NF IRQ - input only
 // #define CCGDO2A GPIO_NUM_4      // GDO2 -rst - input output
 
 #define CC1101_CCGDO0A CCGDO0A      // GDO0
@@ -117,8 +124,18 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 
 #define SD_CS 5 // SD card CS pin
 
+#define PN532_SCK  (CYD_SCLK)
+#define PN532_MOSI (CYD_MOSI)
+#define PN532_SS   (16)
+#define PN532_MISO (CYD_MISO)
+
 
 //ir tx = pin 26 rx 34
+
+extern NFC::NFC_CLASS nfc;
+
+
+
 
 
 class Jammer; // Forward declaration if needed

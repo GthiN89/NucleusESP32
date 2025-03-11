@@ -18,6 +18,7 @@ using namespace std;
 #include "modules/RF/Radio.h"
 #include "main.h"
 #include "modules/IR/ir.h"
+#include "modules/nfc/nfc.h"
 
 
 #define MAX_PATH_LENGTH 256
@@ -157,11 +158,16 @@ void EVENTS::btn_event_IR_menu_run(lv_event_t* e) {
 
 void EVENTS::btn_event_NFC_menu_run(lv_event_t* e) {
      lv_event_code_t code = lv_event_get_code(e);
-     IR_CLASS ir;
+     
     if (code == LV_EVENT_CLICKED) {
-      //   ir.setupIR();
-         ir.sendPower();
-
+        digitalWrite(CC1101_CS, HIGH);
+        delay(5);
+        digitalWrite(PN532_SS, LOW);
+        delay(5);
+        nfc.init();
+        delay(5);
+        nfc.NFCloop();
+        delay(5);
     }
 }
 

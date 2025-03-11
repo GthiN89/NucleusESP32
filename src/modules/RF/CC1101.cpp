@@ -116,6 +116,7 @@ void IRAM_ATTR InterruptHandler(void *arg) {
 
 
 bool CC1101_CLASS::init() {
+    digitalWrite(CC1101_CS, LOW);
     ELECHOUSE_cc1101.setSpiPin(CC1101_SCLK, CC1101_MISO, CC1101_MOSI, CC1101_CS);
     ELECHOUSE_cc1101.Init();
 
