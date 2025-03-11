@@ -100,11 +100,11 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 #define CC1101_MISO CYD_MISO  // Master In Slave Out
 #define CC1101_SCLK CYD_SCLK  // Serial Clock
 
-#define CCGDO0A GPIO_NUM_17      // GDO0-NFC IRQ, NF IRQ - input only
-#define CCGDO2A GPIO_NUM_4      // GDO2 -rst - input output
+//#define CCGDO0A GPIO_NUM_17      // GDO0-NFC IRQ, NF IRQ - input only
+// #define CCGDO2A GPIO_NUM_4      // GDO2 -rst - input output
 
 #define CC1101_CCGDO0A CCGDO0A      // GDO0
-#define CC1101_CCGDO2A CCGDO2A      // GDO2 -rst NF CE
+#define CC1101_CCGDO2A CCGDO0A      // GDO2 -rst NF CE
 
 #define CMD_READ_Y  0x90 // Command for XPT2046 to read Y position
 #define CMD_READ_X  0xD0 // Command for XPT2046 to read X position
