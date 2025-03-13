@@ -30,7 +30,7 @@ public:
     
     CC1101_PRESET preset;
 
-    String getCodeString() const;
+    String getCodeString(uint64_t shortPulse, uint64_t longPulse) const;
 
 
     bool hasValidCode() const;

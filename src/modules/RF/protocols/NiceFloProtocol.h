@@ -13,7 +13,7 @@ public:
 
     void reset();
     bool decode(long long int* samples, size_t sampleCount);
-    String getCodeString() const;
+    String getCodeString(uint64_t shortPulse, uint64_t longPulse) const;
     bool hasValidCode() const;
     void yield(unsigned int hexValue);
     CC1101_PRESET preset;

@@ -182,7 +182,7 @@ void AnsonicProtocol::checkRemoteController() {
 }
 
 
-String AnsonicProtocol::getCodeString() const {
+String AnsonicProtocol::getCodeString(uint64_t shortPulse, uint64_t longPulse) const {
     uint16_t localDip = (finalCode & 0x0FFF);
     uint8_t  localBtn = ((finalCode >> 1) & 0x3);
 
@@ -213,13 +213,19 @@ String AnsonicProtocol::getCodeString() const {
         (localDip & 0x0020 ? '1' : '0'),
         (localDip & 0x0010 ? '1' : '0'),
         (localDip & 0x0001 ? '1' : '0'),
-        (localDip & 0x0008 ? '1' : '0')
+        (localDip & 0x0008 ? '1' : '0'),
+        "Short pulse:",
+        shortPulse,
+        "\n",
+        "Short pulse:",
+        longPulse,
+        "\n"
     );
 
     lv_textarea_set_text(textarea, buf);
 
     // Debug prints
-    //Serial.println(F("AnsonicProtocol::getCodeString() called"));
+    //Serial.println(F("AnsonicProtocol::getCodeString(uint64_t shortPulse, uint64_t longPulse) called"));
     //Serial.print(F(" finalBitCount: "));
     //Serial.println(finalBitCount);
     //Serial.print(F(" finalCode: 0x"));

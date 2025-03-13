@@ -16,13 +16,6 @@
 EVENTS events;
 
 
-
-char** file_list; 
-int file_count = 0;
-lv_obj_t* list;
-
-const char* pathBUffer;
-
 lv_obj_t* previous_screen = NULL; 
 
 
@@ -47,18 +40,13 @@ ScreenManager::ScreenManager()
       C1101preset_container_(nullptr),
       C1101PTK_container_(nullptr),
       C1101SYNC_container_(nullptr),
-      topLabel_RCSwitchMethod_container_(nullptr),
       secondLabel_container_(nullptr),
-      text_area_replay(nullptr),
-      button_container_RCSwitchMethod2_(nullptr),
-      button_container_RCSwitchMethod1_(nullptr),
-      button_container_IR_REC1_(nullptr),
-      button_container_IR_REC2_(nullptr),
       quareLine_container(nullptr),
       appScreen_(nullptr),
       BruteCounterLabel(nullptr),
-      keyboard_encoder(nullptr)     
-  
+      bitLenght_container_(nullptr),
+      repeats_container_(nullptr),
+      frequency_container_(nullptr)
 {
 }
 
@@ -75,7 +63,7 @@ lv_obj_t *ScreenManager::getFreqInput()
 
 lv_obj_t *ScreenManager::getTextArea()
 {
-    return text_area_replay; 
+    return text_area_; 
 }
 
 lv_obj_t *ScreenManager::getTextAreaRCSwitchMethod()
@@ -83,15 +71,9 @@ lv_obj_t *ScreenManager::getTextAreaRCSwitchMethod()
     return text_area_;
 }
 
-lv_obj_t *ScreenManager::getTextAreaSourAple()
-{
-    return text_area_SourApple;
-}
 
-lv_obj_t *ScreenManager::getTextAreaBTSpam()
-{
-    return text_area_BTSpam;
-}
+
+
 
 lv_obj_t *ScreenManager::getKeyboardFreq()
 {
@@ -141,8 +123,13 @@ void ScreenManager::createReplayScreen() {
     lv_obj_set_style_pad_left(topLabel_container_, 10, LV_PART_MAIN);
     lv_obj_set_style_pad_right(topLabel_container_, 0, LV_PART_MAIN);
     containerHelper.fillTopContainer(topLabel_container_, "MHz:  ", TEXT_AREA, &customPreset, "433.92", "433.92", 10, NULL, NULL);
-    lv_obj_set_size(customPreset, 90, 30);                   
+    lv_obj_set_size(customPreset, 90, 30);    
+    kb_freq_ = KeyboardHelper::createKeyboard(appScreen_, LV_KEYBOARD_MODE_NUMBER);
+    lv_obj_add_flag(kb_freq_, LV_OBJ_FLAG_HIDDEN);               
     lv_obj_add_event_cb(customPreset, EVENTS::ta_freq_event_cb, LV_EVENT_ALL, (void *)"freq");
+    lv_keyboard_set_textarea(kb_freq_, customPreset);
+
+ 
 
     containerHelper.createContainer(&secondLabel_container_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
     lv_obj_set_style_border_width(secondLabel_container_, 0, LV_PART_MAIN);
@@ -169,40 +156,41 @@ void ScreenManager::createReplayScreen() {
     lv_obj_add_event_cb(dropdown_1, EVENTS::ta_preset_event_cb, LV_EVENT_VALUE_CHANGED, dropdown_1);
     lv_obj_set_width(dropdown_1, 120);  
     dropdown_2 = lv_dropdown_create(secondLabel_container_);
-    lv_dropdown_set_options(dropdown_2, "Raw\n"
+    lv_dropdown_set_options(dropdown_2, "Decoder\n"
+                                "Raw only\n"
                                 "RC-Switch\n"
-                                "ESPiLight\n"
-                                "RTL_433\n"
+                             //   "ESPiLight\n"
+                             //   "RTL_433\n"
                                 );
     lv_obj_set_width(dropdown_2, 120);  
     lv_obj_add_event_cb(dropdown_2, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, dropdown_2);
 
 
     // Create main text area
-    text_area_replay = lv_textarea_create(appScreen_);
-    lv_obj_set_size(text_area_replay, 240, 120);
-    lv_obj_align(text_area_replay, LV_ALIGN_CENTER, 0, -20);
-    lv_textarea_set_text(text_area_replay, "RAW protocol tool.\nPress listen to start.");
-    lv_obj_set_scrollbar_mode(text_area_replay, LV_SCROLLBAR_MODE_OFF); 
-    lv_textarea_set_cursor_click_pos(text_area_replay, false);
+    text_area_ = lv_textarea_create(appScreen_);
+    lv_obj_set_size(text_area_, 240, 120);
+    lv_obj_align(text_area_, LV_ALIGN_CENTER, 0, -20);
+    lv_textarea_set_text(text_area_, "RAW protocol tool.\nPress listen to start.");
+    lv_obj_set_scrollbar_mode(text_area_, LV_SCROLLBAR_MODE_OFF); 
+    lv_textarea_set_cursor_click_pos(text_area_, false);
     containerHelper.createContainer(&quareLine_container, appScreen_, LV_FLEX_FLOW_ROW, 50, 240);
 
-    containerHelper.createContainer(&button_container_RCSwitchMethod1_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&button_container1_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
 
-    lv_obj_t *listenButton = ButtonHelper::createButton(button_container_RCSwitchMethod1_, "Listen");
+    lv_obj_t *listenButton = ButtonHelper::createButton(button_container1_, "Listen");
     lv_obj_add_event_cb(listenButton, EVENTS::btn_event_RAW_REC_run, LV_EVENT_CLICKED, NULL); 
     
 
-    lv_obj_t *saveButton = ButtonHelper::createButton(button_container_RCSwitchMethod1_, "Save");
+    lv_obj_t *saveButton = ButtonHelper::createButton(button_container1_, "Save");
     lv_obj_add_event_cb(saveButton, EVENTS::save_RF_to_sd_event, LV_EVENT_CLICKED, NULL); 
 
 
-    containerHelper.createContainer(&button_container_RCSwitchMethod2_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&button_container2_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
 
-    lv_obj_t *playButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Play");
-    lv_obj_t *exitButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Exit");
+    lv_obj_t *playButton = ButtonHelper::createButton(button_container2_, "Play");
+    lv_obj_t *exitButton = ButtonHelper::createButton(button_container2_, "Exit");
 
 
     lv_obj_add_event_cb(playButton, EVENTS::sendCapturedEvent, LV_EVENT_CLICKED, NULL); 
@@ -352,25 +340,25 @@ void ScreenManager::createIRRecScreen() {
     lv_textarea_set_text(text_area_IR, "Press listen to start.");
     lv_obj_set_scrollbar_mode(text_area_IR, LV_SCROLLBAR_MODE_OFF); 
     lv_textarea_set_cursor_click_pos(text_area_IR, false);
-    containerHelper.createContainer(&button_container_IR_REC1_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&button_container1_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
 
      // Listen Button
-    lv_obj_t* listenButton = ButtonHelper::createButton(button_container_IR_REC1_, "Listen");
+    lv_obj_t* listenButton = ButtonHelper::createButton(button_container1_, "Listen");
     lv_obj_add_event_cb(listenButton, EVENTS::btn_event_IR_run, LV_EVENT_CLICKED, nullptr);
 
     // Save Button
-    lv_obj_t* saveButton = ButtonHelper::createButton(button_container_IR_REC1_, "Save");
+    lv_obj_t* saveButton = ButtonHelper::createButton(button_container1_, "Save");
    // lv_obj_add_event_cb(saveButton, EVENTS::save_signal_event, LV_EVENT_CLICKED, nullptr);
 
-    containerHelper.createContainer(&button_container_IR_REC2_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+    containerHelper.createContainer(&button_container2_, appScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
     // Play Button
-    lv_obj_t* playButton = ButtonHelper::createButton(button_container_IR_REC2_, "Play");
+    lv_obj_t* playButton = ButtonHelper::createButton(button_container2_, "Play");
     lv_obj_add_event_cb(playButton, EVENTS::btn_event_IR_run, LV_EVENT_CLICKED, nullptr);
 
     // Exit Button
-    lv_obj_t* exitButton = ButtonHelper::createButton(button_container_IR_REC2_, "Exit");
+    lv_obj_t* exitButton = ButtonHelper::createButton(button_container2_, "Exit");
 //lv_obj_add_event_cb(exitButton, EVENTS::exit_event, LV_EVENT_CLICKED, nullptr);
 }
 
@@ -396,12 +384,12 @@ void ScreenManager::createRFdetectScreen() {
     lv_label_set_text(detectLabel, "Press start");
 
 
-   containerHelper.createContainer(&button_container_Detec1_, detectScreen_, LV_FLEX_FLOW_ROW, 35, 240);
+   containerHelper.createContainer(&button_container1_, detectScreen_, LV_FLEX_FLOW_ROW, 35, 240);
 
-   lv_obj_t *startButton = ButtonHelper::createButton(button_container_Detec1_, "Start");
+   lv_obj_t *startButton = ButtonHelper::createButton(button_container1_, "Start");
     lv_obj_add_event_cb(startButton, EVENTS::btn_event_detect_run, LV_EVENT_CLICKED, NULL);
 
-   lv_obj_t *stopButton = ButtonHelper::createButton(button_container_Detec1_, "Exit");
+   lv_obj_t *stopButton = ButtonHelper::createButton(button_container1_, "Exit");
     lv_obj_add_event_cb(stopButton, EVENTS::closeCC1101scanner, LV_EVENT_CLICKED, NULL);
 }
 
@@ -410,91 +398,6 @@ void ScreenManager::draw_image() {
   lv_obj_t * img1 = lv_image_create(lv_screen_active());
   lv_image_set_src(img1, &logo_dsc);
   lv_obj_align(img1, LV_ALIGN_CENTER, 0, 0);
-}
-
-void ScreenManager::createSourAppleScreen() {
-    // ContainerHelper containerHelper;
-
-    // SourAppleScreen_ = lv_obj_create(NULL);
-
-    // lv_scr_load(SourAppleScreen_);
-    // lv_obj_delete(previous_screen);
-    // previous_screen = SourAppleScreen_;
-    // lv_obj_set_flex_flow(SourAppleScreen_, LV_FLEX_FLOW_COLUMN);
-    // lv_obj_set_flex_align(SourAppleScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-
-    // lv_obj_t * topLabel_container_;
-    // containerHelper.createContainer(&topLabel_container_, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-    // lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
-
-    // // Create main text area
-    // text_area_SourApple = lv_textarea_create(SourAppleScreen_);
-    // lv_obj_set_size(text_area_SourApple, 240, 140);
-    // lv_obj_align(text_area_SourApple, LV_ALIGN_CENTER, 0, -20);
-    // lv_textarea_set_text(text_area_SourApple, "Sour Apple\nWill spam BLE devices\nMay cause crash of Apple devices");
-    // lv_obj_set_scrollbar_mode(text_area_SourApple, LV_SCROLLBAR_MODE_OFF); 
-    // lv_textarea_set_cursor_click_pos(text_area_SourApple, false);
-
-    // lv_obj_t *buttonContainer;
-    // containerHelper.createContainer(&buttonContainer, SourAppleScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-
-
-    // lv_obj_t *listenButton = ButtonHelper::createButton(buttonContainer, "Start");
-    // lv_obj_add_event_cb(listenButton, EVENTS::btn_event_SourApple_Start, LV_EVENT_CLICKED, NULL); 
-
-    // lv_obj_t *saveButton = ButtonHelper::createButton(buttonContainer, "Stop");
-    // lv_obj_add_event_cb(saveButton, EVENTS::btn_event_SourApple_Stop, LV_EVENT_CLICKED, NULL); 
-}
-
-void ScreenManager::createBTSPamScreen() {
-    // ContainerHelper containerHelper;
-
-    // BTSpamScreen_ = lv_obj_create(NULL);
-    // lv_scr_load(BTSpamScreen_);
-    // lv_obj_delete(previous_screen);
-    // previous_screen = BTSpamScreen_;
-    // lv_obj_set_flex_flow(BTSpamScreen_, LV_FLEX_FLOW_COLUMN);
-    // lv_obj_set_flex_align(BTSpamScreen_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-
-    // lv_obj_t * topLabel_container_;
-    // containerHelper.createContainer(&topLabel_container_, BTSpamScreen_, LV_FLEX_FLOW_ROW, 35, 240);
-    // lv_obj_set_style_border_width(topLabel_container_, 0, LV_PART_MAIN);
-
-    // // Create main text area
-    // text_area_BTSpam = lv_textarea_create(BTSpamScreen_);
-    // lv_obj_set_size(text_area_BTSpam, 240, 140);
-    // lv_obj_align(text_area_BTSpam, LV_ALIGN_CENTER, 0, -20);
-    // lv_textarea_set_text(text_area_BTSpam, "Will spam BLE devices\nMay cause crash of some");
-    // lv_obj_set_scrollbar_mode(text_area_BTSpam, LV_SCROLLBAR_MODE_OFF); 
-    // lv_textarea_set_cursor_click_pos(text_area_BTSpam, false);
-
-    // lv_obj_t *buttonContainer;
-    // containerHelper.createContainer(&buttonContainer, BTSpamScreen_, LV_FLEX_FLOW_ROW_WRAP, 120, 240);
-    // lv_obj_set_flex_align(buttonContainer, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-
-    // int applle = 0;
-    // int Microsoft = 1;
-    // int Samsung = 2;
-    // int Android = 3;
-    // int ALL = 4;
-
-    // lv_obj_t *startButton = ButtonHelper::createButton(buttonContainer, "Start Apple");
-    // lv_obj_add_event_cb(startButton, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &applle); 
-
-    // lv_obj_t *startButton1 = ButtonHelper::createButton(buttonContainer, "Start Microsoft");
-    // lv_obj_add_event_cb(startButton1, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &Microsoft); 
-
-    // lv_obj_t *startButton2 = ButtonHelper::createButton(buttonContainer, "Start Samsung");
-    // lv_obj_add_event_cb(startButton2, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &Samsung); 
-
-    // lv_obj_t *startButton3 = ButtonHelper::createButton(buttonContainer, "Start Android");
-    // lv_obj_add_event_cb(startButton3, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &Android); 
-
-    // lv_obj_t *startButton4 = ButtonHelper::createButton(buttonContainer, "Start ALL");
-    // lv_obj_add_event_cb(startButton4, EVENTS::btn_event_BTSpam_Start, LV_EVENT_CLICKED, &ALL); 
-
-    // lv_obj_t *saveButton = ButtonHelper::createButton(buttonContainer, "Stop");
-    // lv_obj_add_event_cb(saveButton, EVENTS::btn_event_SourApple_Stop, LV_EVENT_CLICKED, NULL); 
 }
 
 void ScreenManager::createIRMenuScreen() {
@@ -524,7 +427,6 @@ void ScreenManager::createIRMenuScreen() {
     lv_label_set_text(label_IR_READ, "Read IR signals");       
     lv_obj_center(label_IR_READ);
 }
-
 
 void ScreenManager::createmainMenu()
 {
@@ -578,111 +480,12 @@ void ScreenManager::createmainMenu()
     lv_obj_t *btn_RF24_menu = lv_btn_create(mainMenu);
     lv_obj_set_pos(btn_RF24_menu, 25, 260);
     lv_obj_set_size(btn_RF24_menu, 200, 50);
-    lv_obj_add_event_cb(btn_RF24_menu, EVENTS::btn_event_RF24_menu_run, LV_EVENT_CLICKED, NULL);
+   // lv_obj_add_event_cb(btn_RF24_menu, EVENTS::btn_event_RF24_menu_run, LV_EVENT_CLICKED, NULL);
     ScreenManager::apply_neon_theme_button(btn_RF24_menu); 
 
     lv_obj_t *label_RF24_menu = lv_label_create(btn_RF24_menu);
-    lv_label_set_text(label_RF24_menu, "2.4 Ghz Jammer");
+    lv_label_set_text(label_RF24_menu, "Nothing");
     lv_obj_center(label_RF24_menu);
-}
-
-
-void ScreenManager::createJammerMenu() {
-    lv_obj_t *jammerMenu = lv_obj_create(NULL);
-    ScreenManager::apply_neon_theme(jammerMenu);
-    lv_scr_load(jammerMenu);
-    lv_obj_delete(previous_screen);
-    previous_screen = jammerMenu;
-
-    // Bluetooth Jam Button
-    lv_obj_t *btn_BT_main = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_BT_main, 25, 10);
-    lv_obj_set_size(btn_BT_main, 200, 50);
-    lv_obj_add_event_cb(btn_BT_main, [](lv_event_t *e) {
-        setState(BLUETOOTH_JAM);
-    }, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *label_BTJAM_main = lv_label_create(btn_BT_main);
-    lv_label_set_text(label_BTJAM_main, "BT Jam");
-    lv_obj_center(label_BTJAM_main);
-    apply_neon_theme_button(btn_BT_main); 
-
-    // Drone Jam Button
-    lv_obj_t *btn_DroneJam_menu = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_DroneJam_menu, 25, 70);
-    lv_obj_set_size(btn_DroneJam_menu, 200, 50);
-    lv_obj_add_event_cb(btn_DroneJam_menu, [](lv_event_t *e) {
-        setState(DRONE_JAM);
-    }, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *label_DroneJam_menu = lv_label_create(btn_DroneJam_menu);
-    lv_label_set_text(label_DroneJam_menu, "Drone Jam");
-    lv_obj_center(label_DroneJam_menu);
-    apply_neon_theme_button(btn_DroneJam_menu); 
-
-    // BLE Jam Button
-    lv_obj_t *btn_BLE_menu = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_BLE_menu, 25, 130);
-    lv_obj_set_size(btn_BLE_menu, 200, 50);
-    lv_obj_add_event_cb(btn_BLE_menu, [](lv_event_t *e) {
-        setState(BLE_JAM);
-    }, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *label_BLEJAM_menu = lv_label_create(btn_BLE_menu);
-    lv_label_set_text(label_BLEJAM_menu, "BLE Jam");
-    lv_obj_center(label_BLEJAM_menu);
-    apply_neon_theme_button(btn_BLE_menu); 
-
-    // WiFi Jam Button
-    lv_obj_t *btn_WiFi_menu = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_WiFi_menu, 25, 190);
-    lv_obj_set_size(btn_WiFi_menu, 200, 50);
-    lv_obj_add_event_cb(btn_WiFi_menu, [](lv_event_t *e) {
-        setState(WIFI_JAM);
-    }, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *label_WiFi_menu = lv_label_create(btn_WiFi_menu);
-    lv_label_set_text(label_WiFi_menu, "WiFi Jam");
-    lv_obj_center(label_WiFi_menu);
-    apply_neon_theme_button(btn_WiFi_menu); 
-
-    // ZigBee Jam Button
-    lv_obj_t *btn_ZigBee_menu = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_ZigBee_menu, 25, 250);
-    lv_obj_set_size(btn_ZigBee_menu, 200, 50);
-    lv_obj_add_event_cb(btn_ZigBee_menu, [](lv_event_t *e) {
-        setState(ZIGBEE_JAM);
-    }, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *label_ZigBee_menu = lv_label_create(btn_ZigBee_menu);
-    lv_label_set_text(label_ZigBee_menu, "ZigBee Jam");
-    lv_obj_center(label_ZigBee_menu);
-    apply_neon_theme_button(btn_ZigBee_menu); 
-
-    // Misc Jam Button
-    lv_obj_t *btn_Misc_menu = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_Misc_menu, 25, 310);
-    lv_obj_set_size(btn_Misc_menu, 200, 50);
-    lv_obj_add_event_cb(btn_Misc_menu, [](lv_event_t *e) {
-        setState(MISC_JAM);
-    }, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *label_Misc_menu = lv_label_create(btn_Misc_menu);
-    lv_label_set_text(label_Misc_menu, "Misc Jam");
-    lv_obj_center(label_Misc_menu);
-    apply_neon_theme_button(btn_Misc_menu); 
-
-    // Stop Button
-    lv_obj_t *btn_Stop_menu = lv_btn_create(jammerMenu);
-    lv_obj_set_pos(btn_Stop_menu, 25, 370);
-    lv_obj_set_size(btn_Stop_menu, 200, 50);
-    lv_obj_add_event_cb(btn_Stop_menu, [](lv_event_t *e) {
-        setState(IDLE);
-        lv_obj_t *parent = lv_obj_get_parent((lv_obj_t *)lv_event_get_target(e));
-        lv_obj_t *child = lv_obj_get_child(parent, NULL);
-        while (child) {
-            lv_obj_set_style_bg_color(child, lv_color_hex(0x00FF00), 0); // Reset all button colors to green
-
-        }
-    }, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *label_Stop_menu = lv_label_create(btn_Stop_menu);
-    lv_label_set_text(label_Stop_menu, "Stop");
-    lv_obj_center(label_Stop_menu);
-    apply_neon_theme_button(btn_Stop_menu); 
 }
 
 void ScreenManager::createTeslaScreen() {
@@ -730,7 +533,12 @@ void ScreenManager::createEncoderSreen() {
     lv_obj_align(topLabel, LV_ALIGN_CENTER, 0, 0);
     lv_label_set_text(topLabel, "RF Remote encoder");
 
-    lv_obj_t * frequency_container_;
+    kb_freq_ = KeyboardHelper::createKeyboard(appScreen_, LV_KEYBOARD_MODE_NUMBER);
+    lv_obj_add_flag(kb_freq_, LV_OBJ_FLAG_HIDDEN);
+    
+
+
+    
     containerHelper.createContainer(&frequency_container_, appScreen_, LV_FLEX_FLOW_ROW,35, 240);
     lv_obj_t* frequencyLabel = lv_label_create(frequency_container_);
     lv_label_set_text(frequencyLabel, "Freq:");
@@ -755,14 +563,14 @@ void ScreenManager::createEncoderSreen() {
     lv_obj_add_event_cb(dropdown_1, EVENTS::ta_rf_type_event_cb, LV_EVENT_VALUE_CHANGED, dropdown_2);   
 
 
-    lv_obj_t * bitLenght_container_;
+    
     containerHelper.createContainer(&bitLenght_container_, appScreen_, LV_FLEX_FLOW_ROW,35, 240);
      lv_obj_t* bitLenghtlabel = lv_label_create(bitLenght_container_);
      lv_label_set_text(bitLenghtlabel, "Bit Lenght:");
     
      spinbox_bitLenght = SpinBox::createSpinbox(bitLenght_container_, bitLenght, 12, 64, 1, NULL, "bitLenght", 60);
 
-    lv_obj_t * repeats_container_;
+    
     containerHelper.createContainer(&repeats_container_, appScreen_, LV_FLEX_FLOW_ROW,35, 240);
     lv_obj_t* repeats_label = lv_label_create(repeats_container_);
     lv_label_set_text(repeats_label, "Repeats:");
@@ -778,19 +586,14 @@ void ScreenManager::createEncoderSreen() {
     lv_obj_set_size(textarea_encoder, 240, 50);
     lv_textarea_set_placeholder_text(textarea_encoder, "Code (decimal)");
     lv_obj_set_scrollbar_mode(textarea_encoder, LV_SCROLLBAR_MODE_OFF); 
-    lv_obj_add_event_cb(textarea_encoder, ta_event_cb, LV_EVENT_FOCUSED, this);
+    lv_obj_add_event_cb(textarea_encoder, ta_event_cb, LV_EVENT_ALL, this);
 
-    keyboard_encoder = KeyboardHelper::createKeyboard(appScreen_, LV_KEYBOARD_MODE_NUMBER);
-    lv_obj_add_flag(keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
-    lv_keyboard_set_textarea(keyboard_encoder, textarea_encoder);
+    lv_keyboard_set_textarea(kb_freq_, textarea_encoder);
 
+    containerHelper.createContainer(&button_container2_, appScreen_, LV_FLEX_FLOW_ROW, 25, 240);
 
-
-    containerHelper.createContainer(&button_container_RCSwitchMethod2_, appScreen_, LV_FLEX_FLOW_ROW, 25, 240);
-
-
-    lv_obj_t *playButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Play");
-    lv_obj_t *exitButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Exit");
+    lv_obj_t *playButton = ButtonHelper::createButton(button_container2_, "Play");
+    lv_obj_t *exitButton = ButtonHelper::createButton(button_container2_, "Exit");
     lv_obj_set_size(playButton, 90, 20);
     lv_obj_set_size(exitButton, 90, 20);
 
@@ -802,11 +605,30 @@ void ScreenManager::createEncoderSreen() {
 void ScreenManager::ta_event_cb(lv_event_t * e) {
         lv_event_code_t code = lv_event_get_code(e);
         ScreenManager* instance = static_cast<ScreenManager*>(lv_event_get_user_data(e));
-        if (code == LV_EVENT_FOCUSED)
-            lv_obj_clear_flag(instance->keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
-        else {
-            lv_obj_add_flag(instance->keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
+        if (code == LV_EVENT_FOCUSED) {
+            lv_obj_clear_flag(instance->kb_freq_, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(instance->frequency_container_, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(instance->secondLabel_container_, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(instance->bitLenght_container_, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(instance->repeats_container_, LV_OBJ_FLAG_HIDDEN);
+        }        
+        
+        else if (code == LV_EVENT_DEFOCUSED) {
+            lv_obj_add_flag(instance->kb_freq_, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(instance->frequency_container_, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(instance->secondLabel_container_, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(instance->bitLenght_container_, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(instance->repeats_container_, LV_OBJ_FLAG_HIDDEN);
         }
+
+        else if (code == LV_EVENT_READY) {
+            lv_obj_add_flag(instance->kb_freq_, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(instance->frequency_container_, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(instance->secondLabel_container_, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(instance->bitLenght_container_, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(instance->repeats_container_, LV_OBJ_FLAG_HIDDEN);
+        }
+
     }
 
 void ScreenManager::createBruteScreen() {
@@ -859,9 +681,9 @@ void ScreenManager::createBruteScreen() {
     
      spinbox_repeats =  SpinBox::createSpinbox(repeats_container_, repeats,1 , 64, 1, NULL, "repeats", 60);
 
-     keyboard_encoder = KeyboardHelper::createKeyboard(appScreen_, LV_KEYBOARD_MODE_NUMBER);
-     lv_obj_add_flag(keyboard_encoder, LV_OBJ_FLAG_HIDDEN);
-     lv_keyboard_set_textarea(keyboard_encoder, textarea_encoder);
+     kb_freq_ = KeyboardHelper::createKeyboard(appScreen_, LV_KEYBOARD_MODE_NUMBER);
+     lv_obj_add_flag(kb_freq_, LV_OBJ_FLAG_HIDDEN);
+     lv_keyboard_set_textarea(kb_freq_, textarea_encoder);
     
      lv_obj_t * progress_container_;
      containerHelper.createContainer(&progress_container_, appScreen_, LV_FLEX_FLOW_ROW, 105, 240);
@@ -873,11 +695,11 @@ void ScreenManager::createBruteScreen() {
      lv_obj_set_style_text_font(text_area_, &lv_font_montserrat_32, LV_PART_MAIN);  
      
 
-     containerHelper.createContainer(&button_container_RCSwitchMethod2_, appScreen_, LV_FLEX_FLOW_ROW, 25, 240);
+     containerHelper.createContainer(&button_container2_, appScreen_, LV_FLEX_FLOW_ROW, 25, 240);
 
 
-     lv_obj_t *playButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Play");
-     lv_obj_t *exitButton = ButtonHelper::createButton(button_container_RCSwitchMethod2_, "Exit");
+     lv_obj_t *playButton = ButtonHelper::createButton(button_container2_, "Play");
+     lv_obj_t *exitButton = ButtonHelper::createButton(button_container2_, "Exit");
      lv_obj_set_size(playButton, 90, 20);
      lv_obj_set_size(exitButton, 90, 20);
  
@@ -886,42 +708,6 @@ void ScreenManager::createBruteScreen() {
    apply_neon_theme_button(playButton); 
     lv_obj_add_event_cb(exitButton, EVENTS::exitReplayEvent, LV_EVENT_CLICKED, NULL);
     apply_neon_theme_button(exitButton); 
-}
-
-
-void ScreenManager::createBTMenu() {
-    lv_obj_t *BTMenu = lv_obj_create(NULL);
-    ScreenManager::apply_neon_theme(BTMenu);
-    lv_scr_load(BTMenu);    
-    lv_obj_delete(previous_screen);
-    previous_screen = BTMenu;
-
-    lv_obj_t *btn_BT_main = lv_btn_create(BTMenu);
-    lv_obj_set_pos(btn_BT_main, 25, 10);
-    lv_obj_set_size(btn_BT_main, 150, 50);
-    lv_obj_add_event_cb(btn_BT_main, EVENTS::btn_event_SourApple, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *label_BLESPAM_main = lv_label_create(btn_BT_main);
-    lv_label_set_text(label_BLESPAM_main, "Sour Apple");
-    lv_obj_center(label_BLESPAM_main);
-    apply_neon_theme_button(btn_BT_main); 
-
-    lv_obj_t *btn_BT_maspam = lv_btn_create(BTMenu);
-    lv_obj_set_pos(btn_BT_maspam, 25, 70);
-    lv_obj_set_size(btn_BT_maspam, 150, 50);
-    lv_obj_add_event_cb(btn_BT_maspam, EVENTS::btn_event_BTSpam, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *label_SourApple_main = lv_label_create(btn_BT_maspam);
-    lv_label_set_text(label_SourApple_main, "BLE spam");
-    lv_obj_center(label_SourApple_main);
-    apply_neon_theme_button(btn_BT_maspam); 
-
-    lv_obj_t *btn_c1101Others_menu = lv_btn_create(lv_scr_act());
-    lv_obj_set_pos(btn_c1101Others_menu, 25, 250);
-    lv_obj_set_size(btn_c1101Others_menu, 200, 50);
-    lv_obj_t *label_c1101Others_menu = lv_label_create(btn_c1101Others_menu);
-    lv_label_set_text(label_c1101Others_menu, "Back");
-    lv_obj_center(label_c1101Others_menu);
-    lv_obj_add_event_cb(btn_c1101Others_menu, EVENTS::btn_event_mainMenu_run, LV_EVENT_CLICKED, NULL);
-    apply_neon_theme_button(btn_c1101Others_menu); 
 }
 
 void ScreenManager::createRFRemotesMenu() {

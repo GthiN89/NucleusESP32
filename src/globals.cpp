@@ -18,6 +18,7 @@ float CC1101_MHZ;
 bool teslaSucessFlag;
 
 uint8_t runningModule = MODULE_NONE;
+bool isRaw = false;
 
 
 Adafruit_PN532 nfc(PN532_SS, &SPI);

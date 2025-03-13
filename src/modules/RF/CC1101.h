@@ -188,7 +188,7 @@ public:
     void enableTransmit();
     void disableTransmit();
     void saveSignal();
-    void signalAnalyse();
+    void handleSignal();
     bool CheckReceived(void);
     void initRaw();
     void sendRaw();

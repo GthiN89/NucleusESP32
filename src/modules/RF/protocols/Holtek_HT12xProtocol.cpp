@@ -166,7 +166,7 @@ bool HoltekProtocol::decode(long long int* samples, size_t sampleCount) {
     return false;
 }
 
-String HoltekProtocol::getCodeString() const {
+String HoltekProtocol::getCodeString(uint64_t shortPulse, uint64_t longPulse) const {
 
     ScreenManager& screenMgr = ScreenManager::getInstance();
     lv_obj_t* textarea;
@@ -213,14 +213,20 @@ String HoltekProtocol::getCodeString() const {
         (finalDIP & 0x04 ? '0' : '1'),
         (finalDIP & 0x02 ? '0' : '1'),
         (finalDIP & 0x01 ? '0' : '1'),
-        (unsigned long)te
+        (unsigned long)te,
+        "Short pulse:",
+        shortPulse,
+        "\n",
+        "Short pulse:",
+        longPulse,
+        "\n"
     );
     strlcat(buf, line2, sizeof(buf));
 
     lv_textarea_set_text(textarea, buf);
 
 
-    //Serial.println(F("HoltekProtocol::getCodeString() called"));
+    //Serial.println(F("HoltekProtocol::getCodeString(uint64_t shortPulse, uint64_t longPulse) called"));
     //Serial.print(F(" finalBitCount: "));
     //Serial.println(finalBitCount);
     //Serial.print(F(" finalCode: 0x"));

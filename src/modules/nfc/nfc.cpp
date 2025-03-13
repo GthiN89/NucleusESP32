@@ -69,6 +69,40 @@ void NFC_CLASS::NFCloop() {
         // Attempt EMV
         attemptEmvSelectPPSE();
     }
+
+    uint8_t command[] = { 
+        0x40,  // InDataExchange
+        0x01,  // Target number (first tag)
+        0x60,  // MIFARE Authentication (Key A)
+        0x9F,   // Block number
+        0x19
+    };
+
+    // uint8_t rawCmd[] = {
+    // //     0x80,  // InDataExchange command
+    // //     0XCA,
+    // //     0x01,  // Target number
+    // //     0x9F,  // 0x5F (High byte)
+    // //     0x19 // 0x20 (Low byte)
+    // // };
+
+    Serial.println("Sending raw NFC command...");
+
+    // Send the raw command to the PN532 via SPI
+    nfc.writecommand(command, sizeof(command));
+
+
+    // Read the response
+    uint8_t response[512];
+    nfc.readdata(response, sizeof(response));
+
+    // Print the raw response
+    Serial.print("Response: ");
+    for (int i = 0; i < sizeof(response); i++) {
+        Serial.print(response[i], HEX);
+        Serial.print(" ");
+    }
+    Serial.println();
 }
 
 void NFC_CLASS::attemptMifareRead(uint8_t* uid, uint8_t uidLen) {

@@ -31,7 +31,7 @@ public:
     bool decode(long long int* samples, size_t sampleCount);
 
     CC1101_PRESET preset;
-    String getCodeString() const;
+    String getCodeString(uint64_t shortPulse, uint64_t longPulse) const;
 
     bool hasValidCode() const;
     bool decodeReversed(long long int* samples, size_t sampleCount);

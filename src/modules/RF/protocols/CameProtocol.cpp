@@ -171,7 +171,7 @@ uint32_t CameProtocol::reverseKey(uint32_t code, uint8_t bitCount) const {
     return reversed;
 }
 
-String CameProtocol::getCodeString() const {
+String CameProtocol::getCodeString(uint64_t shortPulse, uint64_t longPulse) const {
     ScreenManager& screenMgr = ScreenManager::getInstance();
 
     char buf[128];
@@ -184,7 +184,14 @@ String CameProtocol::getCodeString() const {
         protocolName = "\nAirforce";
     }
     sprintf(buf, "%s %dbit\r\nKey:0x%08lX\r\nYek:0x%08lX\r\n",
-            protocolName, finalBitCount, codeFound, codeReversed);
+            protocolName, finalBitCount, codeFound, codeReversed,
+            "Short pulse:",
+            shortPulse,
+            "\n",
+            "Short pulse:",
+            longPulse,
+            "\n"
+        );
 
     lv_obj_t * textarea;
     if(C1101preset == CUSTOM){

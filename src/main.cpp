@@ -189,24 +189,34 @@ void bruteForceTask(void *pvParameters) {
 }
 
  void CC1101Loop() {
-    if(C1101CurrentState == STATE_ANALYZER) {
+    if(C1101CurrentState == STATE_CODEGRABBER) {
                // delay(50);
-                Serial.println(gpio_get_level(CC1101_CCGDO2A));
+           //     Serial.println(gpio_get_level(CC1101_CCGDO2A));
         if (CC1101.CheckReceived()) {
              delay(5);
-            Serial.println("Received");
             CC1101.disableReceiver();
-            Serial.println("Receiver disabled.");
             delay(5);
-            Serial.println("Analyzing signal...");
-            CC1101.signalAnalyse();
-            Serial.println("Signal analyzed.");
+            CC1101.handleSignal();
             CC1101.decode();
 
             C1101CurrentState = STATE_IDLE;
             runningModule = MODULE_NONE;
         }
     }
+
+    if(C1101CurrentState == STATE_RAWREC) {
+        if (CC1101.CheckReceived()) {
+            delay(5);
+           CC1101.disableReceiver();
+           delay(5);
+           CC1101.handleSignal();
+
+
+           C1101CurrentState = STATE_IDLE;
+           runningModule = MODULE_NONE;
+       }
+    }
+
     if(C1101CurrentState == STATE_RCSWITCH) {
                // delay(50);
                // Serial.println(gpio_get_level(CC1101_CCGDO2A));

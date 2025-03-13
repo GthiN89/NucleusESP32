@@ -188,7 +188,7 @@ void SMC5326Protocol::yield(unsigned int code) {
 }
 
 
-String SMC5326Protocol::getCodeString() const {
+String SMC5326Protocol::getCodeString(uint64_t shortPulse, uint64_t longPulse) const {
     uint32_t data = (finalCode >> 9) & 0xFFFF;
     uint8_t event = (finalCode >> 1) & 0xFF;
 
@@ -230,7 +230,7 @@ String SMC5326Protocol::getCodeString() const {
 
     lv_textarea_set_text(textarea, buf);
 
-    //Serial.println(F("SMC5326Protocol::getCodeString() called"));
+    //Serial.println(F("SMC5326Protocol::getCodeString(uint64_t shortPulse, uint64_t longPulse) called"));
     //Serial.print(F(" finalCode=0x"));
     //Serial.println(finalCode, HEX);
     //Serial.print(F(" finalBitCount="));

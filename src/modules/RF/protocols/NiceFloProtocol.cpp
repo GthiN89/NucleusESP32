@@ -182,13 +182,20 @@ uint32_t NiceFloProtocol::reverseKey(uint32_t code, uint8_t bitCount) const {
     return reversed;
 }
 
-String NiceFloProtocol::getCodeString() const {
+String NiceFloProtocol::getCodeString(uint64_t shortPulse, uint64_t longPulse) const {
     char buf[128];
     uint32_t codeFound = finalCode;
     uint32_t codeReversed = reverseKey(finalCode, finalBitCount);
     const char* protocolName = "\nNiceFlo";
     sprintf(buf, "%s %dbit\r\nKey:0x%08lX\r\nYek:0x%08lX\r\n",
-            protocolName, finalBitCount, codeFound, codeReversed);
+            protocolName, finalBitCount, codeFound, codeReversed,
+            "Short pulse:",
+            shortPulse,
+            "\n",
+            "Short pulse:",
+            longPulse,
+            "\n"
+        );
    ////Serial.println("getCodeString:");
    ////Serial.println(buf);
 

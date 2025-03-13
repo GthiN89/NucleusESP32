@@ -38,7 +38,7 @@ public:
     bool decode(long long int* samples, size_t sampleCount);
 
     // Returns a formatted string with the decoded key, its reverse, and button field.
-    String getCodeString() const;
+    String getCodeString(uint64_t shortPulse, uint64_t longPulse) const;
 
     // Returns true if a valid code was detected.
     bool hasValidCode() const;

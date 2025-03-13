@@ -180,34 +180,50 @@ void EVENTS::btn_event_RF24_menu_run(lv_event_t* e) {
 
 void EVENTS::ta_freq_event_cb(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *kb = screenMgr.getKeyboardFreq(); // Get the keyboard object
+    lv_obj_t *kb = screenMgr.getKeyboardFreq(); 
     const char *user_data = static_cast<const char *>(lv_event_get_user_data(e));
+
 
     if (code == LV_EVENT_FOCUSED) {
         if(strcmp(user_data, "freq") == 0) {
-            lv_keyboard_set_textarea(kb, screenMgr.customPreset); // Link the textarea to the keyboard
+            lv_keyboard_set_textarea(kb, screenMgr.customPreset); 
         }
-        lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN); // Show the keyboard
-        ////Serial.println("Keyboard linked and shown");
-    } else if (code == LV_EVENT_DEFOCUSED || code == LV_EVENT_READY) {
-        lv_keyboard_set_textarea(kb, nullptr); // Unlink the keyboard
-        lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN); // Hide the keyboard
+        lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN); 
+        lv_obj_add_flag(screenMgr.secondLabel_container_, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(screenMgr.text_area_, LV_OBJ_FLAG_HIDDEN);
+
+    } 
+    
+    else if (code == LV_EVENT_DEFOCUSED) {
+        lv_keyboard_set_textarea(kb, nullptr); 
+        lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN); 
+        lv_obj_clear_flag(screenMgr.secondLabel_container_, LV_OBJ_FLAG_HIDDEN); 
+        lv_obj_clear_flag(screenMgr.text_area_, LV_OBJ_FLAG_HIDDEN); 
+
 
         if(strcmp(user_data, "freq") == 0) {
             const char *freq_text = lv_textarea_get_text(screenMgr.customPreset);
         if (freq_text && strlen(freq_text) > 0) {
-            CC1101EV.CC1101_FREQ = atof(freq_text); // Convert text to float
-            ////Serial.printf("Frequency set to: %.2f MHz\n", CC1101EV.CC1101_FREQ);
+            CC1101EV.CC1101_FREQ = atof(freq_text); 
 
             lv_obj_t *text_area = screenMgr.getTextArea();
             lv_textarea_add_text(text_area, "Frequency set to: ");
             lv_textarea_add_text(text_area, freq_text);
             lv_textarea_add_text(text_area, " MHz\n");
-        } else {
-            ////Serial.println("Frequency input is empty");
-        }
+        } 
         }
     }
+    else if(lv_event_get_code(e) == LV_EVENT_READY) {
+        
+        lv_keyboard_set_textarea(kb, nullptr); 
+        lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN); 
+        lv_obj_clear_flag(screenMgr.secondLabel_container_, LV_OBJ_FLAG_HIDDEN); 
+        lv_obj_clear_flag(screenMgr.text_area_, LV_OBJ_FLAG_HIDDEN); 
+        lv_obj_clear_flag(screenMgr.quareLine_container, LV_OBJ_FLAG_HIDDEN); 
+        lv_obj_clear_state(screenMgr.customPreset, LV_STATE_FOCUSED);
+
+        }
+
 }
 
 void EVENTS::dropdown_modulation_event_cb(lv_event_t *e) {
@@ -426,52 +442,7 @@ void EVENTS::sendEncodeddEvent(lv_event_t * e) {
     CC1101EV.sendEncoded(protocols[index], frequency, bitLenght, repeats, code);
 }
 
- void EVENTS::btn_event_SourApple(lv_event_t * e){
-    // screenMgr.createSourAppleScreen();
-    // sourApple sa;
-    // sa.setup();
- }
 
-  void EVENTS::btn_event_BTSpam(lv_event_t * e){
- //   screenMgr.createBTSPamScreen();
- }
-
-  void EVENTS::btn_event_SourApple_Start(lv_event_t * e){
-  //  lv_obj_t * ta = screenMgr.getTextAreaSourAple();
-  //  lv_textarea_set_text(ta, "Running");
-   // BTCurrentState = STATE_SOUR_APPLE;
- }
-
-  void EVENTS::btn_event_SourApple_Stop(lv_event_t * e){
- //   lv_obj_t * ta = screenMgr.getTextAreaSourAple();
-  //  lv_textarea_set_text(ta, "Not running");
-  //  BTCurrentState = STATE_SOUR_APPLE_IDLE;
- }
-
-   void EVENTS::btn_event_BTSpam_Start(lv_event_t * e){
-//     //BLEDevice::init("");
-//     lv_obj_t * ta = screenMgr.getTextAreaBTSpam();
-//     lv_textarea_set_text(ta, "Running");
-//     int *SpamDevice = (int *)lv_event_get_user_data(e); 
-//    // BLESpam spam;
-//     spam.aj_adv(*SpamDevice);
- }
-
-  void EVENTS::btn_event_BTSpam_Stop(lv_event_t * e){
-    // lv_obj_t * ta = screenMgr.getTextAreaBTSpam();
-    // lv_textarea_set_text(ta, "Not running");
-    // //BLESpam spam;
-    // BLEDevice::deinit();
- }
-
- 
-
-void EVENTS::btn_event_BTTools(lv_event_t * e) {
-        lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-        screenMgr.createBTMenu();
-}
-}
 void EVENTS::btn_event_mainMenu_run(lv_event_t* e) {   
      lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
@@ -544,7 +515,7 @@ void EVENTS::btn_event_CUSTOM_REC_run(lv_event_t* e)
   
    //  delay(20);
     runningModule = MODULE_CC1101;
-    C1101CurrentState = STATE_ANALYZER;
+    C1101CurrentState = STATE_CODEGRABBER;
 
     }
 }
@@ -583,18 +554,24 @@ void EVENTS::btn_event_RAW_REC_run(lv_event_t* e)
     lv_dropdown_get_selected_str(screenMgr.dropdown_2, selected_text_type, sizeof(selected_text_type)); 
 
     lv_textarea_set_text(text_area, "Waiting for signal.\n");
-    if(strcmp(selected_text_type, "Raw") == 0) {
+    if(strcmp(selected_text_type, "Decoder") == 0) {
         CC1101EV.setFrequency(CC1101_MHZ);
         CC1101EV.enableReceiver();
         runningModule = MODULE_CC1101;
-        C1101CurrentState = STATE_ANALYZER;   
+        C1101CurrentState = STATE_CODEGRABBER;   
     } else if(strcmp(selected_text_type, "RC-Switch") == 0) {
         ////Serial.println("RCSwitch");
         CC1101EV.setFrequency(CC1101_MHZ);
         CC1101EV.enableRCSwitch(); 
         runningModule = MODULE_CC1101;
         C1101CurrentState = STATE_RCSWITCH;   
+    } else if(strcmp(selected_text_type, "Raw") == 0) {
+        CC1101EV.setFrequency(CC1101_MHZ);
+        CC1101EV.enableReceiver();
+        runningModule = MODULE_CC1101;
+        C1101CurrentState = STATE_RAWREC; 
     }
+    
     }
 }
 

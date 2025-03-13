@@ -1,0 +1,38 @@
+#ifndef GPIOEXPANDERINTERRUPT_H
+#define GPIOEXPANDERINTERRUPT_H
+
+#include <Arduino.h>
+
+class GpioExpanderInterrupt {
+public:
+    GpioExpanderInterrupt(uint8_t fakePin, gpio_num_t srDataPin, gpio_num_t srClockPin, gpio_num_t srLatchPin);
+    
+    void begin();
+    void deinit(bool clearShiftOutputs = false);
+
+    void setPinRouting(uint8_t bitPos, bool route);
+    bool isPinRouted(uint8_t bitPos);
+    
+    void fakeDigitalWrite(uint8_t bitPos, bool level);
+    bool fakeDigitalRead(uint8_t bitPos);
+
+    uint8_t getShiftValue();  // Returns the current shift register state
+
+private:
+    static void IRAM_ATTR isrHandler(void* arg);
+    void IRAM_ATTR onPinChange();
+    void updateShiftRegister();
+    void fastShiftOut(gpio_num_t dataPin, gpio_num_t clockPin, uint8_t bitOrder, uint8_t val);
+
+    uint8_t _fakePin;
+    gpio_num_t _srDataPin;
+    gpio_num_t _srClockPin;
+    gpio_num_t _srLatchPin;
+
+    volatile uint8_t _shiftValue;     // Holds the current shift register output
+    volatile uint8_t _routingMask;    // Bits controlled by the interrupt
+    volatile uint8_t _manualMask;     // Bits controlled by fakeDigitalWrite()
+    volatile bool _interruptTriggered;
+};
+
+#endif

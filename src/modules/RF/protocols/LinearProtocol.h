@@ -13,7 +13,7 @@ public:
     void reset();
     void feed(bool level, uint32_t duration);
     bool decode(const long long int* samples, size_t sampleCount);
-    std::string getCodeString() const;
+    std::string getCodeString(uint64_t shortPulse, uint64_t longPulse) const;
     bool hasValidCode() const;
 
     // Encoder interface

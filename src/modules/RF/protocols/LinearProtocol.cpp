@@ -119,7 +119,7 @@ std::string LinearProtocol::getDIPString(uint32_t data) const {
     return std::string(buf);
 }
 
-std::string LinearProtocol::getCodeString() const {
+std::string LinearProtocol::getCodeString(uint64_t shortPulse, uint64_t longPulse) const {
     char buf[128];
     uint32_t key = finalData;
     uint32_t rev = 0;

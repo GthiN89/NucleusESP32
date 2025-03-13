@@ -1,0 +1,132 @@
+#include "GpioExpander.h"
+
+GpioExpanderInterrupt::GpioExpanderInterrupt(uint8_t fakePin, gpio_num_t srDataPin, gpio_num_t srClockPin, gpio_num_t srLatchPin)
+    : _fakePin(fakePin), _srDataPin(srDataPin), _srClockPin(srClockPin), _srLatchPin(srLatchPin),
+      _shiftValue(0), _routingMask(0), _manualMask(0), _interruptTriggered(false) {}
+
+void GpioExpanderInterrupt::begin() {
+ //   Serial.println("[GpioExpanderInterrupt] Initializing...");
+    
+    pinMode(_srDataPin, OUTPUT);
+    pinMode(_srClockPin, OUTPUT);
+    pinMode(_srLatchPin, OUTPUT);
+    gpio_set_level(_srDataPin, LOW);
+    gpio_set_level(_srClockPin, LOW);
+    gpio_set_level(_srLatchPin, LOW);
+
+    _shiftValue = 0;
+    updateShiftRegister();
+  //  Serial.printf("[GpioExpanderInterrupt] Shift register initialized. All bits cleared (0x%02X)\n", _shiftValue);
+
+    pinMode(_fakePin, INPUT);
+ //   Serial.printf("[GpioExpanderInterrupt] Monitoring GPIO %d for interrupts.\n", _fakePin);
+
+    attachInterruptArg(digitalPinToInterrupt(_fakePin), isrHandler, this, CHANGE);
+}
+
+void GpioExpanderInterrupt::deinit(bool clearShiftOutputs) {
+ //   Serial.println("[GpioExpanderInterrupt] Deinitializing...");
+    
+    noInterrupts();
+    detachInterrupt(digitalPinToInterrupt(_fakePin));
+    
+    if (clearShiftOutputs) {
+        _shiftValue = 0;
+        updateShiftRegister();
+    //    Serial.println("[GpioExpanderInterrupt] Shift register cleared.");
+    }
+
+    pinMode(_fakePin, INPUT);
+    _routingMask = 0;
+    _manualMask = 0;
+    
+    interrupts();
+  //  Serial.println("[GpioExpanderInterrupt] GPIO freed and routing cleared.");
+}
+
+void GpioExpanderInterrupt::setPinRouting(uint8_t bitPos, bool route) {
+    if (bitPos > 7) return;
+    uint8_t mask = (1 << bitPos);
+
+    noInterrupts();
+    if (route) {
+        _routingMask |= mask;
+        _manualMask &= ~mask;  // Remove from manual control
+        bool state = digitalRead(_fakePin);
+        _shiftValue = state ? (_shiftValue | mask) : (_shiftValue & ~mask);
+      //  Serial.printf("[GpioExpanderInterrupt] Bit %d routed. Current state: %d\n", bitPos, state);
+    } else {
+        _routingMask &= ~mask;
+        _manualMask |= mask;  // Allow manual control
+      //  Serial.printf("[GpioExpanderInterrupt] Bit %d removed from routing, now manual.\n", bitPos);
+    }
+    updateShiftRegister();
+    interrupts();
+    delay(20);
+}
+
+bool GpioExpanderInterrupt::isPinRouted(uint8_t bitPos) {
+    if (bitPos > 7) return false;
+    return (_routingMask & (1 << bitPos)) != 0;
+}
+
+void GpioExpanderInterrupt::fakeDigitalWrite(uint8_t bitPos, bool level) {
+    if (bitPos > 7) return;
+    uint8_t mask = (1 << bitPos);
+
+    noInterrupts();
+    if (!isPinRouted(bitPos)) {
+        _shiftValue = level ? (_shiftValue | mask) : (_shiftValue & ~mask);
+     //   Serial.printf("[GpioExpanderInterrupt] fakegpio_set_level(%d, %d) -> New shift value: 0x%02X\n", bitPos, level, _shiftValue);
+        updateShiftRegister();
+    } else {
+      //  Serial.printf("[GpioExpanderInterrupt] fakegpio_set_level(%d, %d) IGNORED (bit is routed to GPIO %d)\n", bitPos, level, _fakePin);
+    }
+    interrupts();
+}
+
+bool GpioExpanderInterrupt::fakeDigitalRead(uint8_t bitPos) {
+    if (bitPos > 7) return false;
+    return (_shiftValue & (1 << bitPos)) != 0;
+}
+
+uint8_t GpioExpanderInterrupt::getShiftValue() {
+    return _shiftValue;
+}
+
+void IRAM_ATTR GpioExpanderInterrupt::isrHandler(void* arg) {
+    GpioExpanderInterrupt* self = static_cast<GpioExpanderInterrupt*>(arg);
+    self->onPinChange();
+}
+
+void IRAM_ATTR GpioExpanderInterrupt::onPinChange() {
+    if (_routingMask == 0) return;
+    bool state = digitalRead(_fakePin);
+    
+    uint8_t routedBits = state ? (_routingMask) : (~_routingMask);
+    _shiftValue = (_shiftValue & ~_routingMask) | (routedBits & _routingMask);
+    
+    _interruptTriggered = true;
+    updateShiftRegister();
+}
+
+void GpioExpanderInterrupt::updateShiftRegister() {
+    gpio_set_level(_srLatchPin, LOW);
+    fastShiftOut(_srDataPin, _srClockPin, MSBFIRST, _shiftValue);
+    gpio_set_level(_srLatchPin, HIGH);
+}
+
+void GpioExpanderInterrupt::fastShiftOut(gpio_num_t dataPin, gpio_num_t clockPin, uint8_t bitOrder, uint8_t val) {
+    uint8_t i;
+  
+    for (i = 0; i < 8; i++) {
+      if (bitOrder == LSBFIRST) {
+        gpio_set_level(dataPin, !!(val & (1 << i)));
+      } else {
+        gpio_set_level(dataPin, !!(val & (1 << (7 - i))));
+      }
+  
+      gpio_set_level(clockPin, HIGH);
+      gpio_set_level(clockPin, LOW);
+    }
+  }

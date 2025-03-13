@@ -199,7 +199,7 @@ bool HormannProtocol::decode(long long int* samples, size_t sampleCount) {
     return false;
 }
 
-String HormannProtocol::getCodeString() const {
+String HormannProtocol::getCodeString(uint64_t shortPulse, uint64_t longPulse) const {
     ScreenManager& screenMgr = ScreenManager::getInstance();
 
     char buf[256];
@@ -210,7 +210,14 @@ String HormannProtocol::getCodeString() const {
     uint32_t rev_high = (uint32_t)(reversed >> 32);
     uint32_t rev_low  = (uint32_t)(reversed & 0xFFFFFFFF);
     sprintf(buf, "Hormann HSM\r\n%dbit\r\nKey:0x%03lX%08lX\r\nRev:0x%03lX%08lX\r\nBtn:0x%01X\r\n",
-            finalBitCount, high, low, rev_high, rev_low, btn);
+            finalBitCount, high, low, rev_high, rev_low, btn,
+            "Short pulse:",
+            shortPulse,
+            "\n",
+            "Short pulse:",
+            longPulse,
+            "\n"
+        );
 
     lv_obj_t * textarea;
     if(C1101preset == CUSTOM){

@@ -21,7 +21,7 @@ public:
 
 
     // returns a string with the decoded key and its reverse.
-    String getCodeString() const;
+    String getCodeString(uint64_t shortPulse, uint64_t longPulse) const;
 
     // returns true if a valid code was detected.
     bool hasValidCode() const;

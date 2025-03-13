@@ -720,12 +720,12 @@ void CC1101_CLASS::startSignalAnalyseTask() {
 }
 
 
-void CC1101_CLASS::signalAnalyse(){
+void CC1101_CLASS::handleSignal(){
 
 ////////////////////////////////////////////////////
         Signal data;
 
-        Serial.println(F("Raw samples: "));
+     //   Serial.println(F("Raw samples: "));
         CC1101_CLASS::receivedData.sampleCount = 0;
         
         for (const auto &sample : CC1101_CLASS::receivedData.samples) {
@@ -737,13 +737,7 @@ void CC1101_CLASS::signalAnalyse(){
 
         CC1101_CLASS::allData.addSignal(data);
 
-///////////////////////////////////////////
-
-
-
-
-
-
+        
 
      lv_obj_t * textareaRC;
     if(C1101preset == CUSTOM){
@@ -765,7 +759,7 @@ if (!SD_RF.directoryExists("/recordedRFRawAll/")) {
 }
 
 String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
-String fullPath = "/recordedRF/" + filename;
+String fullPath = "/recordedRFRawAll/" + filename;
 FlipperSubFile subFile;
 File32* outputFilePtr = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
 if (outputFilePtr) {
@@ -813,11 +807,11 @@ bool CC1101_CLASS::decode() {
 
 
     filterSignal();
-    Serial.println("count:");
-    Serial.println(CC1101_CLASS::receivedData.samples.size());
-    Serial.println("Pulses:");
-    Serial.println(pulses[0]);
-    Serial.println(pulses[1]);
+ //   Serial.println("count:");
+ //   Serial.println(CC1101_CLASS::receivedData.samples.size());
+ //   Serial.println("Pulses:");
+  //  Serial.println(pulses[0]);
+  //  Serial.println(pulses[1]);
     delay(5);
     // Serial.println("filtered values\n");
     // for(int i = 0; i < CC1101.receivedData.filtered.size(); i++) {
@@ -826,48 +820,87 @@ bool CC1101_CLASS::decode() {
     // }
     if ((DURATION_DIFF(pulses[0], 500) < 40) &&
         (DURATION_DIFF(pulses[1], 1000) < 90)) {
-            Serial.println("is Hormann");
+          //  Serial.println("is Hormann");
         if (hormannProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
-            hormannProtocol.getCodeString();
+            hormannProtocol.getCodeString(pulses[0], pulses[1]);
             return true;
         }
     }
 
     if ((DURATION_DIFF(pulses[0], 320) < 50) &&
         (DURATION_DIFF(pulses[1], 640) < 90)) {
-            Serial.println("is Came");
+        //    Serial.println("is Came");
         if (cameProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
-            cameProtocol.getCodeString();
+            cameProtocol.getCodeString(pulses[0], pulses[1]);
             return true;
         }
     }
 
     if ((DURATION_DIFF(pulses[0], 555) < 40) &&
         (DURATION_DIFF(pulses[1], 1111) < 90)) {
-            Serial.println("is Ansonic");
+        //    Serial.println("is Ansonic");
         if (ansonicProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
-            ansonicProtocol.getCodeString();
+            ansonicProtocol.getCodeString(pulses[0], pulses[1]);
             return true;
         }
     }
 
     if ((DURATION_DIFF(pulses[0], 700) < 50) &&
         (DURATION_DIFF(pulses[1], 1400) < 90)) {
-            Serial.println("is NiceFlow");
+        //    Serial.println("is NiceFlow");
         if (niceFloProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
-            niceFloProtocol.getCodeString();
+            niceFloProtocol.getCodeString(pulses[0], pulses[1]);
             return true;
         }
     }
 
     if ((DURATION_DIFF(pulses[0], 300) < 50) &&
         (DURATION_DIFF(pulses[1], 900) < 90)) {
-            Serial.println("is SMC5326");
+    //        Serial.println("is SMC5326");
         if (smc5326Protocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
-            smc5326Protocol.getCodeString();
+            smc5326Protocol.getCodeString(pulses[0], pulses[1]);
             return true;
         }
     }
+
+    std::ostringstream samples;
+    for (size_t i = 0; i < CC1101.receivedData.filtered.size(); ++i) {
+        samples << CC1101.receivedData.filtered.data()[i];
+        if(i != CC1101.receivedData.filtered.size() - 1)
+            samples << " ";
+    }
+
+    SD_RF.restartSD();
+
+        if (!SD_RF.directoryExists("/recordedFilteredAll/")) {
+            SD_RF.createDirectory("/recordedFilteredAll/");
+        }
+
+        String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
+        String fullPath = "/recordedFilteredAll/" + filename;
+        FlipperSubFile subFile;
+        File32* outputFilePtr = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
+        if (outputFilePtr) {
+            File32& outputFile = *outputFilePtr; 
+            std::vector<uint8_t> customPresetData;
+        if (C1101preset == CUSTOM) {
+            customPresetData.insert(customPresetData.end(), {
+                CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
+                CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
+                CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
+                CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
+                CC1101_FREND0,  ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
+                0x00, 0x00
+            });
+        
+            std::array<uint8_t, 8> paTable;
+            ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
+            customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
+        }
+        subFile.generateRaw(outputFile, C1101preset, customPresetData, samples, CC1101_MHZ);
+        SD_RF.closeFile(outputFilePtr);
+    }
+
 
     CC1101_CLASS::receivedData.samples.clear();
     CC1101_CLASS::receivedData.sampleCount = 0;
