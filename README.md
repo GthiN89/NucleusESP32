@@ -1,6 +1,7 @@
 # Nucleus ESP: An Affordable Hacking Tool
 
 Nucleus ESP is a budget-friendly yellow device for various hacking applications. It can transmit in the Sub-GHz RF range and holds additional potential, which I plan to explore further.
+The CC1101 wiring is now compatible with that of Bruce FW
 
 ### The device
 ![Device](https://github.com/GthiN89/NucleusESP32/blob/main/images/brute.jpg)
