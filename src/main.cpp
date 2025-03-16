@@ -54,6 +54,7 @@ void init_touch(TouchCallback singleTouchCallback);
  }
 
 void setup() {
+    digitalWrite(21, HIGH);
 
   Serial.begin(115200);
   init_touch([]() { });
