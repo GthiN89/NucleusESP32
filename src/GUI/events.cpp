@@ -28,7 +28,7 @@ SDcard& SD_EVN = SDcard::getInstance();
 
 
 int SpamDevice = 1;
-bool updatetransmitLabel = false;
+bool updatetransmitLabel;
 bool stopTransmit = false;
 
 //datarate
@@ -872,9 +872,9 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
     SD_EVN.restartSD();
             ////Serial.print("Transmiting?");
             ////Serial.println(EVENTS::fullPath);
-         //   String text = "Transmitting\n Codes send: " + String(codesSend);
-         //   lv_label_set_text(label_sub, text.c_str());
-            updatetransmitLabel = true;
+            String text = "Transmitting\n Codes send: " + String(codesSend);
+           lv_label_set_text(label_sub, text.c_str());
+        updatetransmitLabel = true;
             lv_obj_clean(button_container);
             lv_obj_set_size(button_container, LV_PCT(100), LV_SIZE_CONTENT);
             lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW);
@@ -901,10 +901,9 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
             1                // Core
         );
     
-
+        updatetransmitLabel = true;
     }                   
         } else {
-            updatetransmitLabel = false;
         lv_obj_del(msgbox);
     }
      }
@@ -913,7 +912,6 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
 
 
 void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
-    updatetransmitLabel = false;
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
     stopTransmit = true;

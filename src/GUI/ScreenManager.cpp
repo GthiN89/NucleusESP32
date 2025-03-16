@@ -679,7 +679,7 @@ void ScreenManager::createBruteScreen() {
     lv_obj_t* repeats_label = lv_label_create(repeats_container_);
     lv_label_set_text(repeats_label, "Repeats:");
     
-     spinbox_repeats =  SpinBox::createSpinbox(repeats_container_, repeats,1 , 64, 1, NULL, "repeats", 60);
+     spinbox_repeats =  SpinBox::createSpinbox(repeats_container_, repeats,3 , 64, 1, NULL, "repeats", 60);
 
      kb_freq_ = KeyboardHelper::createKeyboard(appScreen_, LV_KEYBOARD_MODE_NUMBER);
      lv_obj_add_flag(kb_freq_, LV_OBJ_FLAG_HIDDEN);

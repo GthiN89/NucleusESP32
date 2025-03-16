@@ -85,10 +85,9 @@ bool SubGHzParser::processHeader(File32* file) {
 
 void SubGHzParser::processRawDataBlocks(File32* file) {
     String line;
-    
+    updatetransmitLabel = true;
     // For each line that starts with "RAW_Data:" we treat it as a separate block.
     while (file->available()) {
-        updatetransmitLabel = true;
         line = file->readStringUntil('\n');
         line.trim();
         
@@ -102,7 +101,6 @@ void SubGHzParser::processRawDataBlocks(File32* file) {
             Serial.println(line);
         }
     }
-    updatetransmitLabel = false;
 }
 
 std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
@@ -146,7 +144,6 @@ void SubGHzParser::sendRawData(const std::vector<RawDataElement>& rawData) {
         s++;
     }
     Serial.println();    
-    codesSend++;
     CC1101.sendSamples(samplesClean, tempSampleCount, 0);    
     C1101CurrentState = STATE_IDLE;
 }

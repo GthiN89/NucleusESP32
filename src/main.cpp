@@ -54,6 +54,7 @@ void init_touch(TouchCallback singleTouchCallback);
  }
 
 void setup() {
+    pinMode(21, OUTPUT);
     digitalWrite(21, HIGH);
 
   Serial.begin(115200);
@@ -192,6 +193,13 @@ void bruteForceTask(void *pvParameters) {
 }
 
  void CC1101Loop() {
+
+    if(updatetransmitLabel) {
+        Serial.println(codesSend);
+        String text = "Transmitting\n Codes send: " + String(codesSend);
+        lv_label_set_text(label_sub, text.c_str());        
+    }
+
     if(C1101CurrentState == STATE_CODEGRABBER) {
                // delay(50);
                 Serial.println(gpio_get_level(CC1101_CCGDO0A));
@@ -325,10 +333,7 @@ void bruteForceTask(void *pvParameters) {
    default:
     break;
    }
-       if(updatetransmitLabel) {
-        String text = "Transmitting\n Codes send: " + String(codesSend);
-        lv_label_set_text(label_sub, text.c_str());        
-    }
+
     if(RFbruteForcer.sendingFlag) {
          String text = String(RFbruteForcer.counter) + "/4096";
          lv_label_set_text(screenMgrM.getTextAreaRCSwitchMethod(), text.c_str());

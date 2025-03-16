@@ -40,14 +40,14 @@ SDcard& SDcard::getInstance() {
 
 bool SDcard::initializeSD() {
     if (!SD.begin(SD_CONFIG)) {
-        //Serial.println(F("SD Card MOUNT FAIL"));
+        Serial.println(F("SD Card MOUNT FAIL"));
         return false;
     }
-    //Serial.println(F("SD Card MOUNT SUCCESS"));
+    Serial.println(F("SD Card MOUNT SUCCESS"));
     uint64_t cardSize = (uint64_t)SD.card()->sectorCount() * 512 / (1024 * 1024);
-    //Serial.print(F("Reported SD Card Size: "));
-    //Serial.print(cardSize);
-    //Serial.println(F(" MB"));
+    Serial.print(F("Reported SD Card Size: "));
+    Serial.print(cardSize);
+    Serial.println(F(" MB"));
     return true;
 }
 
