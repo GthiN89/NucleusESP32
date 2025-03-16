@@ -3,24 +3,22 @@
 
 #include <Arduino.h>
 #include <vector>
-#include <string>
 #include <cstdint>
 #include <SPI.h>
+#include <array>
 #include <map>
-#include <string>
 #include "modules/RF/CC1101.h"
 #include "GUI/events.h"
 #include "modules/ETC/SDcard.h"
 #include "SD.h"
 
-using Frequency = uint32_t;  
-using PresetString = String; 
-using ProtocolString = String; 
-using RawDataElement = int16_t; 
+
+using Frequency = uint32_t;
+using RawDataElement = int16_t;
+using CustomPresetElement = uint8_t;
+
 extern int codesSend;
 
-
-using CustomPresetElement = uint8_t;
 
 struct SubGHzData {
     Frequency frequency;
@@ -35,34 +33,34 @@ struct SubGHzData {
     std::vector<RawDataElement> key_data;
 };
 
-
-struct RFDetect {
-    uint32_t frequencyIN;
-    uint32_t PAIn;
-    uint32_t frequencyOUT;
-    uint32_t PAOut;
-    uint32_t Preset;
-};
-
 class SubGHzParser {
 public:
-  //  SubGHzParser();
-    bool loadFile(const char* filename); //spfs
-    SubGHzData parseContent();
-    const String& getFileContent() const { return file_content; }
-    void sendRawData(const std::vector<RawDataElement>& rawData);
-    void setRegisters();
-CC1101_CLASS CC1101;
-EVENTS events1;
-SubGHzData data;
-ELECHOUSE_CC1101 ELECCC1101;
-SDcard& SD_SUB = SDcard::getInstance();  
+    SubGHzParser() = default;
 
+    SubGHzData parseContent(const char* filename);
+    
+
+    void sendRawData(const std::vector<RawDataElement>& rawData);
+    
+    void setRegisters();
+
+    ELECHOUSE_CC1101 ELECCC1101;
+    SDcard& SD_SUB = SDcard::getInstance();  
+    
+    
 private:
-    String file_content;
-    std::vector<CustomPresetElement> parseCustomPresetData(const String& line);
-    // Helper method to parse a line of raw data
+
+    SubGHzData data;
+    
     std::vector<RawDataElement> parseRawData(const String& line);
-    void clearData();
+    
+    std::vector<CustomPresetElement> parseCustomPresetData(const String& line);
+    
+
+    bool processHeader(File32* file);
+    
+
+    void processRawDataBlocks(File32* file);
 };
+
 #endif // SUBGHZ_PARSER_H

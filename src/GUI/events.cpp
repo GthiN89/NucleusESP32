@@ -872,8 +872,8 @@ void EVENTS::confirm__explorer_play_sub_cb(lv_event_t * e)
     SD_EVN.restartSD();
             ////Serial.print("Transmiting?");
             ////Serial.println(EVENTS::fullPath);
-            String text = "Transmitting\n Codes send: " + String(codesSend);
-            lv_label_set_text(label_sub, text.c_str());
+         //   String text = "Transmitting\n Codes send: " + String(codesSend);
+         //   lv_label_set_text(label_sub, text.c_str());
             updatetransmitLabel = true;
             lv_obj_clean(button_container);
             lv_obj_set_size(button_container, LV_PCT(100), LV_SIZE_CONTENT);
@@ -917,7 +917,7 @@ void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
     stopTransmit = true;
-    codesSend = 0;
+   // codesSend = 0;
     lv_obj_t * msgbox = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
     lv_obj_del(msgbox);
     CC1101EV.disableTransmit();
@@ -932,37 +932,21 @@ void EVENTS::close_explorer_play_sub_cb(lv_event_t * e) {
 //transmit task on core 1
 
 void EVENTS::CC1101TransmitTask(void* pvParameters) {    
-    
-
     char* fullPath = static_cast<char*>(pvParameters);
-
+    
     detachInterrupt(CC1101_CCGDO0A);
     detachInterrupt(CC1101_CCGDO2A);
-    digitalWrite(CC1101_CS, LOW);
-    CC1101EV.initRaw();
-    ELECHOUSE_cc1101.setCCMode(0); 
-    ELECHOUSE_cc1101.setPktFormat(3);
-    ELECHOUSE_cc1101.setPA(12);
-    ELECHOUSE_cc1101.SetTx();
-    pinMode(CC1101_CCGDO0A, OUTPUT);
-    digitalWrite(CC1101_CCGDO0A, LOW);
-    
-    ////Serial.print("Loading file: ");
-    ////Serial.println(fullPath);
-      if (SD_EVN.fileExists(fullPath)) {
-     SD_EVN.read_sd_card_flipper_file(fullPath);
+
+    char tempPath[MAX_PATH_LENGTH];
+    snprintf(tempPath, sizeof(tempPath), "/%s", fullPath);
+    fullPath = strdup(tempPath);
+
+    SD_EVN.restartSD();
+    if (SD_EVN.fileExists(fullPath)) {
         SubGHzParser parser;
-    parser.loadFile(fullPath);
-    SubGHzData data = parser.parseContent();
-
-   //   delay(1);
-  } else {
-      ////Serial.println("File does not exist.");
-  }
-
-
-    vTaskDelete(taskHandle);
+        SubGHzData data = parser.parseContent(fullPath);
     }
-
-
+    
+    vTaskDelete(NULL);
+}
 

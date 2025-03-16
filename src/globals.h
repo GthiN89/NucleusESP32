@@ -98,9 +98,9 @@ namespace NFC {
 
 //---------------------
 
- #define CYD_MOSI 21   // Master Out Slave In
- #define CYD_MISO 35  // Master In Slave Out
- #define CYD_SCLK 22  // Serial Clock
+ #define CYD_MOSI 23   // Master Out Slave In
+ #define CYD_MISO 19  // Master In Slave Out
+ #define CYD_SCLK 18  // Serial Clock
 
 // Pin configuration for CC1101 nfc CC-27 NRF24 CC-16
 #define CC1101_CS 27    // Chip Select
@@ -108,7 +108,7 @@ namespace NFC {
 #define CC1101_MISO CYD_MISO  // Master In Slave Out
 #define CC1101_SCLK CYD_SCLK  // Serial Clock
 
-#define CCGDO0A GPIO_NUM_17      // GDO0-NFC IRQ, NF IRQ - input only
+#define CCGDO0A GPIO_NUM_22      // GDO0-NFC IRQ, NF IRQ - input only
 // #define CCGDO2A GPIO_NUM_4      // GDO2 -rst - input output
 
 #define CC1101_CCGDO0A CCGDO0A      // GDO0

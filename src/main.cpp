@@ -95,23 +95,25 @@ void setup() {
     SPI.end();                     
     delay(10);                      
 
-    digitalWrite(PN532_SS, LOW);   
-    SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
-    delay(10);                      
+    // digitalWrite(PN532_SS, LOW);   
+    // SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
+    // delay(10);                      
 
-    if (NFCPN.init()) {
-        Serial.println("PN532 initialized.");
-    } else {
-        Serial.println("PN532 initialization failed!");
-    }
+    // if (NFCPN.init()) {
+    //     Serial.println("PN532 initialized.");
+    // } else {
+    //     Serial.println("PN532 initialization failed!");
+    // }
 
-    digitalWrite(PN532_SS, HIGH);   // Deselect PN532 explicitly after initialization
+    // digitalWrite(PN532_SS, HIGH);   // Deselect PN532 explicitly after initialization
 
-    SPI.end(); 
+    // SPI.end(); 
 
     pinMode(IR_RX, INPUT_PULLUP);
 
     pinMode(26, OUTPUT);
+    pinMode(21, OUTPUT);
+    digitalWrite(21, HIGH);
       
 
 }
@@ -191,7 +193,7 @@ void bruteForceTask(void *pvParameters) {
  void CC1101Loop() {
     if(C1101CurrentState == STATE_CODEGRABBER) {
                // delay(50);
-           //     Serial.println(gpio_get_level(CC1101_CCGDO2A));
+                Serial.println(gpio_get_level(CC1101_CCGDO0A));
         if (CC1101.CheckReceived()) {
              delay(5);
             CC1101.disableReceiver();
@@ -205,6 +207,7 @@ void bruteForceTask(void *pvParameters) {
     }
 
     if(C1101CurrentState == STATE_RAWREC) {
+        Serial.println(gpio_get_level(CC1101_CCGDO0A));
         if (CC1101.CheckReceived()) {
             delay(5);
            CC1101.disableReceiver();
@@ -219,7 +222,7 @@ void bruteForceTask(void *pvParameters) {
 
     if(C1101CurrentState == STATE_RCSWITCH) {
                // delay(50);
-               // Serial.println(gpio_get_level(CC1101_CCGDO2A));
+                Serial.println(gpio_get_level(CC1101_CCGDO0A));
         if (mySwitch1.available()) {
              delay(5);
             ir.output(mySwitch1.getReceivedValue(), mySwitch1.getReceivedBitlength(), mySwitch1.getReceivedDelay(), mySwitch1.getReceivedRawdata(),mySwitch1.getReceivedProtocol(), screenMgrM.getTextArea());
@@ -247,11 +250,11 @@ void bruteForceTask(void *pvParameters) {
         // .c_str());
     }
 
-    if(C1101CurrentState == STATE_SEND_FLIPPER) {
-        SubGHzParser parser;
-        parser.loadFile(EVENTS::fullPath);
-        SubGHzData data = parser.parseContent();
-    }
+    // if(C1101CurrentState == STATE_SEND_FLIPPER) {
+    //     SubGHzParser parser;
+    //     parser.loadFile(EVENTS::fullPath);
+    //   //  SubGHzData data = parser.parseContent();
+    // }
 
     if(C1101CurrentState == STATE_BRUTE) {
             C1101CurrentState = STATE_IDLE;

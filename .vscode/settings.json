@@ -77,5 +77,6 @@
     },
     "idf.portWin": "COM33",
     "C_Cpp.errorSquiggles": "disabled",
-    "idf.pythonInstallPath": "/usr/bin/python3"
+    "idf.pythonInstallPath": "/usr/bin/python3",
+    "idf.port": "/dev/ttyUSB1"
 }

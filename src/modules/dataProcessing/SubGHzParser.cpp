@@ -1,67 +1,108 @@
 #include "SubGHzParser.h"
 
-
-
-
 int codesSend = 0;
 
-SubGHzData SubGHzParser::parseContent() {
-
-    String line;
-    int index = 0;
+SubGHzData SubGHzParser::parseContent(const char* filename) {
+    Serial.println(filename);
     
-    while (index < file_content.length()) {
-        int endOfLine = file_content.indexOf('\n', index);
-        if (endOfLine == -1) endOfLine = file_content.length();
-        line = file_content.substring(index, endOfLine);
+    // First pass: open file and process header.
+    File32* file = SD_SUB.createOrOpenFile(filename, O_RDONLY);
+    if (!file) {
+        return data;
+    }
+    
+    bool radioLoaded = processHeader(file);
+    file->close();
+    SD_SUB.endSD();
+    SD_SUB.initializeSD();
+    
+    if (!radioLoaded) {
+        return data;
+    }
+    
+    
+    file = SD_SUB.createOrOpenFile(filename, O_RDONLY);
+    if (!file) {
+        Serial.println("DEBUG: Failed to open file (second pass)");
+        return data;
+    }
+    
+    String line;
+    while (file->available()) {
+        line = file->readStringUntil('\n');
         line.trim();
+        if (line.startsWith("Protocol:")) {
+            break;
+        }
+    }
+
+    processRawDataBlocks(file);
+    file->close();
+    return data;
+}
+
+bool SubGHzParser::processHeader(File32* file) {
+    String line;
+    bool headerComplete = false;
+    
+    while (file->available() && !headerComplete) {
+        line = file->readStringUntil('\n');
+        line.trim();
+        if (line.length() == 0)
+            continue;
         
         if (line.startsWith("Frequency:")) {
             data.frequency = static_cast<Frequency>(line.substring(10).toInt());
             SD_SUB.tempFreq = data.frequency / 1000000.0f;
+            Serial.println(data.frequency);
         } else if (line.startsWith("Preset:")) {
             data.preset = line.substring(7);
-            C1101preset =  convert_str_to_enum(data.preset.c_str());
-            SubGHzParser::setRegisters();
+            Serial.println(data.preset);
         } else if (line.startsWith("Custom_preset_data:")) {
-            data.custom_preset_data = parseCustomPresetData(line.substring(19));            
+            data.custom_preset_data = parseCustomPresetData(line.substring(19));
         } else if (line.startsWith("Protocol:")) {
             data.protocol = line.substring(9);
-        } else if (line.startsWith("RAW_Data:")) {
-            std::vector<RawDataElement> raw_data_sequence = parseRawData(line.substring(9));
-            index = endOfLine + 1;
-            while (index < file_content.length()) {
-                endOfLine = file_content.indexOf('\n', index);
-                if (endOfLine == -1) endOfLine = file_content.length();
-                String nextLine = file_content.substring(index, endOfLine);
-                nextLine.trim();
-                if (nextLine.length() > 0 && (nextLine[0] == '-' || isDigit(nextLine[0]))) {
-                    auto parsed_line = parseRawData(nextLine);
-                    raw_data_sequence.insert(raw_data_sequence.end(), parsed_line.begin(), parsed_line.end());
-                    index = endOfLine + 1;
-                } else {
-                    break;
-                }
-            }
-            data.raw_data_list.push_back(raw_data_sequence);
-            continue; 
-        } else if (line.startsWith("Bit:")) {
-            data.bit = line.substring(4);
-        } else if (line.startsWith("Key:")) {
-            auto parsed_key = parseRawData(line.substring(4));
-            data.key_data.insert(data.key_data.end(), parsed_key.begin(), parsed_key.end());
-        } else if (line.startsWith("TE:")) {
-            data.te = line.substring(3);
-        } else if (line.startsWith("Bit_RAW:")) {
-            data.bit_raw = line.substring(8);
-        } else if (line.startsWith("Data_RAW:")) {
-            auto parsed_raw_data = parseRawData(line.startsWith("Data_RAW:") ? line.substring(9) : line);
-            data.raw_data.insert(data.raw_data.end(), parsed_raw_data.begin(), parsed_raw_data.end());        }
-        
-        index = endOfLine + 1;
+            Serial.println(data.protocol);
+            headerComplete = true;
+        } else {
+            Serial.print("DEBUG: Ignoring header line: ");
+            Serial.println(line);
+        }
     }
     
-    return data;
+    if (headerComplete) {
+        if (CC1101.init()) {
+            Serial.println("DEBUG: Radio initialized successfully.");
+        } else {
+            Serial.println("DEBUG: Radio initialization failed.");
+            return false;
+        }
+        setRegisters();
+        return true;
+    }
+    return false;
+}
+
+void SubGHzParser::processRawDataBlocks(File32* file) {
+    String line;
+    
+    // For each line that starts with "RAW_Data:" we treat it as a separate block.
+    while (file->available()) {
+        updatetransmitLabel = true;
+        line = file->readStringUntil('\n');
+        line.trim();
+        
+        if (line.startsWith("RAW_Data:")) {
+            std::vector<RawDataElement> rawDataBuffer = parseRawData(line.substring(9));
+            Serial.println(rawDataBuffer.size());
+            data.raw_data_list.push_back(rawDataBuffer);
+            sendRawData(rawDataBuffer);
+            codesSend++;
+        } else if (line.length() > 0) {
+            Serial.println(line);
+        }
+    }
+    updatetransmitLabel = false;
 }
 
 std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
@@ -69,7 +110,8 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
     int start = 0;
     while (start < line.length()) {
         int end = line.indexOf(' ', start);
-        if (end == -1) end = line.length();
+        if (end == -1)
+            end = line.length();
         String value = line.substring(start, end);
         if (value.length() > 0) {
             result.push_back(static_cast<RawDataElement>(value.toInt()));
@@ -79,183 +121,81 @@ std::vector<RawDataElement> SubGHzParser::parseRawData(const String& line) {
     return result;
 }
 
-
-
-  void SubGHzParser::sendRawData(const std::vector<RawDataElement>& rawData) {
-    // if(stopTransmit) {
-    //     return;
-    // }
-    
-
+void SubGHzParser::sendRawData(const std::vector<RawDataElement>& rawData) {
     int tempSampleCount = rawData.size();
-    if (tempSampleCount % 2 == 0) {
-    } else {
-    tempSampleCount++;
+    if (tempSampleCount % 2 != 0) {
+        tempSampleCount++; // Ensure even count.
     }
- //  Serial.print(disconnectSD());
     int samplesClean[tempSampleCount];
     for (int i = 0; i < tempSampleCount; i++) {
-    samplesClean[i] = 1;
+        samplesClean[i] = 1;
     }
-        int s = 0;
-        if(rawData[s] < 0){
-            samplesClean[s] = 100;
-            tempSampleCount++;
-            s++;
-        }
-
-        while(s < tempSampleCount) {       
-        if (rawData[s]>0)
-        {            
+    
+    int s = 0;
+    if (rawData[s] < 0) {
+        samplesClean[s] = 100;
+        tempSampleCount++;
+        s++;
+    }
+    while (s < tempSampleCount) {
+        if (rawData[s] > 0) {
             samplesClean[s] = rawData[s];
-        } else {            
-            if(rawData[s] * -1 > 0) {            
-            samplesClean[s] = rawData[s] * -1;
-            }
+        } else {
+            samplesClean[s] = (rawData[s] * -1);
         }
         s++;
     }
-    
-    
-
-    for (int i = 0; i < tempSampleCount; i++) {        
-        Serial.print(String(samplesClean[i]).c_str());
-            Serial.print(", ");
-        }
+    Serial.println();    
     codesSend++;
-    Serial.print(SD_SUB.tempFreq);
-    CC1101.setFrequency(SD_SUB.tempFreq);
-    CC1101.setCC1101Preset(C1101preset);
-    CC1101.loadPreset();
-    Serial.println(presetToString(C1101preset));   
-
-   
-    CC1101.sendSamples(samplesClean, tempSampleCount, 0);
-
+    CC1101.sendSamples(samplesClean, tempSampleCount, 0);    
     C1101CurrentState = STATE_IDLE;
+}
 
-  }
-
-void SubGHzParser::setRegisters(){
-    uint8_t addr;
-    uint8_t value;
-    std::vector<uint8_t> regs; 
-    size_t index = 0;
-
+void SubGHzParser::setRegisters() {    
     if (data.preset == "FuriHalSubGhzPresetCustom") {
-        regs = data.custom_preset_data;  
-    } else {
-        const uint8_t* array = presetTobyteArray(convert_str_to_enum(data.preset.c_str()));
-    size_t presetArrayLength = 44;
-    regs.assign(array, array + presetArrayLength);
-    }
-
-    while (index < regs.size()) {
-        addr = regs[index++];
-        value = regs[index++];
-        ELECCC1101.SpiWriteReg(addr, value);
-
-        if (addr == 0x00 && value == 0x00) {
-            break;
+        std::vector<uint8_t> regs = data.custom_preset_data;
+        size_t index = 0;
+        while (index < regs.size()) {
+            uint8_t addr = regs[index++];
+            uint8_t value = regs[index++];
+            ELECCC1101.SpiWriteReg(addr, value);
+            if (addr == 0x00 && value == 0x00) {
+                break;
+            }
         }
+        if (index + 8 <= regs.size()) {
+            std::array<uint8_t, 8> paValue;
+            std::copy(regs.begin() + index, regs.begin() + index + paValue.size(), paValue.begin());
+            ELECCC1101.SpiWriteBurstReg(CC1101_PATABLE, paValue.data(), paValue.size());
+
+        }
+    } else {
+        CC1101_PRESET presetEnum = convert_str_to_enum(data.preset.c_str());
+        Serial.println((int)presetEnum);
+        CC1101.setFrequency(SD_SUB.tempFreq);
+        CC1101.setCC1101Preset(presetEnum);
+        CC1101.loadPreset();
+        ELECHOUSE_cc1101.setPA(12);
+        CC1101.initRaw();
+
     }
+    
+    ELECHOUSE_cc1101.SetTx();
+    gpio_set_direction(CC1101_CCGDO0A, GPIO_MODE_OUTPUT);
+    SPI.end(); 
 
-    if (index + 8 <= regs.size()) {
-        std::array<uint8_t, 8> paValue;
-        std::copy(regs.begin() + index, regs.begin() + index + paValue.size(), paValue.begin());
-        ELECCC1101.SpiWriteBurstReg(CC1101_PATABLE, paValue.data(), paValue.size());
-    }
- 
-    }
-
-     
-
-
-
+}
 
 std::vector<CustomPresetElement> SubGHzParser::parseCustomPresetData(const String& line) {
     std::vector<uint8_t> result;
     int start = 0;
-
     while (start < line.length()) {
         int end = line.indexOf(' ', start);
-        if (end == -1) end = line.length();
-
+        if (end == -1)
+            end = line.length();
         String hex_value = line.substring(start, end);
-        
         result.push_back(static_cast<uint8_t>(strtol(hex_value.c_str(), NULL, 16)));
-        
         start = end + 1;
     }
-
-    return result; // returns as a vector of uint8_t, a byte array
+    return result;
 }
-
-
-
-bool SubGHzParser::loadFile(const char* filename) {
-  Serial.print("Read Flipper File");
-  Serial.print(filename);
-
-    File32* file = SD_SUB.createOrOpenFile(filename, O_RDONLY);
-    if (!file)
-    {
-        Serial.println("Failed to open file: " + String(filename));
-        return false;
-    }
-
-    String line;
-    bool parsingRawData = false;
-    std::vector<RawDataElement> raw_data_sequence;
-
-  //  Read the file line-by-line
-    while (file->available()) {
-        line = file->readStringUntil('\n');
-        line.trim();
-
-        if (line.startsWith("RAW_Data:")) {
-            raw_data_sequence = parseRawData(line.substring(9));
-            parsingRawData = true;
-
-            if (parsingRawData) {
-                sendRawData(raw_data_sequence);  
-                raw_data_sequence.clear();       
-            }
-            // Start a new RAW_Data section
-            
-        
-        } else if (parsingRawData && (line[0] == '-' || isDigit(line[0]))) {
-            Serial.print(line);
-            auto parsed_line = parseRawData(line);
-            raw_data_sequence.insert(raw_data_sequence.end(), parsed_line.begin(), parsed_line.end());
-
-        } else {
-            if (parsingRawData) {
-                sendRawData(raw_data_sequence);
-                raw_data_sequence.clear();
-                parsingRawData = false;
-            }
-            if (line.startsWith("Frequency:")) {
-                Serial.print("Frequency: ");
-                Serial.println(line.substring(10));
-            }
-        }
-    }
-    if (parsingRawData) {
-        sendRawData(raw_data_sequence);
-    }
-
-    file->close();
-    return true;
-}
-
-
-
-// void SubGHzParser::clearData() {
-//  //   data = SubGHzData();  // Reset data to a new instance (clears all fields)
-//    // SD_SUB.tempFreq = 0;
-// //    SD_SUB.tempSampleCount = 0;
-//   //  C1101CurrentState = STATE_IDLE;
-//  //   codesSend = 0;
-//     SD_SUB.FlipperFileFlag = false;
-// }

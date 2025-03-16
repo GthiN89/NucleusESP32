@@ -9,8 +9,10 @@
 #define SD_FAT_TYPE 1
 
 // SoftSPI configuration
-SoftSpiDriver<SDCARD_MISO_PIN, SDCARD_MOSI_PIN, SDCARD_SCK_PIN> softSpi;
-#define SD_CONFIG SdSpiConfig(SDCARD_CS_PIN, DEDICATED_SPI, SPI_FULL_SPEED, &softSpi)
+//SoftSpiDriver<SDCARD_MISO_PIN, SDCARD_MOSI_PIN, SDCARD_SCK_PIN> softSpi;
+//#define SD_CONFIG SdSpiConfig(SDCARD_CS_PIN, DEDICATED_SPI, SPI_FULL_SPEED, &softSpi)
+
+#define SD_CONFIG SdSpiConfig(SDCARD_CS_PIN, SHARED_SPI, SPI_HALF_SPEED)
 
 SdFat32 SD;  
 
@@ -266,16 +268,22 @@ bool SDcard::writeFile(File32* file, const std::vector<uint8_t>& data, unsigned 
 bool SDcard::restartSD() {
     // Unmount SD card
     SD.end();
-    softSpi.end();
+    SPI.end();
     delay(20);
-    softSpi.begin();
+    SPI.begin();
     delay(20);  // Small delay to allow proper unmounting
 
     // Attempt to remount the SD card
     if (!initializeSD()) {
-        //Serial.println(F("SD Card reinitialization failed."));
+        Serial.println(F("SD Card reinitialization failed."));
         return false;
     }
-    //Serial.println(F("SD Card reinitialized successfully."));
+    Serial.println(F("SD Card reinitialized successfully."));
     return true;
+}
+
+
+void SDcard::endSD() {
+    SD.end();
+    SPI.end();
 }

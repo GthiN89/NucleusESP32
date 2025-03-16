@@ -43,6 +43,7 @@ public:
     lv_fs_res_t readNextFileInDir(File32* dir, char* fn, size_t fn_len);
     File32* getByPath(const char * path); 
     bool restartSD();
+    void endSD();
 
     //vars
 
