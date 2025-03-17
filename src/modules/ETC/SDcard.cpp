@@ -39,6 +39,8 @@ SDcard& SDcard::getInstance() {
 }
 
 bool SDcard::initializeSD() {
+    digitalWrite(SDCARD_CS_PIN, LOW);
+    delay(5);
     if (!SD.begin(SD_CONFIG)) {
         Serial.println(F("SD Card MOUNT FAIL"));
         return false;

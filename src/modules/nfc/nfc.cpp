@@ -20,7 +20,9 @@ bool NFC_CLASS::init() {
 
     // Re-init SPI with your pins
     SPI.end();
+    
     delay(10);
+
     SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI);
     delay(10);
 

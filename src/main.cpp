@@ -21,7 +21,9 @@
 #include "modules/IR/ir.h"
 
 #include "modules/nfc/nfc.h"
+#include "backlight/backlight.hpp"
 
+backLight_ bcklght;
 
 
 
@@ -54,8 +56,20 @@ void init_touch(TouchCallback singleTouchCallback);
  }
 
 void setup() {
-    pinMode(21, OUTPUT);
-    digitalWrite(21, HIGH);
+    pinMode(CYD_MISO, INPUT);
+    pinMode(CYD_MOSI, OUTPUT);
+    pinMode(CYD_SCLK, OUTPUT);
+    pinMode(CC1101_CS, OUTPUT);
+    pinMode(PN532_SS, OUTPUT);
+    pinMode(5, OUTPUT);
+
+    digitalWrite(CC1101_CS, HIGH);
+    digitalWrite(PN532_SS, HIGH);
+    digitalWrite(5, HIGH);
+
+
+    bcklght.init_pwm();
+    bcklght.set_backlight(1000);
 
   Serial.begin(115200);
   init_touch([]() { });
@@ -78,6 +92,23 @@ void setup() {
     register_touch(disp);
     SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI);
 
+
+//     digitalWrite(PN532_SS, LOW);   
+//     SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
+//     delay(10);                      
+
+//     if (NFCPN.init()) {
+//         Serial.println("PN532 initialized.");
+//     } else {
+//         Serial.println("PN532 initialization failed!");
+//     }
+
+//     digitalWrite(PN532_SS, HIGH);   // Deselect PN532 explicitly after initialization
+
+//    SPI.end(); 
+
+ 
+
     if (!SD_CARD.initializeSD()) {
         Serial.println(F("Failed to initialize SD card!"));
     }
@@ -97,25 +128,7 @@ void setup() {
     SPI.end();                     
     delay(10);                      
 
-    // digitalWrite(PN532_SS, LOW);   
-    // SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
-    // delay(10);                      
-
-    // if (NFCPN.init()) {
-    //     Serial.println("PN532 initialized.");
-    // } else {
-    //     Serial.println("PN532 initialization failed!");
-    // }
-
-    // digitalWrite(PN532_SS, HIGH);   // Deselect PN532 explicitly after initialization
-
-    // SPI.end(); 
-
-    pinMode(IR_RX, INPUT_PULLUP);
-
-    pinMode(26, OUTPUT);
-    pinMode(21, OUTPUT);
-    digitalWrite(21, HIGH);
+   
       
 
 }
