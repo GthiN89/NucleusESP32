@@ -125,7 +125,7 @@ namespace NFC {
 
 #define PN532_SCK  (CYD_SCLK)
 #define PN532_MOSI (CYD_MOSI)
-#define PN532_SS   (16)
+#define PN532_SS   (17)
 #define PN532_MISO (CYD_MISO)
 
 

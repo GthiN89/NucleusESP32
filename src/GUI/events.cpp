@@ -329,6 +329,12 @@ void EVENTS::sendCapturedEvent(lv_event_t * e) {
             char selected_text_type[32];
             lv_dropdown_get_selected_str(screenMgr.dropdown_2, selected_text_type, sizeof(selected_text_type)); 
          if(strcmp(selected_text_type, "Raw") == 0) {
+            detachInterrupt(CC1101_CCGDO0A);
+            ELECHOUSE_cc1101.SetTx();
+            CC1101EV.sendRaw();   
+    } else if(strcmp(selected_text_type, "Decoder") == 0) {
+        detachInterrupt(CC1101_CCGDO0A);
+        ELECHOUSE_cc1101.SetTx();
         CC1101EV.sendRaw();   
     } else if(strcmp(selected_text_type, "RC-Switch") == 0) {
         CC1101EV.initRaw();

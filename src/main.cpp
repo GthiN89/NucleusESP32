@@ -68,6 +68,7 @@ void setup() {
     digitalWrite(5, HIGH);
 
 
+
     bcklght.init_pwm();
     bcklght.set_backlight(1000);
 
@@ -93,29 +94,10 @@ void setup() {
     SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI);
 
 
-//     digitalWrite(PN532_SS, LOW);   
-//     SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
-//     delay(10);                      
-
-//     if (NFCPN.init()) {
-//         Serial.println("PN532 initialized.");
-//     } else {
-//         Serial.println("PN532 initialization failed!");
-//     }
-
-//     digitalWrite(PN532_SS, HIGH);   // Deselect PN532 explicitly after initialization
-
-//    SPI.end(); 
-
- 
-
-    if (!SD_CARD.initializeSD()) {
-        Serial.println(F("Failed to initialize SD card!"));
-    }
-    lv_fs_if_init();
-    digitalWrite(PN532_SS ,HIGH);
-    digitalWrite(CC1101_CS, LOW);
-    delay(5);
+    SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
+    delay(2);
+    digitalWrite(CC1101_CS, LOW);   
+    delay(5);                      
 
     if (CC1101.init()) {
         Serial.println(F("CC1101 initialized."));
@@ -125,8 +107,32 @@ void setup() {
     }
    
     digitalWrite(CC1101_CS, HIGH);  
-    SPI.end();                     
-    delay(10);                      
+    SPI.end();
+        
+    SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
+    delay(2);
+    digitalWrite(PN532_SS, HIGH);
+
+    delay(10);   
+
+    if (NFCPN.init()) {
+        Serial.println("PN532 initialized.");
+    } else {
+        Serial.println("PN532 initialization failed!");
+    }
+
+    digitalWrite(PN532_SS, HIGH);   // Deselect PN532 explicitly after initialization
+
+   SPI.end(); 
+
+ 
+
+    if (!SD_CARD.initializeSD()) {
+        Serial.println(F("Failed to initialize SD card!"));
+    }
+    lv_fs_if_init();
+    digitalWrite(PN532_SS ,HIGH);
+                   
 
    
       

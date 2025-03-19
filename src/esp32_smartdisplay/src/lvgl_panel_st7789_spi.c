@@ -29,17 +29,24 @@ void st7789_lv_flush(lv_display_t *display, const lv_area_t *area, uint8_t *px_m
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, px_map));
 };
 
-
+static lv_color_t* buf1 = NULL;
+static lv_color_t* buf2 = NULL;
 
 
 lv_display_t *lvgl_lcd_init(uint32_t hor_res, uint32_t ver_res)
 {
     lv_display_t *display = lv_display_create(DISPLAY_WIDTH, DISPLAY_HEIGHT);
     log_v("display:0x%08x", display);
-    //  Create drawBuffer
+    
     uint32_t drawBufferSize = sizeof(lv_color_t) * LVGL_BUFFER_PIXELS;
-    void *drawBuffer = heap_caps_malloc(drawBufferSize, LVGL_BUFFER_MALLOC_FLAGS);
-    lv_display_set_buffers(display, drawBuffer, NULL, drawBufferSize, LV_DISPLAY_RENDER_MODE_PARTIAL);
+    buf1 = heap_caps_aligned_alloc(32, drawBufferSize, MALLOC_CAP_DMA);
+    buf2 = heap_caps_aligned_alloc(32, drawBufferSize, MALLOC_CAP_DMA);
+    if(buf1 == NULL || buf2 == NULL) {
+        // Handle allocation failure appropriately
+    }
+    // Now set the buffers for the display
+    lv_display_set_buffers(display, buf1, buf2, drawBufferSize, LV_DISPLAY_RENDER_MODE_PARTIAL);
+    
 
     // Hardware rotation is supported
     display->rotation = LV_DISPLAY_ROTATION_0;
@@ -62,7 +69,7 @@ lv_display_t *lvgl_lcd_init(uint32_t hor_res, uint32_t ver_res)
         .cs_gpio_num = ST7789_SPI_CONFIG_CS_GPIO_NUM,
         .dc_gpio_num = ST7789_SPI_CONFIG_DC_GPIO_NUM,
         .spi_mode = ST7789_SPI_CONFIG_SPI_MODE,
-        .pclk_hz = ST7789_SPI_CONFIG_PCLK_HZ,
+        .pclk_hz = 60000000,
         .on_color_trans_done = st7789_color_trans_done,
         .user_ctx = display,
         .trans_queue_depth = ST7789_SPI_CONFIG_TRANS_QUEUE_DEPTH,

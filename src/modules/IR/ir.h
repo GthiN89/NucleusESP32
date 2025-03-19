@@ -40,10 +40,10 @@ public:
 
     struct irSignal {
         std::string signal;
-        std::uint16_t protocol;
-        std::uint16_t TYPE;
-        std::uint16_t address;
-        std::uint16_t command;
+        uint16_t protocol;
+        uint16_t TYPE;
+        uint16_t address;
+        uint16_t command;
     };
 
     struct allSignals {
