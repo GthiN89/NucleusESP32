@@ -730,38 +730,38 @@ SD_RF.closeFile(outputFilePtr);
 
 bool CC1101_CLASS::decode() {
 
-    for (int i=0; i >CC1101_CLASS::receivedData.samples.size(); i++) {
-        Serial.print(CC1101_CLASS::receivedData.samples[i]);
-        Serial.print(", ");
-    }
+    // for (int i=0; i >CC1101_CLASS::receivedData.samples.size(); i++) {
+    //     Serial.print(CC1101_CLASS::receivedData.samples[i]);
+    //     Serial.print(", ");
+    // }
     if (!CC1101_CLASS::receivedData.signals.empty()) {
         const auto& lastSignal = CC1101_CLASS::receivedData.signals.back();
-        for (int i = 0; i < lastSignal.samples.size(); i++) {
-            Serial.print(lastSignal.samples[i]);
-            Serial.print(", ");
-        }
+        // for (int i = 0; i < lastSignal.samples.size(); i++) {
+        //     Serial.print(lastSignal.samples[i]);
+        //     Serial.print(", ");
+        // }
     }
     
 
     if (CC1101_CLASS::receivedData.samples.empty()) {
-        Serial.println("No pulses to decode.");
+  //      Serial.println("No pulses to decode.");
         return false;
     }
             Serial.println("decode.");
 
 
     filterSignal();
-   Serial.println("count:");
-   Serial.println(CC1101_CLASS::receivedData.samples.size());
-   Serial.println("Pulses:");
+//    Serial.println("count:");
+//    Serial.println(CC1101_CLASS::receivedData.samples.size());
+//    Serial.println("Pulses:");
    Serial.println(pulses[0]);
    Serial.println(pulses[1]);
-    delay(5);
-    Serial.println("filtered values\n");
-    for(int i = 0; i < CC1101.receivedData.filtered.size(); i++) {
-        Serial.print(CC1101.receivedData.filtered[i]);
-        Serial.print(", ");
-    }
+  //  delay(5);
+    // Serial.println("filtered values\n");
+    // for(int i = 0; i < CC1101.receivedData.filtered.size(); i++) {
+    //     Serial.print(CC1101.receivedData.filtered[i]);
+    //     Serial.print(", ");
+    // }
     if ((DURATION_DIFF(pulses[0], 500) < 40) &&
         (DURATION_DIFF(pulses[1], 1000) < 90)) {
             Serial.println("is Hormann");
