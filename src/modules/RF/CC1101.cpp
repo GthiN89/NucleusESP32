@@ -696,37 +696,9 @@ void CC1101_CLASS::handleSignal(){
 
 CC1101_CLASS::disableReceiver();
 
-SD_RF.restartSD();
 
-if (!SD_RF.directoryExists("/recordedRFRawAll/")) {
-    SD_RF.createDirectory("/recordedRFRawAll/");
 }
 
-String filename = CC1101_CLASS::generateFilename(CC1101_MHZ, CC1101_MODULATION, CC1101_RX_BW);
-String fullPath = "/recordedRFRawAll/" + filename;
-FlipperSubFile subFile;
-File32* outputFilePtr = SD_RF.createOrOpenFile(fullPath.c_str(), O_WRITE | O_CREAT);
-if (outputFilePtr) {
-    File32& outputFile = *outputFilePtr; 
-    std::vector<uint8_t> customPresetData;
-if (C1101preset == CUSTOM) {
-    customPresetData.insert(customPresetData.end(), {
-        CC1101_MDMCFG4, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG4),
-        CC1101_MDMCFG3, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG3),
-        CC1101_MDMCFG2, ELECHOUSE_cc1101.SpiReadReg(CC1101_MDMCFG2),
-        CC1101_DEVIATN, ELECHOUSE_cc1101.SpiReadReg(CC1101_DEVIATN),
-        CC1101_FREND0,  ELECHOUSE_cc1101.SpiReadReg(CC1101_FREND0),
-        0x00, 0x00
-    });
-
-    std::array<uint8_t, 8> paTable;
-    ELECHOUSE_cc1101.SpiReadBurstReg(0x3E, paTable.data(), paTable.size());
-    customPresetData.insert(customPresetData.end(), paTable.begin(), paTable.end());
-}
-subFile.generateRaw(outputFile, C1101preset, customPresetData, rawString, CC1101_MHZ);
-SD_RF.closeFile(outputFilePtr);
-}
-}
 
 bool CC1101_CLASS::decode() {
 
@@ -1195,15 +1167,14 @@ void CC1101_CLASS::filterAll() {
     
 }
 
-
 void CC1101_CLASS::filterSignal() {
-    const auto& samples = CC1101.receivedData.samples;
-    if (samples.empty()) return;
+    if (CC1101.receivedData.samples.empty()) return;
 
     std::vector<int64_t> absArr;
-    absArr.reserve(samples.size());
-    for (auto x : samples)
+    absArr.reserve(CC1101.receivedData.samples.size());
+    for (auto x : CC1101.receivedData.samples)
         absArr.push_back(std::abs(x));
+
     if (absArr.empty()) return;
     std::sort(absArr.begin(), absArr.end());
 
@@ -1212,75 +1183,105 @@ void CC1101_CLASS::filterSignal() {
     currGroup.push_back(absArr[0]);
     int64_t groupMin = absArr[0];
 
+    // Replace floating point multiplication with integer arithmetic:
+    // Instead of: if (x <= static_cast<int64_t>(1.3 * groupMin))
+    // We use:      if (x * 10 <= groupMin * 13)
     for (size_t i = 1; i < absArr.size(); i++) {
         int64_t x = absArr[i];
-        if (x <= static_cast<int64_t>(1.3 * groupMin))
+        if (x * 10 <= groupMin * 13)
             currGroup.push_back(x);
         else {
             groups.push_back(std::move(currGroup));
-            currGroup = { x };
+            currGroup.clear();
+            currGroup.push_back(x);
             groupMin = x;
         }
     }
     if (!currGroup.empty())
         groups.push_back(std::move(currGroup));
+
     if (groups.empty()) return;
 
     if (groups.size() == 1) {
-        const auto& grp = groups[0];
-        size_t mid = grp.size() / 2;
-        int64_t median = grp[mid];
-        pulses = { median };
+        std::sort(groups[0].begin(), groups[0].end());
+        int64_t median = computeMedian(&groups[0]);
+        pulses.clear();
+        pulses.push_back(median);
         return;
     }
 
-    std::vector<std::pair<int64_t, int64_t>> groupStats;
-    groupStats.reserve(groups.size());
+    std::vector<std::pair<int64_t, int64_t>> groupStats; // {count, median}
     for (auto &g : groups) {
-        size_t mid = g.size() / 2;
-        groupStats.push_back({ static_cast<int64_t>(g.size()), g[mid] });
+        std::sort(g.begin(), g.end());
+        groupStats.push_back({ static_cast<int64_t>(g.size()), computeMedian(&g) });
     }
 
-    std::sort(groupStats.begin(), groupStats.end(),
-    [](const std::pair<int64_t, int64_t>& a, const std::pair<int64_t, int64_t>& b) {
-         return (a.first == b.first) ? (a.second < b.second) : (a.first > b.first);
-    });
+    std::sort(groupStats.begin(), groupStats.end(), 
+        [](const std::pair<int64_t, int64_t>& a, const std::pair<int64_t, int64_t>& b) {
+            return (a.first == b.first) ? (a.second < b.second) : (a.first > b.first);
+        });
+
     if (groupStats.size() < 2) return;
 
     int64_t rep1 = groupStats[0].second;
     int64_t rep2 = groupStats[1].second;
     if (rep1 > rep2) std::swap(rep1, rep2);
 
-    int64_t sum = rep1 + rep2;
-    constexpr int numCandidates = 8;
-    std::array<uint32_t, numCandidates> diffs;
-    std::array<int64_t, numCandidates> smallCandidates, bigCandidates;
-    for (int i = 0; i < numCandidates; i++) {
-        int denom = i + 3;       // 3..10
-        int multiplier = i + 2;    // 2..9
-        smallCandidates[i] = sum / denom;
-        bigCandidates[i] = smallCandidates[i] * multiplier;
-        diffs[i] = DURATION_DIFF(rep1, smallCandidates[i]);
-    }
-    auto minIt = std::min_element(diffs.begin(), diffs.end());
-    size_t index = std::distance(diffs.begin(), minIt);
+    int64_t smallCandidate1 = (rep1 + rep2) / 3;
+    int64_t bigCandidate1   = smallCandidate1 * 2;
+    int64_t smallCandidate2 = (rep1 + rep2) / 4;
+    int64_t bigCandidate2   = smallCandidate2 * 3;
+    int64_t smallCandidate3 = (rep1 + rep2) / 5;
+    int64_t bigCandidate3   = smallCandidate3 * 4;
+    int64_t smallCandidate4 = (rep1 + rep2) / 6;
+    int64_t bigCandidate4   = smallCandidate4 * 5;
+    int64_t smallCandidate5 = (rep1 + rep2) / 7;
+    int64_t bigCandidate5   = smallCandidate5 * 6;
+    int64_t smallCandidate6 = (rep1 + rep2) / 8;
+    int64_t bigCandidate6   = smallCandidate6 * 7;
+    int64_t smallCandidate7 = (rep1 + rep2) / 9;
+    int64_t bigCandidate7   = smallCandidate7 * 8;
+    int64_t smallCandidate8 = (rep1 + rep2) / 10;
+    int64_t bigCandidate8   = smallCandidate8 * 9;
+
+    uint32_t diff1 = DURATION_DIFF(rep1, smallCandidate1);
+    uint32_t diff2 = DURATION_DIFF(rep1, smallCandidate2);
+    uint32_t diff3 = DURATION_DIFF(rep1, smallCandidate3);
+    uint32_t diff4 = DURATION_DIFF(rep1, smallCandidate4);
+    uint32_t diff5 = DURATION_DIFF(rep1, smallCandidate5);
+    uint32_t diff6 = DURATION_DIFF(rep1, smallCandidate6);
+    uint32_t diff7 = DURATION_DIFF(rep1, smallCandidate7);
+    uint32_t diff8 = DURATION_DIFF(rep1, smallCandidate8);
+    uint32_t diffs[] = { diff1, diff2, diff3, diff4, diff5, diff6, diff7, diff8 };
+
+    auto minPtr = std::min_element(std::begin(diffs), std::end(diffs));
+    size_t index = std::distance(std::begin(diffs), minPtr);
 
     pulses.clear();
-    pulses.push_back(smallCandidates[index]);
-    pulses.push_back(bigCandidates[index]);
+    switch (index) {
+        case 0: pulses.push_back(smallCandidate1);  pulses.push_back(bigCandidate1); break;
+        case 1: pulses.push_back(smallCandidate2);  pulses.push_back(bigCandidate2); break;
+        case 2: pulses.push_back(smallCandidate3);  pulses.push_back(bigCandidate3); break;
+        case 3: pulses.push_back(smallCandidate4);  pulses.push_back(bigCandidate4); break;
+        case 4: pulses.push_back(smallCandidate5);  pulses.push_back(bigCandidate5); break;
+        case 5: pulses.push_back(smallCandidate6);  pulses.push_back(bigCandidate6); break;
+        case 6: pulses.push_back(smallCandidate7);  pulses.push_back(bigCandidate7); break;
+        case 7: pulses.push_back(smallCandidate8);  pulses.push_back(bigCandidate8); break;
+    }
 
     if (checkReversed(rep2))
         reverseLogicState();
 
     if (DURATION_DIFF(pulses[0], rep1) < 40 && DURATION_DIFF(pulses[1], rep2) < 80)
         filterAll();
-    else
-        pulses = { rep1, rep2 };
+    else {
+        pulses.clear();
+        pulses.push_back(rep1);
+        pulses.push_back(rep2);
+    }
 
-    //Serial.print("Pulses Med: ");
-    //Serial.print(rep1);
-    //Serial.print(" ");
-    //Serial.println(rep2);
+    Serial.print("Pulses Med: ");
+    Serial.print(rep1);
+    Serial.print(" ");
+    Serial.println(rep2);
 }
-
-

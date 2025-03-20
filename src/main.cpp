@@ -60,11 +60,11 @@ void setup() {
     pinMode(CYD_MOSI, OUTPUT);
     pinMode(CYD_SCLK, OUTPUT);
     pinMode(CC1101_CS, OUTPUT);
-    pinMode(PN532_SS, OUTPUT);
+   // pinMode(PN532_SS, OUTPUT);
     pinMode(5, OUTPUT);
 
     digitalWrite(CC1101_CS, HIGH);
-    digitalWrite(PN532_SS, HIGH);
+   // digitalWrite(PN532_SS, HIGH);
     digitalWrite(5, HIGH);
 
 
@@ -109,21 +109,21 @@ void setup() {
     digitalWrite(CC1101_CS, HIGH);  
     SPI.end();
         
-    SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
-    delay(2);
-    digitalWrite(PN532_SS, HIGH);
+//     SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
+//     delay(2);
+//     digitalWrite(PN532_SS, HIGH);
 
-    delay(10);   
+//     delay(10);   
 
-    if (NFCPN.init()) {
-        Serial.println("PN532 initialized.");
-    } else {
-        Serial.println("PN532 initialization failed!");
-    }
+//     if (NFCPN.init()) {
+//         Serial.println("PN532 initialized.");
+//     } else {
+//         Serial.println("PN532 initialization failed!");
+//     }
 
-    digitalWrite(PN532_SS, HIGH);   // Deselect PN532 explicitly after initialization
+//     digitalWrite(PN532_SS, HIGH);   // Deselect PN532 explicitly after initialization
 
-   SPI.end(); 
+//    SPI.end(); 
 
  
 
@@ -131,7 +131,7 @@ void setup() {
         Serial.println(F("Failed to initialize SD card!"));
     }
     lv_fs_if_init();
-    digitalWrite(PN532_SS ,HIGH);
+ //   digitalWrite(PN532_SS ,HIGH);
                    
 
    
@@ -228,6 +228,7 @@ void bruteForceTask(void *pvParameters) {
             delay(5);
             CC1101.handleSignal();
             CC1101.decode();
+
 
             C1101CurrentState = STATE_IDLE;
             runningModule = MODULE_NONE;

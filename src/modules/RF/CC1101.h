@@ -206,7 +206,7 @@ public:
     void filterAll(); 
     void sendEncoded(RFProtocol protocol, float frequency, int16_t bitLenght, int8_t repeats, int64_t code);
 
-
+    void SaveToSD();
 private:
     //decoder instances
     HormannProtocol hormannProtocol;
@@ -221,6 +221,7 @@ private:
 
     String generateFilename(float frequency, int modulation, float bandwidth);
     String generateRandomString(int length);
+   
 
     bool levelFlag;                         // Current GPIO level
     timer_idx_t timerIndex = TIMER_0;               // Timer index
