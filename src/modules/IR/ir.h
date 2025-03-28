@@ -12,7 +12,7 @@
 #include <lvgl.h>
 
 
-#define IR_TX 26
+#define IR_TX 4
 #define IR_RX 34
 
 #define freq_to_timerval(x) (x / 1000)

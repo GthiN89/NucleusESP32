@@ -14,3 +14,16 @@ int64_t medianOfTwo(int64_t a, int64_t b) {
 }
 
 
+uint32_t getHashDataLong(uint64_t &decodeData, size_t len) {
+    union {
+        uint32_t full;
+        uint8_t split[4];
+    } hash = {0};
+    uint8_t* p = (uint8_t*)&decodeData;
+    for(size_t i = 0; i < len; i++) {
+        hash.split[i % sizeof(hash)] ^= p[i];
+    }
+    return hash.full;
+}
+
+

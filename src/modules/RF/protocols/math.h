@@ -25,5 +25,6 @@ typedef struct {
 // Function Declarations (Prototypes)
 int64_t computeMedian(vector<int64_t>* nums);
 int64_t medianOfTwo(int64_t a, int64_t b);
+uint32_t getHashDataLong(uint64_t &decodeData, size_t len);
 
 #endif // MATH_H

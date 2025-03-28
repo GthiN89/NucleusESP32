@@ -129,19 +129,19 @@ namespace NFC {
 #define PN532_MISO (CYD_MISO)
 
 
-//ir tx = pin 26 rx 34
+
 
 extern Adafruit_PN532 nfc;
-extern NFC::NFC_CLASS NFCPN;
 
 
 
 
-class Jammer; // Forward declaration if needed
+
+
 
 extern bool teslaSucessFlag;
 
-extern Jammer jammer;
+
 
 
 extern int8_t repeats;
@@ -151,8 +151,11 @@ extern int8_t repeats;
 // 
 
 
-
-
+enum NFCState {
+    TEST,
+    NFC_IDLE
+};
+extern NFCState nfcState;
 
 
 enum C1101State
@@ -197,7 +200,8 @@ enum RunnigModule
 {
   MODULE_NONE,
   MODULE_CC1101,
-  MODULE_IR
+  MODULE_IR,
+  MODULE_NFC
 };
 
 // Current State

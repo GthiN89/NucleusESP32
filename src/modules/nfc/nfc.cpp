@@ -1,172 +1,199 @@
-
 #include "nfc.h"
-#include "protocols/MifareHandler.h"
-#include "protocols/felica.h"
-#include <aes/esp_aes.h> 
-
+#include "globals.h"
+#include <SPI.h>
+#include "protocols/MFClassicPoller.hpp"
 
 namespace NFC {
+Adafruit_PN532 nfc(PN532_SS,&SPI);
 
-NFC_CLASS::NFC_CLASS()
-{
-    // Initialize example Key B
-    _keyB[0] = 0xFF; 
-    _keyB[1] = 0xFF; 
-    _keyB[2] = 0xFF; 
-    _keyB[3] = 0xFF; 
-    _keyB[4] = 0xFF; 
-    _keyB[5] = 0xFF;
+NFC_CLASS::NFC_CLASS() {
+    // Constructor - initialization done in init()
+}
+
+NFC_CLASS::~NFC_CLASS() {
+    deinit();
 }
 
 bool NFC_CLASS::init() {
-    pinMode(PN532_SS, OUTPUT);
+    digitalWrite(CC1101_CS, HIGH);
+    digitalWrite(SD_CS, HIGH);
     digitalWrite(PN532_SS, LOW);
-
-    // Re-init SPI with your pins
+    delay(5);
     SPI.end();
-    delay(10);
-    SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI);
-    delay(10);
+    delay(5);
+    // has to be fast to dump the entire memory contents!
+    SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI, PN532_SS);
+    //SPI.setBitOrder(MSBFIRST);
+    SPI.setDataMode(SPI_MODE0);  
+    SPI.setFrequency(30000000);   
 
+    delay(5);
+    Serial.println("Looking for PN532...");
+  
     nfc.begin();
+    delay(5);
+    // uint8_t cmd[] = {0x14, 0x01};  // SAMConfig, normal mode
+    // nfc.writecommand(cmd, sizeof(cmd));
+    // delay(5);
     uint32_t versiondata = nfc.getFirmwareVersion();
-    if(!versiondata) {
-        Serial.println("PN532 not found");
-        while(true) { delay(10); }
+    if (! versiondata) {
+      Serial.print("Didn't find PN53x board");
+      while (1); // halt
     }
-
-    // Print version info
-    Serial.print("Found chip PN5");
-    Serial.println((versiondata >> 24) & 0xFF, HEX);
-    Serial.print("Firmware ver. ");
-    Serial.print((versiondata >> 16) & 0xFF, DEC);
-    Serial.print('.');
-    Serial.println((versiondata >> 8) & 0xFF, DEC);
-
-    // Optional: nfc.setPassiveActivationRetries(0xFF);
-    // Optional: nfc.SAMConfig();
-
+    // Got ok data, print it out!
+    Serial.print("Found chip PN5"); Serial.println((versiondata>>24) & 0xFF, HEX);
+    Serial.print("Firmware ver. "); Serial.print((versiondata>>16) & 0xFF, DEC);
+    Serial.print('.'); Serial.println((versiondata>>8) & 0xFF, DEC);
+  
+    Serial.println("Waiting for an ISO14443A Card ...");
     return true;
 }
 
+void NFC_CLASS::deinit() {
+    if (_nfc) {
+        delete _nfc;
+        _nfc = nullptr;
+    }
+    _initialized = false;
+    Serial.println("[NFC] Deinitialized");
+}
+
+void NFC_CLASS::read443AUUID() {
+  Serial.println("1");
+    uint8_t success;  
+    uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
+    uint8_t uidLength;   
+    Serial.println("2");
+    success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength);
+    Serial.println("3");
+   delay(50);
+        // Display some basic information about the card
+        Serial.println("Found an ISO14443A card");
+        Serial.print("  UID Length: ");Serial.print(uidLength, DEC);Serial.println(" bytes");
+        Serial.print("  UID Value: ");
+        nfc.PrintHex(uid, uidLength);
+        Serial.println("");
+    
+}
+
 void NFC_CLASS::NFCloop() {
-    uint8_t uid[7] = {0};
-    uint8_t uidLen = 0;
+  MfClassicPoller poller(&nfc);
 
-    bool success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A,
-                                           uid, &uidLen,
-                                           1000);
-    if(success) {
-        Serial.println("\nCard detected!");
-        Serial.print("UID Length: "); Serial.println(uidLen);
-        Serial.print("UID Value: ");
-        for(uint8_t i = 0; i < uidLen; i++){
-            Serial.print(uid[i], HEX); 
-            Serial.print(" ");
+  //poller.begin();
+  for(int i = 0; i < 60; i++) {
+    poller.dumpToSerial();
+    delay(500);
+  }
+
+}
+
+void NFC_CLASS::mifaredump() {
+  uint8_t success;                          // Flag to check if there was an error with the PN532
+  uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
+  uint8_t uidLength;                        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
+  uint8_t currentblock;                     // Counter to keep track of which block we're on
+  bool authenticated = false;               // Flag to indicate if the sector is authenticated
+  uint8_t data[16];                         // Array to store block data during reads
+
+  // Keyb on NDEF and Mifare Classic should be the same
+  uint8_t keyuniversal[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+
+  // Wait for an ISO14443A type cards (Mifare, etc.).  When one is found
+  // 'uid' will be populated with the UID, and uidLength will indicate
+  // if the uid is 4 bytes (Mifare Classic) or 7 bytes (Mifare Ultralight)
+  
+  nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength);
+
+  delay(50);
+
+  //if (success) {
+    // Display some basic information about the card
+   // Serial.println("Found an ISO14443A card");
+    Serial.print("  UID Length: ");Serial.print(uidLength, DEC);Serial.println(" bytes");
+    Serial.print("  UID Value: ");
+    nfc.PrintHex(uid, uidLength);
+    Serial.println("");
+
+    if (uidLength == 4)
+    {
+      // We probably have a Mifare Classic card ...
+      Serial.println("Seems to be a Mifare Classic card (4 byte UID)");
+
+      // Now we try to go through all 16 sectors (each having 4 blocks)
+      // authenticating each sector, and then dumping the blocks
+      for (currentblock = 0; currentblock < 64; currentblock++)
+      {
+        // Check if this is a new block so that we can reauthenticate
+        if (nfc.mifareclassic_IsFirstBlock(currentblock)) authenticated = false;
+
+        // If the sector hasn't been authenticated, do so first
+        if (!authenticated)
+        {
+          // Starting of a new sector ... try to to authenticate
+          Serial.print("------------------------Sector ");Serial.print(currentblock/4, DEC);Serial.println("-------------------------");
+          if (currentblock == 0)
+          {
+              // This will be 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF for Mifare Classic (non-NDEF!)
+              // or 0xA0 0xA1 0xA2 0xA3 0xA4 0xA5 for NDEF formatted cards using key a,
+              // but keyb should be the same for both (0xFF 0xFF 0xFF 0xFF 0xFF 0xFF)
+              success = nfc.mifareclassic_AuthenticateBlock (uid, uidLength, currentblock, 1, keyuniversal);
+          }
+          else
+          {
+              // This will be 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF for Mifare Classic (non-NDEF!)
+              // or 0xD3 0xF7 0xD3 0xF7 0xD3 0xF7 for NDEF formatted cards using key a,
+              // but keyb should be the same for both (0xFF 0xFF 0xFF 0xFF 0xFF 0xFF)
+              success = nfc.mifareclassic_AuthenticateBlock (uid, uidLength, currentblock, 1, keyuniversal);
+          }
+          if (success)
+          {
+            authenticated = true;
+          }
+          else
+          {
+            Serial.println("Authentication error");
+          }
         }
-        Serial.println();
-
-        // Attempt Mifare
-        attemptMifareRead(uid, uidLen);
-
-        // Attempt EMV
-        attemptEmvSelectPPSE();
+        // If we're still not authenticated just skip the block
+        if (!authenticated)
+        {
+          Serial.print("Block ");Serial.print(currentblock, DEC);Serial.println(" unable to authenticate");
+        }
+        else
+        {
+          // Authenticated ... we should be able to read the block now
+          // Dump the data into the 'data' array
+          success = nfc.mifareclassic_ReadDataBlock(currentblock, data);
+          if (success)
+          {
+            // Read successful
+            Serial.print("Block ");Serial.print(currentblock, DEC);
+            if (currentblock < 10)
+            {
+              Serial.print("  ");
+            }
+            else
+            {
+              Serial.print(" ");
+            }
+            // Dump the raw data
+            nfc.PrintHexChar(data, 16);
+          }
+          else
+          {
+            // Oops ... something happened
+            Serial.print("Block ");Serial.print(currentblock, DEC);
+            Serial.println(" unable to read this block");
+          }
+        }
+      }
     }
-
-    uint8_t command[] = { 
-        0x40,  // InDataExchange
-        0x01,  // Target number (first tag)
-        0x60,  // MIFARE Authentication (Key A)
-        0x9F,  // Block number
-        0x19
-    };
-
-    Serial.println("Sending raw NFC command...");
-    nfc.writecommand(command, sizeof(command));
-
-    uint8_t response[512];
-    nfc.readdata(response, sizeof(response));
-
-    Serial.print("Response: ");
-    for (int i = 0; i < sizeof(response); i++) {
-        Serial.print(response[i], HEX);
-        Serial.print(" ");
+    else
+    {
+      Serial.println("Ooops ... this doesn't seem to be a Mifare Classic card!");
     }
-    Serial.println();
+  //}
 
-    FelicaData* data = felica_alloc();
-    felica_reset(data);
-
-    uint8_t uid_example[FELICA_IDM_SIZE] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-    if (felica_set_uid(data, uid_example, FELICA_IDM_SIZE)) {
-        Serial.println("UID set successfully");
-    }
-
-    size_t uid_len;
-    const uint8_t* felica_uid = felica_get_uid(data, &uid_len);
-    Serial.print("UID: ");
-    for (size_t i = 0; i < uid_len; i++) {
-        Serial.print(felica_uid[i], HEX);
-        Serial.print(" ");
-    }
-    Serial.println();
-
-     Format ff;
-    ff.data = "Dummy format data";
-
-    if(felica_load(data, &ff, 1)) {
-        Serial.println("Felica data loaded successfully.");
-    } else {
-        Serial.println("Felica data load failed.");
-    }
-
-    // --- AES-based MAC calculation example ---
-    esp_aes_context ctx;
-    esp_aes_init(&ctx);
-    uint8_t ck[16] = {0};   // Dummy 16-byte card key
-    uint8_t rc[16] = {0};   // Dummy 16-byte random challenge
-    uint8_t session_key[FELICA_DATA_BLOCK_SIZE];
-    felica_calculate_session_key_aes(&ctx, ck, rc, session_key);
-    Serial.print("Session key: ");
-    for (uint8_t i = 0; i < FELICA_DATA_BLOCK_SIZE; i++) {
-        Serial.print(session_key[i], HEX);
-        Serial.print(" ");
-    }
-    Serial.println();
-    esp_aes_free(&ctx);
-
-    if(felica_save(data, &ff)) {
-        Serial.println("Felica data saved successfully.");
-    } else {
-        Serial.println("Felica data save failed.");
-    }
-
-    felica_free(data);
-}
-
-void NFC_CLASS::attemptMifareRead(uint8_t* uid, uint8_t uidLen) {
-    Serial.println("Trying Mifare Classic read (block #4)...");
-    MifareHandler mifare;
-    uint8_t data[16];
-    bool ok = mifare.readBlock(nfc, uid, uidLen,
-                               4,       // block number
-                               1,       // Key Type => KEY_B
-                               _keyB,   // key
-                               data);
-    if(!ok) {
-        Serial.println("Mifare Auth failed or not a Mifare Classic card.");
-        return;
-    }
-    Serial.print("Block #4: ");
-    for (int i = 0; i < 16; i++){
-        Serial.print(data[i], HEX);
-        Serial.print(" ");
-    }
-    Serial.println();
-}
-
-void NFC_CLASS::attemptEmvSelectPPSE() {
-    Serial.println("Trying EMV SELECT PPSE...");
 }
 
 } // namespace NFC

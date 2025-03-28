@@ -13,7 +13,7 @@
 #include "protocols/AnsonicProtocol.h"
 #include "protocols/Smc5326Protocol.h"
 #include "protocols/Holtek_HT12xProtocol.h"
-
+#include "protocols/kia.hpp"
 
 #define SAMPLE_SIZE 1024
 #define MAX_SIGNAL_LENGTH 10000000  
@@ -215,6 +215,7 @@ private:
     HoltekProtocol holtekProtocol;
     NiceFloProtocol niceFloProtocol;
     SMC5326Protocol  smc5326Protocol;
+    KiaProtocol kiaProtocol;
     
 
 

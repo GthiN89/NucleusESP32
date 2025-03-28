@@ -21,14 +21,8 @@ uint8_t runningModule = MODULE_NONE;
 bool isRaw = false;
 
 
-Adafruit_PN532 nfc(PN532_SS, &SPI);
-NFC::NFC_CLASS NFCPN;
 
-
-////////////////////////////////////////
-//FLAGS
-//////////////////
-bool CC1101_init  = false;
+NFCState nfcState = NFC_IDLE;
 
 
 CC1101_PRESET  C1101preset = AM650;

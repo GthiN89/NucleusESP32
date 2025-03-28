@@ -702,38 +702,43 @@ CC1101_CLASS::disableReceiver();
 
 bool CC1101_CLASS::decode() {
 
-    // for (int i=0; i >CC1101_CLASS::receivedData.samples.size(); i++) {
-    //     //Serial.print(CC1101_CLASS::receivedData.samples[i]);
-    //     //Serial.print(", ");
-    // }
+    delay(5);
+    for (int i=0; i >CC1101_CLASS::receivedData.samples.size(); i++) {
+        Serial.print(CC1101_CLASS::receivedData.samples[i]);
+        Serial.print(", ");
+    }
+
+    delay(5);
     if (!CC1101_CLASS::receivedData.signals.empty()) {
         const auto& lastSignal = CC1101_CLASS::receivedData.signals.back();
-        // for (int i = 0; i < lastSignal.samples.size(); i++) {
-        //     //Serial.print(lastSignal.samples[i]);
-        //     //Serial.print(", ");
-        // }
+        for (int i = 0; i < lastSignal.samples.size(); i++) {
+            Serial.print(lastSignal.samples[i]);
+            Serial.print(", ");
+        }
     }
+
+    delay(5);
     
 
     if (CC1101_CLASS::receivedData.samples.empty()) {
-  //      //Serial.println("No pulses to decode.");
+  Serial.println("No pulses to decode.");
         return false;
     }
-            //Serial.println("decode.");
+            Serial.println("decode.");
 
 
     filterSignal();
-//    //Serial.println("count:");
-//    //Serial.println(CC1101_CLASS::receivedData.samples.size());
-//    //Serial.println("Pulses:");
-   //Serial.println(pulses[0]);
-   //Serial.println(pulses[1]);
-  //  delay(5);
-    // //Serial.println("filtered values\n");
-    // for(int i = 0; i < CC1101.receivedData.filtered.size(); i++) {
-    //     //Serial.print(CC1101.receivedData.filtered[i]);
-    //     //Serial.print(", ");
-    // }
+   Serial.println("count:");
+   Serial.println(CC1101_CLASS::receivedData.samples.size());
+   Serial.println("Pulses:");
+   Serial.println(pulses[0]);
+   Serial.println(pulses[1]);
+   delay(5);
+    Serial.println("filtered values\n");
+    for(int i = 0; i < CC1101.receivedData.filtered.size(); i++) {
+        Serial.print(CC1101.receivedData.filtered[i]);
+        Serial.print(", ");
+    }
     if ((DURATION_DIFF(pulses[0], 500) < 40) &&
         (DURATION_DIFF(pulses[1], 1000) < 90)) {
             //Serial.println("is Hormann");
@@ -778,6 +783,16 @@ bool CC1101_CLASS::decode() {
             return true;
         }
     }
+
+    if ((DURATION_DIFF(pulses[0], 250) < 50) &&
+    (DURATION_DIFF(pulses[1], 500) < 90)) {
+        //Serial.println("is SMC5326");
+    if (kiaProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
+        kiaProtocol.get_string(pulses[0], pulses[1]);
+        return true;
+    }
+    }
+
 
     std::ostringstream samples;
     for (size_t i = 0; i < CC1101.receivedData.filtered.size(); ++i) {

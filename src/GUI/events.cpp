@@ -18,7 +18,7 @@ using namespace std;
 #include "modules/RF/Radio.h"
 #include "main.h"
 #include "modules/IR/ir.h"
-#include "modules/nfc/nfc.h"
+#
 
 
 #define MAX_PATH_LENGTH 256
@@ -160,14 +160,8 @@ void EVENTS::btn_event_NFC_menu_run(lv_event_t* e) {
      lv_event_code_t code = lv_event_get_code(e);
      
     if (code == LV_EVENT_CLICKED) {
-        digitalWrite(CC1101_CS, HIGH);
-        delay(5);
-        digitalWrite(PN532_SS, LOW);
-        delay(5);
-        NFCPN.init();
-        delay(5);
-        NFCPN.NFCloop();
-        delay(5);
+        runningModule = MODULE_NFC;
+        nfcState = TEST;
     }
 }
 

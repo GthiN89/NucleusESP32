@@ -19,8 +19,9 @@
 #include <IRrecv.h>
 #include <IRutils.h>
 #include "modules/IR/ir.h"
-
+#include <IRutils.h>
 #include "modules/nfc/nfc.h"
+
 #include "backlight/backlight.hpp"
 
 backLight_ bcklght;
@@ -44,6 +45,8 @@ static lv_indev_t *indev = nullptr;
 TouchCallback _singleTouchCallback;
 
 
+
+
 void register_touch(lv_disp_t *disp);
 void my_touchpad_read(lv_indev_t * indev_driver, lv_indev_data_t * data);
 void init_touch(TouchCallback singleTouchCallback);
@@ -56,6 +59,8 @@ void init_touch(TouchCallback singleTouchCallback);
  }
 
 void setup() {
+    pinMode(IR_TX, OUTPUT);
+    pinMode(IR_RX, INPUT);
     pinMode(CYD_MISO, INPUT);
     pinMode(CYD_MOSI, OUTPUT);
     pinMode(CYD_SCLK, OUTPUT);
@@ -91,45 +96,8 @@ void setup() {
     delay(3000);
     screenMgrM.createmainMenu();
     register_touch(disp);
-    SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI);
 
-
-    SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
-    delay(2);
-    digitalWrite(CC1101_CS, LOW);   
-    delay(5);                      
-
-    if (CC1101.init()) {
-        Serial.println(F("CC1101 initialized."));
-        CC1101.emptyReceive();
-    } else {
-        Serial.println(F("Failed to initialize CC1101."));
-    }
    
-    digitalWrite(CC1101_CS, HIGH);  
-    SPI.end();
-        
-//     SPI.begin(CYD_SCLK, CYD_MISO, CYD_MOSI); 
-//     delay(2);
-//     digitalWrite(PN532_SS, HIGH);
-
-//     delay(10);   
-
-//     if (NFCPN.init()) {
-//         Serial.println("PN532 initialized.");
-//     } else {
-//         Serial.println("PN532 initialization failed!");
-//     }
-
-//     digitalWrite(PN532_SS, HIGH);   // Deselect PN532 explicitly after initialization
-
-//    SPI.end(); 
-
- 
-
-    if (!SD_CARD.initializeSD()) {
-        Serial.println(F("Failed to initialize SD card!"));
-    }
     lv_fs_if_init();
  //   digitalWrite(PN532_SS ,HIGH);
                    
@@ -137,6 +105,14 @@ void setup() {
    
       
 
+}
+
+void NFCLoop() {
+    if(nfcState == TEST){
+        nfcState = NFC_IDLE;
+         NFC::NFC_CLASS::getInstance().init();     
+        NFC::NFC_CLASS::getInstance().NFCloop();       
+    }
 }
 
 void bruteForceTask(void *pvParameters) {
@@ -349,6 +325,9 @@ void bruteForceTask(void *pvParameters) {
         break;
     case MODULE_IR:
         IRLoop();
+    break;
+    case MODULE_NFC:
+        NFCLoop();
     break;
    default:
     break;
