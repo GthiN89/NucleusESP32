@@ -516,7 +516,7 @@ void CC1101_CLASS::loadPreset() {
 }
 
 bool CC1101_CLASS::CheckReceived() {
-    if(CC1101_CLASS::receivedData.sampleCount  > 512) {
+    if(CC1101_CLASS::receivedData.sampleCount  > 2046) {
         CC1101_CLASS::receivedData.sampleCount = 0;
         CC1101_CLASS::receivedData.lastReceiveTime = 0;
         return true;
@@ -526,7 +526,7 @@ bool CC1101_CLASS::CheckReceived() {
             return false;
     }
      else if (CC1101_CLASS::receivedData.sampleCount  > 24 and
-            (esp_timer_get_time() - startRec) > 500000) {
+            (esp_timer_get_time() - startRec) > 1000000) {
         CC1101_CLASS::receivedData.sampleCount = 0;
         CC1101_CLASS::receivedData.lastReceiveTime = 0;
         return true;
@@ -564,8 +564,8 @@ void CC1101_CLASS::enableScanner(float start, float stop) {
     CC1101_CLASS::startSignalAnalyseTask();
 }
 void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pulseWidth, const uint8_t messageLength) {
-    CC1101_CLASS::init();
-    delay(5);
+
+
     uint8_t dataByte;
     uint8_t i; 
     for (i = 0; i <= messageLength; i++) 
@@ -573,7 +573,7 @@ void CC1101_CLASS::sendByteSequence(const uint8_t sequence[], const uint16_t pul
         dataByte = sequence[i];
         for (int8_t bit = 7; bit >= 0; bit--)
         { 
-            digitalWrite(CC1101_CCGDO0A, (dataByte & (1 << bit)) != 0 ? HIGH : LOW);
+            gpio_set_level(CC1101_CCGDO0A, (dataByte & (1 << bit)) != 0 ? HIGH : LOW);
             delayMicroseconds(pulseWidth);
         }
     }    
@@ -739,10 +739,16 @@ bool CC1101_CLASS::decode() {
         Serial.print(CC1101.receivedData.filtered[i]);
         Serial.print(", ");
     }
+    delay(5);
+    Serial.println("filtered values\n");
+    for(int i = 0; i < CC1101.receivedData.samples.size(); i++) {
+        Serial.print(CC1101.receivedData.samples[i]);
+        Serial.print(", ");
+    }
     if ((DURATION_DIFF(pulses[0], 500) < 40) &&
         (DURATION_DIFF(pulses[1], 1000) < 90)) {
             //Serial.println("is Hormann");
-        if (hormannProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
+        if (hormannProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.filtered.size())) {
             hormannProtocol.getCodeString(pulses[0], pulses[1]);
             return true;
         }
@@ -751,7 +757,7 @@ bool CC1101_CLASS::decode() {
     if ((DURATION_DIFF(pulses[0], 320) < 50) &&
         (DURATION_DIFF(pulses[1], 640) < 90)) {
             //Serial.println("is Came");
-        if (cameProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
+        if (cameProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.filtered.size())) {
             cameProtocol.getCodeString(pulses[0], pulses[1]);
             return true;
         }
@@ -760,7 +766,7 @@ bool CC1101_CLASS::decode() {
     if ((DURATION_DIFF(pulses[0], 555) < 40) &&
         (DURATION_DIFF(pulses[1], 1111) < 90)) {
             //Serial.println("is Ansonic");
-        if (ansonicProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
+        if (ansonicProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.filtered.size())) {
             ansonicProtocol.getCodeString(pulses[0], pulses[1]);
             return true;
         }
@@ -769,7 +775,7 @@ bool CC1101_CLASS::decode() {
     if ((DURATION_DIFF(pulses[0], 700) < 50) &&
         (DURATION_DIFF(pulses[1], 1400) < 90)) {
            //Serial.println("is NiceFlow");
-        if (niceFloProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
+        if (niceFloProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.filtered.size())) {
             niceFloProtocol.getCodeString(pulses[0], pulses[1]);
             return true;
         }
@@ -778,7 +784,7 @@ bool CC1101_CLASS::decode() {
     if ((DURATION_DIFF(pulses[0], 300) < 50) &&
         (DURATION_DIFF(pulses[1], 900) < 90)) {
             //Serial.println("is SMC5326");
-        if (smc5326Protocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
+        if (smc5326Protocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.filtered.size())) {
             smc5326Protocol.getCodeString(pulses[0], pulses[1]);
             return true;
         }
@@ -787,11 +793,59 @@ bool CC1101_CLASS::decode() {
     if ((DURATION_DIFF(pulses[0], 250) < 50) &&
     (DURATION_DIFF(pulses[1], 500) < 90)) {
         //Serial.println("is SMC5326");
-    if (kiaProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.samples.size())) {
+    if (kiaProtocol.decode(CC1101.receivedData.filtered.data(), CC1101_CLASS::receivedData.filtered.size())) {
         kiaProtocol.get_string(pulses[0], pulses[1]);
         return true;
     }
     }
+
+    else if ((DURATION_DIFF(pulses[0], 400) < 100) &&
+    (DURATION_DIFF(pulses[1], 800) < 150)) {
+        Serial.println("KeeLoq structure detected (Timing match):");
+        for(int i = 0; i < CC1101.receivedData.samples.size(); i++) {
+            keeloqDecoder.feed(CC1101.receivedData.samples.data()[i] < 0, abs(CC1101.receivedData.samples.data()[i]));
+
+        }
+        
+
+        if (keeloqDecoder.hasResult()) {
+ 
+   KeeLoqData keeloqResult;
+   KeeLoqStatus status = keeloqDecoder.getResult(
+       keeloqResult,
+       0ULL,
+       KeeLoqCommon::KeeLoqLearningType::Unknown,
+       ""
+   );
+
+   // Get the formatted string from the data object
+   std::string result_str_std = keeloqResult.getCodeString();
+   String result_str = result_str_std.c_str(); // Convert std::string to Arduino String
+
+   // --- Update UI (Ported from Hormann example) ---
+   ScreenManager& screenMgr = ScreenManager::getInstance(); // Get ScreenManager instance
+   lv_obj_t * textarea;
+   if(C1101preset == CUSTOM){ // Assuming C1101preset is accessible
+       textarea = screenMgr.text_area_SubGHzCustom;
+   } else {
+       textarea = screenMgr.getTextArea();
+   }
+   // Check if textarea is valid before using
+   if (textarea != nullptr) {
+        lv_textarea_set_text(textarea, result_str.c_str()); // Use C-string representation for LVGL
+   } else {
+        Serial.println("Error: Target text area is null!");
+        // Optionally print to Serial as fallback
+        Serial.println(result_str);
+   }
+   // --- End UI Update ---
+
+
+}
+}
+
+
+
 
 
     std::ostringstream samples;

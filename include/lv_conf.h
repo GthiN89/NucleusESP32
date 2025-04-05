@@ -63,30 +63,11 @@
 #define LV_STDARG_INCLUDE       <stdarg.h>
 #define TFT_INVERSION_ON
 
-/* Inertial scrolling sensitivity for drag gestures */
-#define LV_INDEV_DEF_DRAG_THROW    5    /* Default: 10 */
-
 /* Inertial scrolling sensitivity for scroll gestures */
 #define LV_INDEV_DEF_SCROLL_THROW  10   /* Default: 20 */
 
 /* Snap scrolling settings */
 #define LV_INDEV_DEF_SCROLL_SNAP   LV_SCROLL_SNAP_NONE /* Default: LV_SCROLL_SNAP_CENTER */
-
-#if LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN
-    /*Size of the memory available for `lv_malloc()` in bytes (>= 2kB)*/
-    #define LV_MEM_SIZE (46 * 1024U)          /*[bytes]*/
-
-    /*Size of the memory expand for `lv_malloc()` in bytes*/
-    #define LV_MEM_POOL_EXPAND_SIZE 0
-
-    /*Set an address for the memory pool instead of allocating it as a normal array. Can be in external SRAM too.*/
-    #define LV_MEM_ADR 0     /*0: unused*/
-    /*Instead of an address give a memory allocator that will be called to get a memory pool for LVGL. E.g. my_malloc*/
-    #if LV_MEM_ADR == 0
-        #undef LV_MEM_POOL_INCLUDE
-        #undef LV_MEM_POOL_ALLOC
-    #endif
-#endif  /*LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN*/
 
 /*====================
    HAL SETTINGS
@@ -735,7 +716,7 @@
 /*File system interfaces for common APIs */
 
 /*Setting a default driver letter allows skipping the driver prefix in filepaths*/
-#define LV_FS_DEFAULT_DRIVE_LETTER 'S'
+#define LV_FS_DEFAULT_DRIVER_LETTER 'S'
 
 /*API for fopen, fread, etc*/
 #define LV_USE_FS_STDIO 0

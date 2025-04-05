@@ -12,8 +12,8 @@
 #include <lvgl.h>
 
 
-#define IR_TX 4
-#define IR_RX 34
+#define IR_TX 17
+#define IR_RX 35
 
 #define freq_to_timerval(x) (x / 1000)
 //Codes captured from Generation 3 TV-B-Gone by Limor Fried & Mitch Altman

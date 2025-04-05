@@ -14,10 +14,11 @@
 #include "protocols/Smc5326Protocol.h"
 #include "protocols/Holtek_HT12xProtocol.h"
 #include "protocols/kia.hpp"
+#include "protocols/KeeLoqProtocol.hpp"
+//#include "protocols/TPMSGenericData.h"
 
-#define SAMPLE_SIZE 1024
+#define SAMPLE_SIZE 2048
 #define MAX_SIGNAL_LENGTH 10000000  
-#define RAW_BUF_SIZE   2048     // Maximum number of raw samples
 #define TE_MIN_COUNT   5        // Minimum number of high pulses required to calculate TE
 #define GAP_MULTIPLIER 10       // A low pulse longer than GAP_MULTIPLIER * TE is considered a gap
 const float BIN_RAW_GAP_MULTIPLIER = 10.0;  // A low pulse longer than (TE * GAP_MULTIPLIER) is considered a gap
@@ -216,6 +217,9 @@ private:
     NiceFloProtocol niceFloProtocol;
     SMC5326Protocol  smc5326Protocol;
     KiaProtocol kiaProtocol;
+    KeeLoqProtocolDecoder keeloqDecoder;
+    //TPMSProtocolDecoder tpmsDecoder;
+
     
 
 
