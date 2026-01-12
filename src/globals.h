@@ -66,9 +66,7 @@ const SPISettings spiSettings = SPISettings(SPI_CLOCK_DIV4, MSBFIRST, SPI_MODE0)
 #include "Adafruit_PN532.h"
 #include "modules/nfc/nfc.h"
 
-namespace NFC {
-    class NFC_CLASS;
-}
+// Removed conflicting NFC namespace - keeping only the NFC class
 
    //---------------------------------------------------------------------------//
   //-----------------------------SETINGS---------------------------------------//
@@ -150,11 +148,11 @@ extern int8_t repeats;
 // 
 
 
-enum NFCState {
+enum class GlobalNFCState {
     TEST,
     NFC_IDLE
 };
-extern NFCState nfcState;
+extern GlobalNFCState nfcState;
 
 
 enum C1101State

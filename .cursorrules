@@ -1,0 +1,217 @@
+{
+  "rules": {
+    "context_initialization": {
+      "description": "Setup for SOLID principle analysis",
+      "steps": [
+        "ALWAYS verify LLM client configuration",
+        "Check template availability",
+        "Review SOLID principle definitions",
+        "Verify parsing capabilities"
+      ]
+    },
+    "code_analysis": {
+      "solid_principles": {
+        "srp": {
+          "checks": [
+            "Class responsibility count",
+            "Method cohesion",
+            "Dependency count",
+            "Change reasons"
+          ],
+          "patterns": [
+            "Multiple unrelated methods",
+            "Mixed abstraction levels",
+            "Tangled dependencies",
+            "Mixed concerns"
+          ]
+        },
+        "ocp": {
+          "checks": [
+            "Extension points",
+            "Abstract base classes",
+            "Interface usage",
+            "Modification patterns"
+          ],
+          "patterns": [
+            "Direct type checks",
+            "Switch statements on type",
+            "Hardcoded behaviors",
+            "Concrete dependencies"
+          ]
+        },
+        "lsp": {
+          "checks": [
+            "Inheritance hierarchy",
+            "Method contracts",
+            "Type substitution",
+            "Invariant preservation"
+          ],
+          "patterns": [
+            "Contract violations",
+            "Not implemented exceptions",
+            "Type checks in base class",
+            "Inconsistent behavior"
+          ]
+        },
+        "isp": {
+          "checks": [
+            "Interface size",
+            "Method grouping",
+            "Client dependencies",
+            "Interface cohesion"
+          ],
+          "patterns": [
+            "Fat interfaces",
+            "Unused methods",
+            "Mixed responsibilities",
+            "Forced implementations"
+          ]
+        },
+        "dip": {
+          "checks": [
+            "Abstraction usage",
+            "Dependency direction",
+            "Concrete class coupling",
+            "Configuration handling"
+          ],
+          "patterns": [
+            "Direct instantiation",
+            "Concrete class dependencies",
+            "Missing abstractions",
+            "High-level depending on low-level"
+          ]
+        }
+      }
+    },
+    "llm_integration": {
+      "prompt_engineering": {
+        "requirements": [
+          "Clear principle specification",
+          "Code context provision",
+          "Output structure definition",
+          "Example patterns"
+        ],
+        "patterns": [
+          "Use XML tags for structured output",
+          "Include context markers",
+          "Provide principle-specific examples",
+          "Define expected formats"
+        ]
+      },
+      "response_parsing": {
+        "requirements": [
+          "Structured output parsing",
+          "Error handling",
+          "Format validation",
+          "Content extraction"
+        ],
+        "patterns": [
+          "Use robust XML parsing",
+          "Handle malformed responses",
+          "Validate against schemas",
+          "Extract relevant sections"
+        ]
+      }
+    },
+    "code_improvement": {
+      "suggestion_generation": {
+        "requirements": [
+          "Maintain functionality",
+          "Follow SOLID principles",
+          "Consider context",
+          "Progressive enhancement"
+        ],
+        "patterns": [
+          "Step-by-step refactoring",
+          "Alternative approaches",
+          "Code examples",
+          "Implementation guidance"
+        ]
+      },
+      "validation": {
+        "requirements": [
+          "Syntax verification",
+          "Semantic analysis",
+          "SOLID compliance",
+          "Functionality preservation"
+        ],
+        "patterns": [
+          "AST parsing",
+          "Type checking",
+          "Pattern matching",
+          "Test preservation"
+        ]
+      }
+    },
+    "template_management": {
+      "analysis_templates": {
+        "required_sections": [
+          "Code input",
+          "Principle specification",
+          "Analysis structure",
+          "Output format"
+        ],
+        "formatting": [
+          "Clear sections",
+          "XML tags",
+          "Variable placeholders",
+          "Example blocks"
+        ]
+      },
+      "improvement_templates": {
+        "required_sections": [
+          "Original code",
+          "Analysis summary",
+          "Improvement structure",
+          "Implementation guidance"
+        ],
+        "formatting": [
+          "Before/after sections",
+          "Step-by-step changes",
+          "Code blocks",
+          "Explanation sections"
+        ]
+      }
+    },
+    "testing_requirements": {
+      "analysis_tests": [
+        "Principle detection accuracy",
+        "Pattern recognition",
+        "Parse reliability",
+        "Error handling"
+      ],
+      "improvement_tests": [
+        "Code validity",
+        "SOLID compliance",
+        "Functionality preservation",
+        "Performance impact"
+      ],
+      "integration_tests": [
+        "LLM communication",
+        "Template rendering",
+        "Response handling",
+        "End-to-end workflow"
+      ]
+    },
+    "documentation_requirements": {
+      "code_analysis": [
+        "SOLID principle definitions",
+        "Detection patterns",
+        "Analysis strategies",
+        "Example violations"
+      ],
+      "improvements": [
+        "Refactoring patterns",
+        "Implementation guidance",
+        "Best practices",
+        "Common pitfalls"
+      ],
+      "configuration": [
+        "LLM setup",
+        "Template configuration",
+        "Analysis options",
+        "Improvement settings"
+      ]
+    }
+  }
+}

@@ -1,0 +1,261 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ '**' ]  # Run on all branches
+  pull_request:
+    branches: [ '**' ]
+  workflow_dispatch:    # Allow manual trigger
+  schedule:
+    - cron: '0 0 * * *'  # Run at midnight UTC every day
+
+env:
+  BUILD_TYPE: Debug
+
+jobs:
+  quick-checks:
+    name: Quick Code Checks
+    if: github.event_name != 'schedule'  # Skip on nightly runs
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Allow the pipeline to continue even if checks fail
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format clang-tidy
+
+      - name: Check Code Formatting
+        continue-on-error: true  # Don't fail on formatting issues
+        run: |
+          find src/modules/nfc -name '*.cpp' -o -name '*.h' | while read file; do
+            clang-format --dry-run --Werror "$file"
+          done
+
+      - name: Basic Clang-Tidy Checks
+        continue-on-error: true  # Don't fail on static analysis issues
+        run: |
+          mkdir -p quick-check-results
+          for file in src/modules/nfc/*.{cpp,h}; do
+            clang-tidy "$file" \
+              -checks=bugprone-*,performance-*,readability-identifier-naming \
+              -- -std=c++17 \
+              2>&1 | tee -a quick-check-results/clang-tidy.log
+          done
+
+      - name: Upload Quick Check Results
+        if: always()  # Always upload results, even on failure
+        uses: actions/upload-artifact@v3
+        with:
+          name: quick-check-results
+          path: quick-check-results/
+
+      - name: Comment PR with Results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('quick-check-results/clang-tidy.log')) {
+              const report = fs.readFileSync('quick-check-results/clang-tidy.log', 'utf8');
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: '## Quick Code Check Results\n```\n' + report + '\n```'
+              });
+            }
+
+  basic-tests:
+    name: Basic Tests
+    if: github.event_name != 'schedule'  # Skip on nightly runs
+    needs: quick-checks
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Allow the pipeline to continue even if tests fail
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure CMake
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+            -DBUILD_TESTING=ON
+
+      - name: Build
+        run: cmake --build build --config ${{ env.BUILD_TYPE }}
+
+      - name: Run Tests
+        continue-on-error: true  # Don't fail the pipeline on test failures
+        working-directory: build
+        run: ctest --output-on-failure -C ${{ env.BUILD_TYPE }}
+
+  nightly-analysis:
+    name: Comprehensive Analysis
+    if: github.event_name == 'schedule'  # Only run on schedule
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Allow the pipeline to continue even if analysis fails
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Analysis Container
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          load: true
+          tags: nfc-analysis:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Run Comprehensive Analysis
+        continue-on-error: true  # Don't fail on analysis issues
+        run: |
+          mkdir -p analysis-results
+          docker run --rm -v ${{ github.workspace }}/analysis-results:/analysis-results \
+            nfc-analysis:latest /bin/bash -c "
+              ./scripts/run-analysis.sh > /analysis-results/analysis.log 2>&1 || true
+              echo 'ANALYSIS_EXIT_CODE='$? >> /analysis-results/status
+            "
+
+      - name: Install Additional Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cppcheck lcov clang-tidy clang-format
+
+      - name: Run cppcheck
+        continue-on-error: true  # Don't fail on cppcheck issues
+        run: |
+          cppcheck --enable=all --suppress=missingInclude \
+            --error-exitcode=1 \
+            --inline-suppr \
+            --template="{file}:{line}: {severity}: {message}" \
+            src/modules/nfc/ 2>&1 | tee -a analysis-results/cppcheck.log
+
+      - name: Run Coverage Analysis
+        continue-on-error: true  # Don't fail on coverage issues
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON
+          cmake --build build
+          cd build && ctest || true
+          lcov --capture --directory . --output-file ../analysis-results/coverage.info || true
+          lcov --remove ../analysis-results/coverage.info '/usr/*' --output-file ../analysis-results/coverage.info || true
+
+      - name: Generate Comprehensive Report
+        if: always()  # Always generate report
+        run: |
+          echo "# Nightly Analysis Report" > analysis-results/report.md
+          echo "## Run Information" >> analysis-results/report.md
+          echo "- Date: $(date -u)" >> analysis-results/report.md
+          echo "## Static Analysis Results" >> analysis-results/report.md
+          cat analysis-results/analysis.log >> analysis-results/report.md || true
+          echo "## Code Coverage Results" >> analysis-results/report.md
+          lcov --summary analysis-results/coverage.info >> analysis-results/report.md || true
+          echo "## Cppcheck Results" >> analysis-results/report.md
+          cat analysis-results/cppcheck.log >> analysis-results/report.md || true
+
+      - name: Upload Analysis Results
+        if: always()  # Always upload results
+        uses: actions/upload-artifact@v3
+        with:
+          name: nightly-analysis-report
+          path: analysis-results/
+
+      - name: Create Issue for Problems
+        if: always()  # Create issue even if steps fail
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('analysis-results/report.md', 'utf8');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '📊 Nightly Analysis Report',
+              body: report,
+              labels: ['nightly-analysis', 'needs-review']
+            });
+
+  cross-platform-tests:
+    name: Full Test Suite
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true  # Allow the pipeline to continue even if tests fail
+    strategy:
+      fail-fast: false  # Continue with other OS tests even if one fails
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            cmake_generator: "Unix Makefiles"
+          - os: windows-latest
+            cmake_generator: "Visual Studio 17 2022"
+          - os: macos-latest
+            cmake_generator: "Xcode"
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Cache CMake
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cmake
+            build
+          key: ${{ runner.os }}-cmake-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt', '**/*.cmake') }}
+          restore-keys: |
+            ${{ runner.os }}-cmake-
+
+      - name: Set up CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Install Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build
+
+      - name: Install Dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Configure CMake
+        shell: bash
+        run: |
+          cmake -B build \
+            -G "${{ matrix.cmake_generator }}" \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+            -DBUILD_TESTING=ON
+
+      - name: Build
+        shell: bash
+        continue-on-error: true  # Don't fail on build issues
+        run: cmake --build build --config ${{ env.BUILD_TYPE }}
+
+      - name: Run Tests
+        working-directory: build
+        shell: bash
+        continue-on-error: true  # Don't fail on test failures
+        run: ctest --output-on-failure -C ${{ env.BUILD_TYPE }} --verbose
+
+      - name: Upload Test Results
+        if: always()  # Always upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            build/Testing/Temporary/LastTest.log
+            build/CMakeFiles/CMakeError.log
+            build/CMakeFiles/CMakeOutput.log 

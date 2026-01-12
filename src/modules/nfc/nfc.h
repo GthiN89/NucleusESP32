@@ -1,85 +1,119 @@
-// nfc.h
 #ifndef NFC_H
 #define NFC_H
 
-#include <Arduino.h>
-#include <Adafruit_PN532.h> // Include library header
-#include "protocols/nfc_card_defs.h" // Include your generic card definitions
+#include <functional>
+#include <memory>
+#include "infc_reader.h"
 
-// Forward declaration for global nfc object for potential use by other files including nfc.h
-// If only nfc.cpp uses it, this extern isn't strictly needed here, but doesn't hurt.
-namespace NFC {
-    extern Adafruit_PN532 nfc; // Declare global object as external
-}
+/**
+ * @brief Represents the possible states of the NFC module.
+ */
+enum class NFCState {
+    Idle,     ///< No card is being read
+    Reading   ///< A card is currently being read
+};
 
-namespace NFC {
+/**
+ * @brief Main NFC module class that handles card detection and reading.
+ * 
+ * This class provides a high-level interface for NFC/RFID operations.
+ * It follows SOLID principles and uses dependency injection for the
+ * actual NFC reader implementation.
+ * 
+ * Thread Safety: This class is not thread-safe and should be accessed
+ * from a single thread only.
+ */
+class NFC {
+public:
+    /**
+     * @brief Callback type for card detection events.
+     * 
+     * The callback receives the card's UID as a hexadecimal string.
+     * Callbacks should be lightweight and non-blocking as they are
+     * called from the update loop.
+     */
+    using CardDetectedCallback = std::function<void(const String& uid)>;
 
     /**
-     * @brief Main class to manage NFC functionality using PN532.
-     * Handles initialization, card detection, and specific card interactions.
+     * @brief Construct a new NFC object.
+     *
+     * @param readerImpl A unique pointer to an INFCReader implementation.
+     * @throws std::invalid_argument if readerImpl is null.
      */
-    class NFC_CLASS {
-    public:
-        /**
-         * @brief Constructor. Initializes internal state.
-         */
-        NFC_CLASS();
+    explicit NFC(std::unique_ptr<INFCReader> readerImpl);
 
-        /**
-         * @brief Destructor. Calls deinit if necessary.
-         */
-        ~NFC_CLASS();
+    /**
+     * @brief Default destructor for NFC.
+     */
+    ~NFC() = default;
 
-        /**
-         * @brief Initializes the SPI communication and the PN532 module.
-         * Detects the chip and configures it for card reading.
-         * @return true if initialization was successful, false otherwise.
-         */
-        bool init();
+    /**
+     * @brief Initialize the NFC module.
+     *
+     * This method initializes the NFC reader hardware and prepares
+     * it for operation.
+     * 
+     * @throws std::runtime_error if initialization fails or if the reader
+     *         is not properly set up.
+     */
+    void begin();
 
-        /**
-         * @brief Deinitializes the NFC module (optional cleanup). Sets CS high.
-         */
-        void deinit();
+    /**
+     * @brief Update the NFC module.
+     *
+     * This method should be called periodically in the main loop to check
+     * for new cards and process them. If a card is detected, the registered
+     * callback (if any) will be invoked with the card's UID.
+     * 
+     * Any exceptions in the callback will be caught and logged to prevent
+     * them from affecting the NFC module's operation.
+     */
+    void update();
 
-        /**
-         * @brief Checks if the NFC module is initialized.
-         * @return true if initialized, false otherwise.
-         */
-        bool isInitialized() const;
+    /**
+     * @brief Disable the NFC module.
+     *
+     * Places the NFC reader in a low-power state. The module can be
+     * reactivated by calling begin().
+     * 
+     * @throws std::runtime_error if shutdown fails.
+     */
+    void shutdown();
 
-        /**
-         * @brief Detects a card, identifies its type (Classic, UL, Type4 etc.),
-         *        and attempts to dump readable sectors using ONLY Mifare Classic default keys.
-         * Stores results in an internal CardData structure. Prints results block-by-block for Classic.
-         * @return true if a compatible card (any type identified) was detected, false otherwise or on error.
-         */
-        bool mifareDumpDefaultKeys();
+    /**
+     * @brief Get the current state of the NFC module.
+     *
+     * @return NFCState The current operational state.
+     */
+    [[nodiscard]] auto getState() const -> NFCState;
 
-        /**
-         * @brief Attempts Mifare Classic dictionary attack ONLY on sectors where default keys failed.
-         * Assumes mifareDumpDefaultKeys() has already been run successfully on a Mifare Classic card
-         * to populate the internal CardData structure.
-         * Prints results block-by-block for newly cracked sectors.
-         * @return true if the process completed (doesn't guarantee keys were found), false if preconditions not met or on error.
-         */
-        bool mifareDumpDictionaryAttack();
+    /**
+     * @brief Set the callback for card detection events.
+     *
+     * @param callback A function to be called when a card is detected.
+     *                 Pass nullptr to remove the callback.
+     */
+    void setCardDetectedCallback(CardDetectedCallback callback);
 
-        /**
-         * @brief Prints a summary of the currently stored card data (UID, Type, and block data if Classic).
-         */
-        void printStoredCardData();
+    // Prevent copying and moving
+    NFC(const NFC&) = delete;
+    NFC& operator=(const NFC&) = delete;
+    NFC(NFC&&) = delete;
+    NFC& operator=(NFC&&) = delete;
 
+private:
+    std::unique_ptr<INFCReader> reader;
+    CardDetectedCallback callback{nullptr};
+    NFCState state{NFCState::Idle};
 
-    private:
-        bool _initialized = false; // Initialization status flag
+    /**
+     * @brief Format a byte array as a hexadecimal string.
+     *
+     * @param uidBytes Pointer to the byte array.
+     * @param uidSize Size of the array (max 10 bytes).
+     * @return String The formatted hexadecimal string.
+     */
+    auto formatUID(const byte* uidBytes, byte uidSize) const -> String;
+};
 
-        // Note: Uses global 'nfc' object (defined in nfc.cpp) for hardware access.
-        // Note: Uses global 'currentNfcCard' object (defined in nfc.cpp) to store card data.
-        //       Consider making currentNfcCard a member if multiple NFC_CLASS instances
-        //       or better encapsulation is needed in the future.
-    };
-
-} // namespace NFC
-
-#endif // NFC_H
+#endif  // NFC_H

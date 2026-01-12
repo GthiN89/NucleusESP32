@@ -1,0 +1,252 @@
+# NucleusESP32 pyproject.toml
+# Configured for bundled SpareTools CPython 3.12.7 environment
+# All tool versions and Python requirements align with hermetic environment
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nucleus-esp32"
+version = "0.1.0"
+description = "ESP32-based multi-tool device firmware"
+readme = "README.md"
+license = {text = "MIT"}
+# Requires Python 3.12+ (bundled SpareTools CPython 3.12.7)
+requires-python = ">=3.12"
+authors = [
+    {name = "NucleusESP32 Team", email = "team@nucleus-esp32.local"},
+]
+maintainers = [
+    {name = "SpareTools Team", email = "team@sparesparrow.local"},
+]
+keywords = ["esp32", "embedded", "rf", "nfc", "iot", "firmware"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Embedded Systems",
+    "Topic :: System :: Hardware",
+]
+
+dependencies = [
+    # Core dependencies are managed via Conan
+    # Python tools for development and testing
+]
+
+[project.optional-dependencies]
+# Development dependencies - versions tested with bundled CPython 3.12.7
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.5.0",
+    "pre-commit>=3.5.0",
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=1.3.0",
+]
+
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=1.3.0",
+    "myst-parser>=2.0.0",
+]
+
+testing = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "coverage>=7.3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/sparesparrow/NucleusESP32"
+Documentation = "https://nucleus-esp32.readthedocs.io/"
+Repository = "https://github.com/sparesparrow/NucleusESP32.git"
+Issues = "https://github.com/sparesparrow/NucleusESP32/issues"
+Changelog = "https://github.com/sparesparrow/NucleusESP32/blob/main/CHANGELOG.md"
+
+[project.scripts]
+nucleus-bootstrap = "scripts.bootstrap:main"
+nucleus-build = "scripts.build:main"
+nucleus-test = "scripts.test:main"
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["nucleus*"]
+exclude = ["test*"]
+
+[tool.setuptools.package-data]
+nucleus = [
+    "boards/*.json",
+    "assets/*",
+    "data/*",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | \.pio
+  | \.platformio
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+known_first_party = ["nucleus", "test"]
+skip = [".platformio", ".pio", "build", "dist"]
+
+[tool.flake8]
+max-line-length = 100
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".eggs",
+    ".tox",
+    ".venv",
+    ".platformio",
+    ".pio",
+    "test/__pycache__",
+]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "conan.*",
+    "platformio.*",
+    "esptool.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.4"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    # Coverage disabled by default - enable with --cov when pytest-cov is available
+    # "--cov=nucleus",
+    # "--cov-report=term-missing",
+    # "--cov-report=xml",
+    # "--cov-report=html",
+]
+testpaths = ["test"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "hardware: marks tests that require hardware (deselect with '-m \"not hardware\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "simulation: marks tests as hardware simulation tests",
+]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "test/*",
+    "*/test/*",
+    "*/tests/*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.1.0"
+tag_format = "v$version"
+changelog_file = "CHANGELOG.md"
+update_changelog_on_bump = true
+
+[tool.pre-commit]
+repos = [
+    {repo = "https://github.com/pre-commit/pre-commit-hooks", rev = "v4.5.0", hooks = [
+        {id = "trailing-whitespace"},
+        {id = "end-of-file-fixer"},
+        {id = "check-yaml"},
+        {id = "check-added-large-files"},
+        {id = "check-merge-conflict"},
+        {id = "debug-statements"},
+        {id = "check-docstring-first"},
+    ]},
+    {repo = "https://github.com/psf/black", rev = "24.1.0", hooks = [
+        {id = "black"},
+    ]},
+    {repo = "https://github.com/pycqa/isort", rev = "5.13.0", hooks = [
+        {id = "isort"},
+    ]},
+    {repo = "https://github.com/pycqa/flake8", rev = "7.0.0", hooks = [
+        {id = "flake8"},
+    ]},
+    {repo = "https://github.com/pre-commit/mirrors-mypy", rev = "v1.8.0", hooks = [
+        {id = "mypy"},
+    ]},
+]

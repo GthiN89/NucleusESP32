@@ -22,7 +22,7 @@ bool isRaw = false;
 
 
 
-NFCState nfcState = NFC_IDLE;
+GlobalNFCState nfcState = GlobalNFCState::NFC_IDLE;
 
 
 CC1101_PRESET  C1101preset = AM650;

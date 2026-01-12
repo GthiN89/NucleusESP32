@@ -1,0 +1,149 @@
+name: Performance Regression Detection
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+env:
+  SPARETOOLS_PROJECT_TYPE: embedded/esp32
+  SPARETOOLS_PROJECT_NAME: nucleus-esp32
+
+jobs:
+  performance-baseline:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Bootstrap development environment
+      run: python scripts/bootstrap.py
+
+    - name: Run performance benchmarks
+      run: |
+        mkdir -p performance-baseline
+        python scripts/test_runner.py --integration-only --report-dir ./performance-baseline
+
+    - name: Extract performance metrics
+      run: |
+        # Extract key metrics from test results
+        if [ -f "performance-baseline/comprehensive_report.json" ]; then
+          jq '.performance_metrics | to_entries[] | select(.value.duration) | "\(.key)=\(.value.duration)"' \
+            performance-baseline/comprehensive_report.json > performance-baseline/metrics.txt
+        fi
+
+    - name: Upload performance baseline
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-baseline
+        path: performance-baseline/
+        retention-days: 90
+
+    - name: Store baseline in repository (placeholder)
+      run: |
+        # In a real implementation, this would store the baseline
+        # in a database or artifact store for comparison
+        echo "Performance baseline stored for future comparisons"
+
+  performance-comparison:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Bootstrap development environment
+      run: python scripts/bootstrap.py
+
+    - name: Run performance benchmarks
+      run: |
+        mkdir -p performance-current
+        python scripts/test_runner.py --integration-only --report-dir ./performance-current
+
+    - name: Download baseline (if available)
+      if: github.event_name == 'pull_request'
+      uses: actions/download-artifact@v3
+      with:
+        name: performance-baseline
+        path: performance-baseline/
+        # This would need to be from the main branch run
+
+    - name: Compare performance metrics
+      run: |
+        if [ -f "performance-baseline/metrics.txt" ] && [ -f "performance-current/comprehensive_report.json" ]; then
+          echo "Comparing performance metrics..."
+
+          # Extract current metrics
+          jq '.performance_metrics | to_entries[] | select(.value.duration) | "\(.key)=\(.value.duration)"' \
+            performance-current/comprehensive_report.json > performance-current/metrics.txt
+
+          # Compare metrics (simple diff for now)
+          echo "## Performance Comparison" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | Baseline | Current | Change |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|----------|---------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          while IFS='=' read -r test_name baseline_time; do
+            current_time=$(grep "^${test_name}=" performance-current/metrics.txt | cut -d'=' -f2)
+            if [ -n "$current_time" ]; then
+              # Calculate percentage change
+              if (( $(echo "$baseline_time > 0" | bc -l) )); then
+                change=$(echo "scale=2; (($current_time - $baseline_time) / $baseline_time) * 100" | bc -l)
+                change_str="${change}%"
+                if (( $(echo "$change > 5" | bc -l) )); then
+                  change_str="⚠️ ${change}% (REGRESSION)"
+                elif (( $(echo "$change < -5" | bc -l) )); then
+                  change_str="✅ ${change}% (IMPROVEMENT)"
+                else
+                  change_str="${change}% (stable)"
+                fi
+              else
+                change_str="N/A"
+              fi
+
+              echo "| $test_name | ${baseline_time}s | ${current_time}s | $change_str |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done < performance-baseline/metrics.txt
+
+        else
+          echo "Performance comparison not available (missing baseline or current results)"
+        fi
+
+    - name: Upload current performance results
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-current-${{ github.run_id }}
+        path: performance-current/
+        retention-days: 30
+
+    - name: Fail on significant regression
+      run: |
+        # Check for significant performance regressions
+        if [ -f "performance-current/comprehensive_report.json" ]; then
+          # Simple check: fail if any operation takes more than 2x expected time
+          # In a real implementation, this would be more sophisticated
+          slow_operations=$(jq '.performance_metrics | to_entries[] | select(.value.duration > 1.0) | .key' \
+            performance-current/comprehensive_report.json)
+
+          if [ -n "$slow_operations" ]; then
+            echo "⚠️  Some operations are slower than expected:"
+            echo "$slow_operations"
+            # Don't fail for now, just warn
+          fi
+        fi

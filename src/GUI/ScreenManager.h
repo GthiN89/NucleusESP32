@@ -3,7 +3,6 @@
 
 #include "lvgl.h"
 #include <functional>
-#include "XPT2046_Bitbang.h"
 #include "logo.h"
 struct SubGHzScreen {
     lv_obj_t* screen;

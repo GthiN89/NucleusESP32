@@ -6,7 +6,6 @@
 //#include "FS.h"
 #include "modules/dataProcessing/SubGHzParser.h"
 #include "modules/dataProcessing/dataProcessing.h"
-#include "XPT2046_Bitbang.h"
 #include "modules/nfc/nfc.h"
 #include "modules/IR/ir.h"
 #include "GUI/spinbox.h"

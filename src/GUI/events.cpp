@@ -161,7 +161,7 @@ void EVENTS::btn_event_NFC_menu_run(lv_event_t* e) {
      
     if (code == LV_EVENT_CLICKED) {
         runningModule = MODULE_NFC;
-        nfcState = TEST;
+        nfcState = GlobalNFCState::TEST;
     }
 }
 

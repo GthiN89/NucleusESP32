@@ -1,0 +1,684 @@
+// NucleusESP32 FlatBuffers Message Protocol Schema
+// Version: 1.0.0
+
+namespace nucleus.protocol;
+
+// ==========================================
+// Core Message Types
+// ==========================================
+
+// Base message envelope that wraps all protocol messages
+table MessageEnvelope {
+    // Protocol version for backward compatibility
+    version:uint16 = 1;
+
+    // Message timestamp (milliseconds since device boot)
+    timestamp:uint64;
+
+    // Unique message ID for request/response correlation
+    message_id:uint32;
+
+    // Message type discriminator
+    message_type:MessageType;
+
+    // The actual message payload (union of all message types)
+    payload:MessagePayload;
+}
+
+// Message type enumeration
+enum MessageType : byte {
+    COMMAND = 0,
+    RESPONSE = 1,
+    STATUS = 2,
+    DATA = 3,
+    ERROR = 4
+}
+
+// Union of all possible message payloads
+union MessagePayload {
+    Command,
+    Response,
+    Status,
+    Data,
+    Error
+}
+
+// ==========================================
+// Command Messages
+// ==========================================
+
+table Command {
+    // Command type
+    command_type:CommandType;
+
+    // Command-specific parameters
+    parameters:CommandParameters;
+}
+
+enum CommandType : byte {
+    // System commands
+    PING = 0,
+    RESET = 1,
+    GET_STATUS = 2,
+    SET_CONFIG = 3,
+
+    // Module commands
+    NFC_READ = 10,
+    NFC_WRITE = 11,
+    NFC_EMULATE = 12,
+
+    RF_TRANSMIT = 20,
+    RF_RECEIVE = 21,
+    RF_SCAN = 22,
+
+    IR_TRANSMIT = 30,
+    IR_LEARN = 31,
+
+    // Data processing commands
+    PROCESS_SUBGHZ = 40,
+    ANALYZE_DATA = 41,
+
+    // GUI commands
+    UPDATE_DISPLAY = 50,
+    GET_GUI_STATE = 51
+}
+
+union CommandParameters {
+    PingParams,
+    ResetParams,
+    GetStatusParams,
+    SetConfigParams,
+    NfcReadParams,
+    NfcWriteParams,
+    NfcEmulateParams,
+    RfTransmitParams,
+    RfReceiveParams,
+    RfScanParams,
+    IrTransmitParams,
+    IrLearnParams,
+    ProcessSubGhzParams,
+    AnalyzeDataParams,
+    UpdateDisplayParams,
+    GetGuiStateParams
+}
+
+// Command parameter definitions
+table PingParams {
+    // Optional ping data
+    data:string;
+}
+
+table ResetParams {
+    // Reset type
+    reset_type:ResetType;
+}
+
+enum ResetType : byte {
+    SOFT = 0,
+    HARD = 1,
+    FACTORY = 2
+}
+
+table GetStatusParams {
+    // Specific status components to retrieve
+    components:[StatusComponent];
+}
+
+enum StatusComponent : byte {
+    SYSTEM = 0,
+    MODULES = 1,
+    MEMORY = 2,
+    BATTERY = 3,
+    NETWORK = 4
+}
+
+table SetConfigParams {
+    // Configuration key-value pairs
+    config_items:[ConfigItem];
+}
+
+table ConfigItem {
+    key:string;
+    value:string;
+    value_type:ConfigValueType;
+}
+
+enum ConfigValueType : byte {
+    STRING = 0,
+    INT32 = 1,
+    UINT32 = 2,
+    FLOAT = 3,
+    BOOL = 4
+}
+
+// Module-specific command parameters
+table NfcReadParams {
+    // NFC card type (if known)
+    card_type:NfcCardType;
+    // Timeout in milliseconds
+    timeout_ms:uint32 = 5000;
+}
+
+enum NfcCardType : byte {
+    AUTO = 0,
+    MF_CLASSIC = 1,
+    MF_ULTRALIGHT = 2,
+    NTAG = 3,
+    ISO14443A = 4,
+    ISO14443B = 5
+}
+
+table NfcWriteParams {
+    // Data to write
+    data:[ubyte];
+    // Block/sector to write to
+    block:uint16;
+    // Card type for validation
+    card_type:NfcCardType;
+}
+
+table NfcEmulateParams {
+    // Card data to emulate
+    card_data:[ubyte];
+    // Card type to emulate
+    card_type:NfcCardType;
+}
+
+table RfTransmitParams {
+    // Raw RF data to transmit
+    data:[ubyte];
+    // Protocol type
+    protocol:RfProtocol;
+    // Transmission parameters
+    frequency_mhz:uint32;
+    modulation:RfModulation;
+}
+
+enum RfProtocol : byte {
+    RAW = 0,
+    KEELOQ = 1,
+    HORMANN = 2,
+    NICE = 3,
+    CAME = 4,
+    ANSONIC = 5,
+    HOLTEK = 6,
+    LINEAR = 7,
+    CHAMBERLAIN = 8
+}
+
+enum RfModulation : byte {
+    ASK_OOK = 0,
+    FSK = 1,
+    GFSK = 2,
+    MSK = 3,
+    BPSK = 4
+}
+
+table RfReceiveParams {
+    // Receive timeout in milliseconds
+    timeout_ms:uint32 = 10000;
+    // Frequency to listen on
+    frequency_mhz:uint32;
+}
+
+table RfScanParams {
+    // Frequency range to scan
+    start_freq_mhz:uint32;
+    end_freq_mhz:uint32;
+    // Scan step size in kHz
+    step_khz:uint16 = 50;
+}
+
+table IrTransmitParams {
+    // IR data to transmit
+    data:[ubyte];
+    // Protocol type
+    protocol:IrProtocol;
+}
+
+enum IrProtocol : byte {
+    RAW = 0,
+    NEC = 1,
+    SONY = 2,
+    RC5 = 3,
+    RC6 = 4,
+    SAMSUNG = 5,
+    PANASONIC = 6
+}
+
+table IrLearnParams {
+    // Learning timeout in milliseconds
+    timeout_ms:uint32 = 15000;
+    // Protocol hint (optional)
+    protocol_hint:IrProtocol;
+}
+
+table ProcessSubGhzParams {
+    // SubGHz file data
+    file_data:[ubyte];
+    // Processing options
+    options:SubGhzOptions;
+}
+
+table SubGhzOptions {
+    // Extract raw data
+    extract_raw:bool = true;
+    // Extract protocol info
+    extract_protocol:bool = true;
+    // Validate data integrity
+    validate:bool = true;
+}
+
+table AnalyzeDataParams {
+    // Data to analyze
+    data:[ubyte];
+    // Analysis type
+    analysis_type:DataAnalysisType;
+}
+
+enum DataAnalysisType : byte {
+    PATTERN = 0,
+    ENTROPY = 1,
+    FREQUENCY = 2,
+    CORRELATION = 3
+}
+
+table UpdateDisplayParams {
+    // Display update type
+    update_type:DisplayUpdateType;
+    // Update data (format depends on type)
+    data:[ubyte];
+}
+
+enum DisplayUpdateType : byte {
+    FULL_REFRESH = 0,
+    PARTIAL_UPDATE = 1,
+    TEXT_UPDATE = 2,
+    IMAGE_UPDATE = 3
+}
+
+table GetGuiStateParams {
+    // Specific GUI components to query
+    components:[GuiComponent];
+}
+
+enum GuiComponent : byte {
+    SCREEN = 0,
+    MENU = 1,
+    STATUS_BAR = 2,
+    KEYBOARD = 3
+}
+
+// ==========================================
+// Response Messages
+// ==========================================
+
+table Response {
+    // Response status
+    status:ResponseStatus;
+
+    // Response data (if successful)
+    data:ResponseData;
+
+    // Error information (if failed)
+    error:ErrorInfo;
+}
+
+enum ResponseStatus : byte {
+    SUCCESS = 0,
+    PENDING = 1,
+    FAILED = 2,
+    TIMEOUT = 3,
+    INVALID_REQUEST = 4
+}
+
+union ResponseData {
+    PingResponse,
+    StatusResponse,
+    ConfigResponse,
+    NfcResponse,
+    RfResponse,
+    IrResponse,
+    DataResponse,
+    GuiResponse
+}
+
+// Response data definitions
+table PingResponse {
+    // Echo back ping data
+    echo:string;
+    // Round trip time (if available)
+    rtt_ms:uint32;
+}
+
+table StatusResponse {
+    // Status information
+    system_status:SystemStatus;
+    module_statuses:[ModuleStatus];
+}
+
+table SystemStatus {
+    uptime_ms:uint64;
+    free_heap:uint32;
+    total_heap:uint32;
+    cpu_usage_percent:uint8;
+    temperature_celsius:float;
+}
+
+table ModuleStatus {
+    module_type:ModuleType;
+    enabled:bool;
+    status:string;
+    last_activity_ms:uint64;
+}
+
+enum ModuleType : byte {
+    NFC = 0,
+    RF = 1,
+    IR = 2,
+    SUBGHZ = 3,
+    BLE = 4,
+    WIFI = 5,
+    SDCARD = 6,
+    DISPLAY = 7
+}
+
+table ConfigResponse {
+    // Retrieved configuration items
+    config_items:[ConfigItem];
+}
+
+table NfcResponse {
+    // NFC operation result
+    operation:NfcOperation;
+    // Card information
+    card_info:NfcCardInfo;
+    // Read/written data
+    data:[ubyte];
+}
+
+enum NfcOperation : byte {
+    READ = 0,
+    WRITE = 1,
+    EMULATE = 2,
+    DETECT = 3
+}
+
+table NfcCardInfo {
+    card_type:NfcCardType;
+    uid:[ubyte];
+    sak:ubyte;
+    atqa:[ubyte];
+    memory_size:uint16;
+}
+
+table RfResponse {
+    // RF operation result
+    operation:RfOperation;
+    // Received/transmitted data
+    data:[ubyte];
+    // Signal information
+    signal_info:RfSignalInfo;
+}
+
+enum RfOperation : byte {
+    TRANSMIT = 0,
+    RECEIVE = 1,
+    SCAN = 2
+}
+
+table RfSignalInfo {
+    frequency_mhz:uint32;
+    rssi_dbm:int8;
+    snr_db:uint8;
+    modulation:RfModulation;
+}
+
+table IrResponse {
+    // IR operation result
+    operation:IrOperation;
+    // IR data
+    data:[ubyte];
+    // Signal characteristics
+    signal_info:IrSignalInfo;
+}
+
+enum IrOperation : byte {
+    TRANSMIT = 0,
+    LEARN = 1
+}
+
+table IrSignalInfo {
+    protocol:IrProtocol;
+    frequency_khz:uint16 = 38;
+    duty_cycle_percent:uint8 = 33;
+}
+
+table DataResponse {
+    // Analysis results
+    analysis_results:[AnalysisResult];
+}
+
+table AnalysisResult {
+    type:DataAnalysisType;
+    data:[ubyte];
+    confidence_percent:uint8;
+}
+
+table GuiResponse {
+    // Current GUI state
+    screen_id:uint16;
+    menu_state:string;
+    status_text:string;
+}
+
+// ==========================================
+// Status Messages
+// ==========================================
+
+table Status {
+    // Status update type
+    status_type:StatusType;
+
+    // Status data
+    data:StatusData;
+}
+
+enum StatusType : byte {
+    SYSTEM_STATUS = 0,
+    MODULE_STATUS = 1,
+    OPERATION_PROGRESS = 2,
+    ERROR_CONDITION = 3,
+    BATTERY_STATUS = 4
+}
+
+union StatusData {
+    SystemStatusUpdate,
+    ModuleStatusUpdate,
+    OperationProgress,
+    ErrorCondition,
+    BatteryStatus
+}
+
+table SystemStatusUpdate {
+    uptime_ms:uint64;
+    free_heap:uint32;
+    cpu_usage_percent:uint8;
+}
+
+table ModuleStatusUpdate {
+    module:ModuleType;
+    status:string;
+    enabled:bool;
+}
+
+table OperationProgress {
+    operation_id:uint32;
+    progress_percent:uint8;
+    status:string;
+    estimated_time_remaining_ms:uint32;
+}
+
+table ErrorCondition {
+    error_code:ErrorCode;
+    message:string;
+    module:ModuleType;
+    recoverable:bool;
+}
+
+enum ErrorCode : byte {
+    NONE = 0,
+    TIMEOUT = 1,
+    HARDWARE_FAILURE = 2,
+    INVALID_DATA = 3,
+    MEMORY_ERROR = 4,
+    NETWORK_ERROR = 5,
+    PERMISSION_DENIED = 6,
+    NOT_SUPPORTED = 7
+}
+
+table BatteryStatus {
+    voltage_mv:uint16;
+    level_percent:uint8;
+    charging:bool;
+    temperature_celsius:int8;
+}
+
+// ==========================================
+// Data Messages
+// ==========================================
+
+table Data {
+    // Data type
+    data_type:DataType;
+
+    // Data payload
+    payload:DataPayload;
+
+    // Metadata
+    metadata:DataMetadata;
+}
+
+enum DataType : byte {
+    RAW_BYTES = 0,
+    TEXT = 1,
+    JSON = 2,
+    BINARY_STRUCTURED = 3,
+    IMAGE = 4,
+    AUDIO = 5
+}
+
+union DataPayload {
+    RawBytes,
+    TextData,
+    JsonData,
+    BinaryStructured,
+    ImageData,
+    AudioData
+}
+
+table DataMetadata {
+    size_bytes:uint32;
+    timestamp_ms:uint64;
+    source:DataSource;
+    compression:CompressionType = NONE;
+}
+
+enum DataSource : byte {
+    NFC = 0,
+    RF = 1,
+    IR = 2,
+    SUBGHZ = 3,
+    SDCARD = 4,
+    NETWORK = 5,
+    INTERNAL = 6
+}
+
+enum CompressionType : byte {
+    NONE = 0,
+    GZIP = 1,
+    LZ4 = 2,
+    ZSTD = 3
+}
+
+table RawBytes {
+    data:[ubyte];
+}
+
+table TextData {
+    text:string;
+    encoding:TextEncoding = UTF8;
+}
+
+enum TextEncoding : byte {
+    UTF8 = 0,
+    ASCII = 1,
+    UTF16 = 2,
+    LATIN1 = 3
+}
+
+table JsonData {
+    json:string;
+}
+
+table BinaryStructured {
+    // Custom binary format data
+    format_id:uint16;
+    data:[ubyte];
+}
+
+table ImageData {
+    width:uint16;
+    height:uint16;
+    format:ImageFormat;
+    data:[ubyte];
+}
+
+enum ImageFormat : byte {
+    RAW = 0,
+    BMP = 1,
+    PNG = 2,
+    JPEG = 3,
+    GIF = 4
+}
+
+table AudioData {
+    sample_rate_hz:uint32;
+    channels:uint8;
+    format:AudioFormat;
+    data:[ubyte];
+}
+
+enum AudioFormat : byte {
+    RAW = 0,
+    WAV = 1,
+    MP3 = 2,
+    AAC = 3
+}
+
+// ==========================================
+// Error Messages
+// ==========================================
+
+table Error {
+    // Error code
+    error_code:ErrorCode;
+
+    // Human-readable error message
+    message:string;
+
+    // Module that generated the error
+    module:ModuleType;
+
+    // Whether the error is recoverable
+    recoverable:bool;
+
+    // Additional error context
+    context:[ubyte];
+}
+
+// ==========================================
+// Root message type
+// ==========================================
+
+root_type MessageEnvelope;
