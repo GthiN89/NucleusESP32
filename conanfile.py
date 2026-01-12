@@ -13,7 +13,7 @@ class NucleusESP32Conan(ConanFile):
     package_type = "application"
 
 # Foundation layer - SpareTools base provides common utilities and configuration
-python_requires = "sparetools-base/2.0.3"
+python_requires = "sparesparrow/sparetools-base/2.0.4"
 
 # Optional metadata
 license = "MIT"
